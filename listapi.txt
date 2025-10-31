@@ -1,0 +1,2522 @@
+================================================================================
+                    RAMPUNGIN.ID - LIST API ENDPOINTS
+                    Backend: CodeIgniter 4 + PostgreSQL
+                    Base URL: http://localhost/admintukang
+                    Authentication: JWT Bearer Token
+                    Updated: October 29, 2025
+================================================================================
+
+DAFTAR ISI:
+1. AUTH ENDPOINTS (5 endpoints)
+   - Register, Login, Logout, Get Current User, Change Password
+   
+2. CLIENT ENDPOINTS (14 endpoints)
+   - Profile Management (2)
+   - Browse & Search Tukang (4)
+   - Booking & Transactions (5)
+   - Top-up POIN (2)
+   - Rating & Statistics (2)
+   
+3. TUKANG ENDPOINTS (14 endpoints)
+   - Profile Management (3)
+   - Order Management (7)
+   - Ratings & Reviews (1)
+   - Withdrawal (2)
+   - Statistics (1)
+
+================================================================================
+
+
+
+
+📝 IMPORTANT NOTES:
+================================================================================
+✅ Semua response dalam format JSON standar:
+   {
+     "status": "success" | "error",
+     "message": "Pesan deskriptif",
+     "data": {...} // Opsional, berisi data response
+   }
+
+✅ Authentication menggunakan JWT Bearer Token:
+   - Header: Authorization: Bearer {your_token_here}
+   - Token didapat dari endpoint /api/auth/login
+   - Token valid selama 30 hari
+   - Token akan masuk blacklist setelah logout
+
+✅ HTTP Methods:
+   - PUT method bisa diganti POST jika client tidak support
+   - Contoh: PUT /api/client/profile → POST /api/client/profile
+
+✅ Error Codes:
+   - 200: Success
+   - 400: Bad Request (validasi gagal)
+   - 401: Unauthorized (token tidak valid/kadaluarsa)
+   - 403: Forbidden (role tidak sesuai)
+   - 404: Not Found
+   - 422: Unprocessable Entity (validasi error)
+   - 500: Internal Server Error
+
+✅ Dual Payment System:
+   POIN (QRIS Digital):
+   - Client top-up via QRIS → verifikasi admin → saldo masuk
+   - Saat booking, poin auto-deduct dari client
+   - Setelah selesai, poin transfer ke tukang
+   - Tukang bisa withdrawal ke bank (min 50k, fee 2%)
+   
+   TUNAI (Cash on Service):
+   - Tidak perlu top-up
+   - Langsung booking tanpa potong poin
+   - Bayar cash ke tukang setelah pekerjaan selesai
+   - Tukang konfirmasi pembayaran via app
+
+================================================================================
+🔓 AUTH ENDPOINTS - PUBLIC (No Authentication Required)
+================================================================================
+Total: 2 endpoints untuk register dan login
+
+1. REGISTER (Client & Tukang)
+   URL: http://localhost/admintukang/api/auth/register
+   Method: POST
+   Auth: No
+   Content-Type: application/json
+   
+   ⚠️ PENTING:
+   - Client otomatis verified (is_verified = true)
+   - Tukang perlu verifikasi admin dulu (is_verified = false)
+   - Gunakan field "role" untuk menentukan: "client" atau "tukang"
+   
+   Request Body (Client):
+   {
+     "username": "budi_santoso",
+     "email": "budi@gmail.com",
+     "password": "password123",
+     "nama_lengkap": "Budi Santoso",
+     "no_telp": "081234567890",
+     "role": "client",
+     "alamat": "Jl. Sudirman No. 123",
+     "kota": "Jakarta",
+     "provinsi": "DKI Jakarta",
+     "kode_pos": "10110"
+   }
+   
+   Request Body (Tukang):
+   {
+     "username": "agus_listrik",
+     "email": "agus@gmail.com",
+     "password": "password123",
+     "nama_lengkap": "Agus Prasetyo",
+     "no_telp": "082134567891",
+     "role": "tukang",
+     "alamat": "Jl. Raya Bekasi No. 89",
+     "kota": "Jakarta Timur",
+     "provinsi": "DKI Jakarta",
+     "kode_pos": "13920",
+     
+     // Profil tukang (wajib untuk tukang)
+     "pengalaman_tahun": 8,
+     "tarif_per_jam": 75000,
+     "bio": "Ahli instalasi listrik rumah dan gedung",
+     "keahlian": ["instalasi listrik", "perbaikan listrik"],
+     "kategori_ids": [1, 15],  // Array ID kategori
+     "nama_bank": "BCA",
+     "nomor_rekening": "1234567890",
+     "nama_pemilik_rekening": "Agus Prasetyo"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Registrasi berhasil",
+     "data": {
+       "user_id": 7,
+       "username": "agus_listrik",
+       "email": "agus@gmail.com",
+       "role": "tukang",
+       "is_verified": false  // false untuk tukang, true untuk client
+     }
+   }
+
+2. LOGIN (All Roles)
+   URL: http://localhost/admintukang/api/auth/login
+   Method: POST
+   Auth: No
+   Content-Type: application/json
+   
+   ⚠️ PENTING:
+   - Bisa login dengan username atau email
+   - Akan mendapat JWT token yang valid 30 hari
+   - Simpan token ini untuk request selanjutnya
+   
+   Request Body:
+   {
+     "username": "budi_santoso",  // atau gunakan email
+     "password": "password123"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Login berhasil",
+     "data": {
+       "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+       "user": {
+         "id": 2,
+         "username": "budi_santoso",
+         "email": "budi@gmail.com",
+         "nama_lengkap": "Budi Santoso",
+         "foto_profil": "uploads/profiles/budi.jpg",
+         "poin": 500000,
+         "is_active": true,
+         "is_verified": true,
+         "id_role": 2
+       },
+       "role": {
+         "id": 2,
+         "name": "client",
+         "description": "Client"
+       }
+     }
+   }
+
+================================================================================
+🔐 AUTH ENDPOINTS - PROTECTED (JWT Token Required)
+================================================================================
+Total: 3 endpoints untuk user yang sudah login (semua role)
+
+3. LOGOUT
+   URL: http://localhost/admintukang/api/auth/logout
+   Method: POST
+   Auth: Bearer Token
+   Content-Type: application/json
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   ⚠️ PENTING:
+   - Token akan masuk blacklist dan tidak bisa digunakan lagi
+   - User harus login ulang untuk mendapat token baru
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Logout berhasil"
+   }
+
+4. GET CURRENT USER
+   URL: http://localhost/admintukang/api/auth/me
+   Method: GET
+   Auth: Bearer Token
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   ⚠️ PENTING:
+   - Gunakan untuk cek user yang sedang login
+   - Response berbeda tergantung role (client/tukang/admin)
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data user berhasil diambil",
+     "data": {
+       "id": 2,
+       "username": "budi_santoso",
+       "email": "budi@gmail.com",
+       "nama_lengkap": "Budi Santoso",
+       "no_telp": "081234567890",
+       "alamat": "Jl. Sudirman No. 123",
+       "kota": "Jakarta",
+       "provinsi": "DKI Jakarta",
+       "kode_pos": "10110",
+       "foto_profil": "uploads/profiles/budi.jpg",
+       "poin": 500000,
+       "is_active": true,
+       "is_verified": true,
+       "tanggal_bergabung": "2025-10-01 09:00:00",
+       "updated_at": "2025-10-28 10:00:00",
+       "id_role": 2,
+       "role": {
+         "id": 2,
+         "name": "client",
+         "description": "Client"
+       }
+     }
+   }
+
+5. CHANGE PASSWORD
+   URL: http://localhost/admintukang/api/auth/change-password
+   Method: POST
+   Auth: Bearer Token
+   Content-Type: application/json
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Request Body:
+   {
+     "old_password": "password123",
+     "new_password": "newpassword456",
+     "confirm_password": "newpassword456"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Password berhasil diubah"
+   }
+
+================================================================================
+👤 CLIENT ENDPOINTS (Protected - JWT + Role Client)
+================================================================================
+Total: 14 endpoints untuk client yang sudah login
+
+⚠️ FLOW CLIENT:
+1. Register & Login → Dapat token
+2. Browse tukang berdasarkan kategori, rating, lokasi
+3. Pilih metode pembayaran:
+   - POIN: Top-up dulu → Verifikasi admin → Booking
+   - TUNAI: Langsung booking → Bayar cash di lokasi
+4. Tracking status pesanan
+5. Beri rating setelah selesai
+
+---[ PROFILE MANAGEMENT ]-------------------------------------------------------
+
+6. GET CLIENT PROFILE
+   URL: http://localhost/admintukang/api/client/profile
+   Method: GET
+   Auth: Bearer Token (Client)
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data profil berhasil diambil",
+     "data": {
+       "id": 2,
+       "username": "budi_santoso",
+       "email": "budi@gmail.com",
+       "nama_lengkap": "Budi Santoso",
+       "no_telp": "081234567890",
+       "alamat": "Jl. Sudirman No. 123",
+       "kota": "Jakarta",
+       "provinsi": "DKI Jakarta",
+       "kode_pos": "10110",
+       "foto_profil": "uploads/profiles/budi.jpg",
+       "poin": 500000,
+       "is_active": true,
+       "is_verified": true,
+       "tanggal_bergabung": "2025-10-01 09:00:00",
+       "id_role": 2
+     }
+   }
+
+7. UPDATE CLIENT PROFILE
+   URL: http://localhost/admintukang/api/client/profile
+   Method: PUT atau POST
+   Auth: Bearer Token (Client)
+   Content-Type: application/json
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Request Body:
+   {
+     "nama_lengkap": "Budi Santoso Updated",
+     "email": "budi.new@gmail.com",
+     "no_telp": "081234567890",
+     "alamat": "Jl. Sudirman No. 123",
+     "kota": "Jakarta",
+     "provinsi": "DKI Jakarta",
+     "kode_pos": "10110",
+     "foto_profil": "base64_image_string"  // Optional
+   }
+
+---[ BROWSE & SEARCH TUKANG ]--------------------------------------------------
+
+8. GET CATEGORIES
+   URL: http://localhost/admintukang/api/client/categories
+   Method: GET
+   Auth: Bearer Token (Client)
+   
+   ⚠️ Gunakan untuk filter tukang berdasarkan kategori keahlian
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data kategori berhasil diambil",
+     "data": [
+       {
+         "id": 1,
+         "nama": "Tukang Listrik",
+         "deskripsi": "Instalasi dan perbaikan sistem kelistrikan",
+         "jumlah_tukang": 5
+       },
+       {
+         "id": 2,
+         "nama": "Tukang AC",
+         "deskripsi": "Instalasi, service, dan perbaikan AC",
+         "jumlah_tukang": 3
+       }
+     ]
+   }
+
+9. BROWSE TUKANG
+   URL: http://localhost/admintukang/api/client/tukang
+   Method: GET
+   Auth: Bearer Token (Client)
+   
+   Query Parameters (Semua optional):
+   - kategori_id: integer (filter by kategori)
+   - kota: string (filter by kota)
+   - status: string (tersedia/tidak_tersedia)
+   - min_rating: decimal (minimum rating, contoh: 4.5)
+   - max_tarif: integer (maximum tarif per jam)
+   - order_by: string (rata_rata_rating, tarif_per_jam, pengalaman_tahun)
+   - order_dir: string (ASC, DESC)
+   - limit: integer (default 10, max 50)
+   - offset: integer (default 0)
+   
+   Example:
+   http://localhost/admintukang/api/client/tukang?kategori_id=1&kota=Jakarta&status=tersedia&order_by=rata_rata_rating&order_dir=DESC&limit=10
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data tukang berhasil diambil",
+     "data": [
+       {
+         "id": 1,
+         "user_id": 7,
+         "nama_lengkap": "Agus Prasetyo",
+         "foto_profil": "uploads/profiles/agus.jpg",
+         "no_telp": "082134567891",
+         "kota": "Jakarta Timur",
+         "provinsi": "DKI Jakarta",
+         "pengalaman_tahun": 8,
+         "tarif_per_jam": 75000,
+         "bio": "Ahli instalasi listrik rumah dan gedung",
+         "keahlian": ["instalasi listrik", "perbaikan listrik"],
+         "rata_rata_rating": 4.8,
+         "total_rating": 25,
+         "total_pekerjaan_selesai": 30,
+         "status_ketersediaan": "tersedia",
+         "radius_layanan_km": 10
+       }
+     ],
+     "pagination": {
+       "total": 5,
+       "limit": 10,
+       "offset": 0,
+       "current_page": 1,
+       "total_pages": 1
+     }
+   }
+
+10. GET TUKANG DETAIL
+    URL: http://localhost/admintukang/api/client/tukang/{tukang_id}
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    Example:
+    http://localhost/admintukang/api/client/tukang/1
+    
+    ⚠️ PENTING:
+    - Lihat profil lengkap tukang sebelum booking
+    - Termasuk rating, ulasan, dan statistik rating
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail tukang berhasil diambil",
+      "data": {
+        "id": 1,
+        "user_id": 7,
+        "nama_lengkap": "Agus Prasetyo",
+        "email": "agus@gmail.com",
+        "no_telp": "082134567891",
+        "foto_profil": "uploads/profiles/agus.jpg",
+        "alamat": "Jl. Raya Bekasi No. 89",
+        "kota": "Jakarta Timur",
+        "provinsi": "DKI Jakarta",
+        "pengalaman_tahun": 8,
+        "tarif_per_jam": 75000,
+        "bio": "Ahli instalasi listrik rumah dan gedung",
+        "keahlian": ["instalasi listrik", "perbaikan listrik"],
+        "radius_layanan_km": 10,
+        "rata_rata_rating": 4.8,
+        "total_rating": 25,
+        "total_pekerjaan_selesai": 30,
+        "status_ketersediaan": "tersedia",
+        "kategori": [
+          {
+            "id": 1,
+            "nama": "Tukang Listrik"
+          }
+        ],
+        "ratings": [
+          {
+            "id": 1,
+            "rating": 5,
+            "ulasan": "Kerja cepat dan rapi!",
+            "nama_client": "Budi Santoso",
+            "foto_client": "uploads/profiles/budi.jpg",
+            "created_at": "2025-10-15 14:30:00"
+          }
+        ],
+        "rating_stats": {
+          "total": 25,
+          "rata_rata": 4.8,
+          "bintang_5": 15,
+          "bintang_4": 8,
+          "bintang_3": 2,
+          "bintang_2": 0,
+          "bintang_1": 0
+        }
+      }
+    }
+
+11. SEARCH TUKANG
+    URL: http://localhost/admintukang/api/client/search-tukang
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    Query Parameters:
+    - keyword: string (search di nama, bio, keahlian)
+    - kategori_id: integer (optional)
+    - kota: string (optional)
+    - limit: integer (default 10)
+    - offset: integer (default 0)
+    
+    Example:
+    http://localhost/admintukang/api/client/search-tukang?keyword=listrik&kota=Jakarta
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Hasil pencarian tukang",
+      "data": [
+        {
+          "id": 1,
+          "nama_lengkap": "Agus Prasetyo",
+          "foto_profil": "uploads/profiles/agus.jpg",
+          "kota": "Jakarta Timur",
+          "pengalaman_tahun": 8,
+          "tarif_per_jam": 75000,
+          "bio": "Ahli instalasi listrik",
+          "rata_rata_rating": 4.8,
+          "status_ketersediaan": "tersedia"
+        }
+      ],
+      "pagination": {
+        "total": 1,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+---[ BOOKING & TRANSACTIONS ]--------------------------------------------------
+
+12. CREATE BOOKING
+    URL: http://localhost/admintukang/api/client/booking
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    
+    ⚠️ PENTING - Dual Payment:
+    - metode_pembayaran: "poin" → Auto-deduct saldo poin client
+    - metode_pembayaran: "tunai" → Bayar cash di lokasi, no deduct
+    
+    Request Body:
+    {
+      "tukang_id": 7,
+      "kategori_id": 1,
+      "judul_layanan": "Instalasi stop kontak tambahan",
+      "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+      "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+      "tanggal_jadwal": "2025-10-30",
+      "waktu_jadwal": "09:00:00",
+      "estimasi_durasi_jam": 2,
+      "harga_dasar": 150000,
+      "biaya_tambahan": 0,
+      "metode_pembayaran": "poin",  // "poin" atau "tunai"
+      "catatan_client": "Tolong bawa stop kontak sendiri"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Booking berhasil dibuat",
+      "data": {
+        "transaksi_id": 1,
+        "nomor_pesanan": "TRX-20251028-0001",
+        "status": "pending",
+        "total_biaya": 150000,
+        "metode_pembayaran": "poin",
+        "poin_terpotong": true  // true jika metode poin
+      }
+    }
+
+13. GET TRANSACTIONS
+    URL: http://localhost/admintukang/api/client/transactions
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    Query Parameters (Semua optional):
+    - status: string (pending, diterima, dalam_proses, selesai, dibatalkan, ditolak)
+    - metode_pembayaran: string (poin, tunai)
+    - start_date: date (YYYY-MM-DD)
+    - end_date: date (YYYY-MM-DD)
+    - limit: integer (default 10)
+    - offset: integer (default 0)
+    
+    Example:
+    http://localhost/admintukang/api/client/transactions?status=selesai&metode_pembayaran=poin
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data transaksi berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "nomor_pesanan": "TRX-20251028-0001",
+          "tukang_id": 7,
+          "nama_tukang": "Agus Prasetyo",
+          "foto_tukang": "uploads/profiles/agus.jpg",
+          "no_telp_tukang": "082134567891",
+          "kategori_id": 1,
+          "nama_kategori": "Tukang Listrik",
+          "judul_layanan": "Instalasi stop kontak",
+          "lokasi_kerja": "Jl. Sudirman No. 123",
+          "tanggal_jadwal": "2025-10-30",
+          "waktu_jadwal": "09:00:00",
+          "total_biaya": 150000,
+          "metode_pembayaran": "poin",
+          "status": "selesai",
+          "poin_terpotong": true,
+          "sudah_dibayar_tunai": false,
+          "sudah_dirating": true,
+          "created_at": "2025-10-28 10:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 10,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+14. GET TRANSACTION DETAIL
+    URL: http://localhost/admintukang/api/client/transactions/{transaksi_id}
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    Example:
+    http://localhost/admintukang/api/client/transactions/1
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail transaksi berhasil diambil",
+      "data": {
+        "id": 1,
+        "nomor_pesanan": "TRX-20251028-0001",
+        "client_id": 2,
+        "nama_client": "Budi Santoso",
+        "tukang_id": 7,
+        "nama_tukang": "Agus Prasetyo",
+        "foto_tukang": "uploads/profiles/agus.jpg",
+        "no_telp_tukang": "082134567891",
+        "kategori_id": 1,
+        "nama_kategori": "Tukang Listrik",
+        "judul_layanan": "Instalasi stop kontak",
+        "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+        "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+        "tanggal_jadwal": "2025-10-30",
+        "waktu_jadwal": "09:00:00",
+        "estimasi_durasi_jam": 2,
+        "harga_dasar": 150000,
+        "biaya_tambahan": 0,
+        "total_biaya": 150000,
+        "metode_pembayaran": "poin",
+        "status": "selesai",
+        "poin_terpotong": true,
+        "sudah_dibayar_tunai": false,
+        "catatan_client": "Tolong bawa stop kontak sendiri",
+        "catatan_tukang": "Semua stop kontak sudah terpasang",
+        "created_at": "2025-10-28 10:00:00",
+        "waktu_diterima": "2025-10-28 10:15:00",
+        "waktu_selesai": "2025-10-30 11:05:00",
+        "sudah_dirating": true,
+        "rating": {
+          "id": 1,
+          "rating": 5,
+          "ulasan": "Kerja cepat dan rapi!",
+          "created_at": "2025-10-30 11:30:00"
+        }
+      }
+    }
+
+15. CANCEL TRANSACTION
+    URL: http://localhost/admintukang/api/client/transactions/{transaksi_id}/cancel
+    Method: PUT atau POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    
+    ⚠️ PENTING:
+    - Hanya bisa cancel jika status: "pending" atau "diterima"
+    - Jika metode POIN, saldo akan dikembalikan otomatis
+    
+    Request Body:
+    {
+      "alasan_pembatalan": "Perubahan rencana renovasi"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Transaksi berhasil dibatalkan",
+      "data": {
+        "poin_dikembalikan": 150000  // Hanya jika metode poin
+      }
+    }
+
+---[ TOP-UP POIN (QRIS) ]------------------------------------------------------
+
+16. REQUEST TOP-UP
+    URL: http://localhost/admintukang/api/client/topup
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: multipart/form-data
+    
+    ⚠️ PENTING:
+    - Upload bukti transfer QRIS (gambar/PDF, max 2MB)
+    - Menunggu verifikasi admin (status: pending)
+    - Jika diverifikasi, saldo poin akan masuk otomatis
+    - Request kadaluarsa setelah 24 jam jika tidak diverifikasi
+    
+    Form Data:
+    - jumlah: integer (required) - Jumlah top-up
+    - bukti_pembayaran: file (required) - Image/PDF max 2MB
+    
+    Example Form Data:
+    jumlah=100000
+    bukti_pembayaran=[file upload]
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Request top-up berhasil dibuat",
+      "data": {
+        "topup_id": 1,
+        "jumlah": 100000,
+        "status": "pending",
+        "kadaluarsa_pada": "2025-10-29 10:00:00"
+      }
+    }
+
+17. GET TOP-UP HISTORY
+    URL: http://localhost/admintukang/api/client/topup
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    Query Parameters (Optional):
+    - status: string (pending, berhasil, ditolak, kadaluarsa)
+    - limit: integer (default 10)
+    - offset: integer (default 0)
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Riwayat top-up berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "jumlah": 100000,
+          "metode_pembayaran": "qris",
+          "bukti_pembayaran": "uploads/topup/bukti_abc.jpg",
+          "status": "berhasil",
+          "alasan_penolakan": null,
+          "nama_admin": "Super Administrator",
+          "waktu_verifikasi": "2025-10-28 11:00:00",
+          "kadaluarsa_pada": "2025-10-29 10:00:00",
+          "created_at": "2025-10-28 10:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 2,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+---[ RATING & STATISTICS ]-----------------------------------------------------
+
+18. SUBMIT RATING
+    URL: http://localhost/admintukang/api/client/rating
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    
+    ⚠️ PENTING:
+    - Hanya bisa rating jika transaksi status "selesai"
+    - Rating hanya bisa diberikan 1x per transaksi
+    
+    Request Body:
+    {
+      "transaksi_id": 1,
+      "rating": 5,  // 1-5
+      "ulasan": "Kerja cepat dan rapi! Recommended."
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Rating berhasil diberikan",
+      "data": {
+        "rating_id": 1,
+        "transaksi_id": 1,
+        "rating": 5
+      }
+    }
+
+19. GET CLIENT STATISTICS
+    URL: http://localhost/admintukang/api/client/statistics
+    Method: GET
+    Auth: Bearer Token (Client)
+    
+    ⚠️ Gunakan untuk dashboard client
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Statistik client berhasil diambil",
+      "data": {
+        "saldo_poin": 200000,
+        "transaksi": {
+          "total": 5,
+          "pending": 0,
+          "diterima": 1,
+          "dalam_proses": 0,
+          "selesai": 3,
+          "dibatalkan": 1,
+          "ditolak": 0,
+          "total_pengeluaran": 450000
+        },
+        "topup": {
+          "total": 3,
+          "pending": 0,
+          "berhasil": 3,
+          "ditolak": 0,
+          "kadaluarsa": 0,
+          "total_topup_berhasil": 500000
+        },
+        "rating_diberikan": 3
+      }
+    }
+
+================================================================================
+   URL: http://localhost/admintukang/api/client/profile
+   Method: GET
+   Auth: Bearer Token (Client)
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data profil berhasil diambil",
+     "data": {
+       "id": 2,
+       "username": "budi_santoso",
+       "email": "budi.santoso@gmail.com",
+       "nama_lengkap": "Budi Santoso",
+       "no_telp": "081234567890",
+       "alamat": "Jl. Sudirman No. 123",
+       "kota": "Jakarta",
+       "provinsi": "DKI Jakarta",
+       "kode_pos": "10110",
+       "foto_profil": "uploads/profiles/budi.jpg",
+       "poin": 500000,
+       "is_active": true,
+       "is_verified": true,
+       "tanggal_bergabung": "2025-10-01 09:00:00",
+       "updated_at": "2025-10-28 10:00:00",
+       "id_role": 2,
+       "role": {
+         "id": 2,
+         "name": "client",
+         "description": "Client"
+       }
+     }
+   }
+
+7. UPDATE CLIENT PROFILE
+   URL: http://localhost/admintukang/api/client/profile
+   Method: PUT / POST
+   Auth: Bearer Token (Client)
+   Content-Type: application/json
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Request Body:
+   {
+     "nama_lengkap": "Budi Santoso Updated",
+     "email": "budi.new@gmail.com",
+     "no_telp": "081234567890",
+     "alamat": "Jl. Sudirman No. 123",
+     "kota": "Jakarta",
+     "provinsi": "DKI Jakarta",
+     "kode_pos": "10110",
+     "foto_profil": "base64_image_string" // optional
+   }
+
+8. GET CATEGORIES
+   URL: http://localhost/admintukang/api/client/categories
+   Method: GET
+   Auth: Bearer Token (Client)
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data kategori berhasil diambil",
+     "data": [
+       {
+         "id": 1,
+         "nama": "Tukang Listrik",
+         "deskripsi": "Instalasi dan perbaikan sistem kelistrikan rumah dan gedung",
+         "created_at": "2025-10-01 08:00:00",
+         "jumlah_tukang": 5
+       },
+       {
+         "id": 2,
+         "nama": "Tukang AC",
+         "deskripsi": "Instalasi, service, dan perbaikan AC",
+         "created_at": "2025-10-01 08:00:00",
+         "jumlah_tukang": 3
+       }
+     ]
+   }
+
+9. BROWSE TUKANG
+   URL: http://localhost/admintukang/api/client/tukang
+   Method: GET
+   Auth: Bearer Token (Client)
+   Headers:
+   {
+     "Authorization": "Bearer {token}"
+   }
+   
+   Query Parameters (Optional):
+   - kategori_id: integer (filter by kategori)
+   - kota: string (filter by kota)
+   - status: string (tersedia/tidak_tersedia)
+   - min_rating: decimal (filter by minimum rating)
+   - max_tarif: integer (filter by maximum tarif)
+   - order_by: string (rata_rata_rating, tarif_per_jam, pengalaman_tahun)
+   - order_dir: string (ASC, DESC)
+   - limit: integer (default 10)
+   - offset: integer (default 0)
+   
+   Example:
+   http://localhost/admintukang/api/client/tukang?kategori_id=1&kota=Jakarta&status=tersedia&order_by=rata_rata_rating&order_dir=DESC
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Data tukang berhasil diambil",
+     "data": [
+       {
+         "id": 1,
+         "user_id": 7,
+         "nama_lengkap": "Agus Prasetyo",
+         "foto_profil": "uploads/profiles/agus.jpg",
+         "no_telp": "082134567891",
+         "kota": "Jakarta Timur",
+         "provinsi": "DKI Jakarta",
+         "pengalaman_tahun": 8,
+         "tarif_per_jam": 75000,
+         "bio": "Ahli instalasi listrik rumah dan gedung",
+         "keahlian": ["instalasi listrik", "perbaikan listrik"],
+         "rata_rata_rating": 4.8,
+         "total_rating": 25,
+         "total_pekerjaan_selesai": 30,
+         "status_ketersediaan": "tersedia",
+         "radius_layanan_km": 10
+       }
+     ],
+     "pagination": {
+       "total": 5,
+       "limit": 10,
+       "offset": 0,
+       "current_page": 1,
+       "total_pages": 1
+     }
+   }
+
+10. GET TUKANG DETAIL
+    URL: http://localhost/admintukang/api/client/tukang/{tukang_id}
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/client/tukang/1
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail tukang berhasil diambil",
+      "data": {
+        "id": 1,
+        "user_id": 7,
+        "nama_lengkap": "Agus Prasetyo",
+        "email": "agus.listrik@gmail.com",
+        "no_telp": "082134567891",
+        "foto_profil": "uploads/profiles/agus.jpg",
+        "alamat": "Jl. Raya Bekasi No. 89",
+        "kota": "Jakarta Timur",
+        "provinsi": "DKI Jakarta",
+        "pengalaman_tahun": 8,
+        "tarif_per_jam": 75000,
+        "bio": "Ahli instalasi listrik rumah dan gedung dengan pengalaman 8 tahun",
+        "keahlian": ["instalasi listrik", "perbaikan listrik", "instalasi CCTV"],
+        "radius_layanan_km": 10,
+        "rata_rata_rating": 4.8,
+        "total_rating": 25,
+        "total_pekerjaan_selesai": 30,
+        "status_ketersediaan": "tersedia",
+        "nama_bank": "BCA",
+        "nomor_rekening": "1234567890",
+        "nama_pemilik_rekening": "Agus Prasetyo",
+        "tanggal_bergabung": "2025-09-15 10:00:00",
+        "kategori": [
+          {
+            "id": 1,
+            "nama": "Tukang Listrik"
+          },
+          {
+            "id": 15,
+            "nama": "Instalasi CCTV"
+          }
+        ],
+        "ratings": [
+          {
+            "id": 1,
+            "rating": 5,
+            "ulasan": "Kerja cepat dan rapi! Sangat recommended.",
+            "nama_client": "Budi Santoso",
+            "foto_client": "uploads/profiles/budi.jpg",
+            "created_at": "2025-10-15 14:30:00"
+          },
+          {
+            "id": 2,
+            "rating": 4,
+            "ulasan": "Bagus, tapi datang agak telat",
+            "nama_client": "Siti Nurhaliza",
+            "foto_client": "uploads/profiles/siti.jpg",
+            "created_at": "2025-10-10 16:00:00"
+          }
+        ],
+        "rating_stats": {
+          "total": 25,
+          "rata_rata": 4.8,
+          "bintang_5": 15,
+          "bintang_4": 8,
+          "bintang_3": 2,
+          "bintang_2": 0,
+          "bintang_1": 0
+        }
+      }
+    }
+
+11. SEARCH TUKANG
+    URL: http://localhost/admintukang/api/client/search-tukang
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters:
+    - keyword: string (search in nama, bio, keahlian)
+    - kategori_id: integer
+    - kota: string
+    - limit: integer
+    - offset: integer
+    
+    Example:
+    http://localhost/admintukang/api/client/search-tukang?keyword=listrik&kota=Jakarta
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Hasil pencarian tukang",
+      "data": [
+        {
+          "id": 1,
+          "user_id": 7,
+          "nama_lengkap": "Agus Prasetyo",
+          "foto_profil": "uploads/profiles/agus.jpg",
+          "kota": "Jakarta Timur",
+          "pengalaman_tahun": 8,
+          "tarif_per_jam": 75000,
+          "bio": "Ahli instalasi listrik rumah dan gedung",
+          "keahlian": ["instalasi listrik", "perbaikan listrik"],
+          "rata_rata_rating": 4.8,
+          "total_rating": 25,
+          "status_ketersediaan": "tersedia"
+        }
+      ],
+      "pagination": {
+        "total": 1,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+12. CREATE BOOKING
+    URL: http://localhost/admintukang/api/client/booking
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "tukang_id": 7,
+      "kategori_id": 1,
+      "judul_layanan": "Instalasi stop kontak tambahan",
+      "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+      "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+      "tanggal_jadwal": "2025-10-30",
+      "waktu_jadwal": "09:00:00",
+      "estimasi_durasi_jam": 2,
+      "harga_dasar": 150000,
+      "biaya_tambahan": 0,
+      "metode_pembayaran": "poin",  // poin atau tunai
+      "catatan_client": "Tolong bawa stop kontak sendiri"
+    }
+
+13. GET TRANSACTIONS
+    URL: http://localhost/admintukang/api/client/transactions
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters (Optional):
+    - status: string (pending, diterima, dalam_proses, selesai, dibatalkan, ditolak)
+    - metode_pembayaran: string (poin, tunai)
+    - start_date: date (YYYY-MM-DD)
+    - end_date: date (YYYY-MM-DD)
+    - limit: integer
+    - offset: integer
+    
+    Example:
+    http://localhost/admintukang/api/client/transactions?status=selesai&limit=10
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data transaksi berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "nomor_pesanan": "TRX-20251028-0001",
+          "tukang_id": 7,
+          "nama_tukang": "Agus Prasetyo",
+          "foto_tukang": "uploads/profiles/agus.jpg",
+          "kategori_id": 1,
+          "nama_kategori": "Tukang Listrik",
+          "judul_layanan": "Instalasi stop kontak tambahan",
+          "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+          "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+          "tanggal_jadwal": "2025-10-30",
+          "waktu_jadwal": "09:00:00",
+          "estimasi_durasi_jam": 2,
+          "harga_dasar": 150000,
+          "biaya_tambahan": 0,
+          "total_biaya": 150000,
+          "metode_pembayaran": "poin",
+          "status": "selesai",
+          "poin_terpotong": true,
+          "sudah_dibayar_tunai": false,
+          "catatan_client": "Tolong bawa stop kontak sendiri",
+          "catatan_tukang": "Semua stop kontak sudah terpasang dengan baik",
+          "created_at": "2025-10-28 10:00:00",
+          "waktu_diterima": "2025-10-28 10:15:00",
+          "waktu_mulai_aktual": "2025-10-30 09:10:00",
+          "waktu_selesai_aktual": "2025-10-30 11:05:00",
+          "sudah_dirating": true
+        }
+      ],
+      "pagination": {
+        "total": 10,
+        "limit": 10,
+        "offset": 0,
+        "current_page": 1,
+        "total_pages": 1
+      }
+    }
+
+14. GET TRANSACTION DETAIL
+    URL: http://localhost/admintukang/api/client/transactions/{transaksi_id}
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/client/transactions/1
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail transaksi berhasil diambil",
+      "data": {
+        "id": 1,
+        "nomor_pesanan": "TRX-20251028-0001",
+        "client_id": 2,
+        "nama_client": "Budi Santoso",
+        "foto_client": "uploads/profiles/budi.jpg",
+        "no_telp_client": "081234567890",
+        "tukang_id": 7,
+        "nama_tukang": "Agus Prasetyo",
+        "foto_tukang": "uploads/profiles/agus.jpg",
+        "no_telp_tukang": "082134567891",
+        "kategori_id": 1,
+        "nama_kategori": "Tukang Listrik",
+        "judul_layanan": "Instalasi stop kontak tambahan",
+        "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+        "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+        "tanggal_jadwal": "2025-10-30",
+        "waktu_jadwal": "09:00:00",
+        "estimasi_durasi_jam": 2,
+        "harga_dasar": 150000,
+        "biaya_tambahan": 0,
+        "total_biaya": 150000,
+        "metode_pembayaran": "poin",
+        "status": "selesai",
+        "poin_terpotong": true,
+        "sudah_dibayar_tunai": false,
+        "catatan_client": "Tolong bawa stop kontak sendiri",
+        "catatan_tukang": "Semua stop kontak sudah terpasang dengan baik",
+        "alasan_penolakan": null,
+        "alasan_pembatalan": null,
+        "dibatalkan_oleh": null,
+        "created_at": "2025-10-28 10:00:00",
+        "waktu_diterima": "2025-10-28 10:15:00",
+        "waktu_ditolak": null,
+        "waktu_mulai": "2025-10-30 09:00:00",
+        "waktu_selesai": "2025-10-30 11:00:00",
+        "waktu_mulai_aktual": "2025-10-30 09:10:00",
+        "waktu_selesai_aktual": "2025-10-30 11:05:00",
+        "waktu_dibatalkan": null,
+        "waktu_konfirmasi_pembayaran_tunai": null,
+        "sudah_dirating": true,
+        "rating": {
+          "id": 1,
+          "rating": 5,
+          "ulasan": "Kerja cepat dan rapi! Recommended.",
+          "created_at": "2025-10-30 11:30:00"
+        },
+        "riwayat_status": [
+          {
+            "status": "pending",
+            "keterangan": "Pesanan dibuat",
+            "created_at": "2025-10-28 10:00:00"
+          },
+          {
+            "status": "diterima",
+            "keterangan": "Pesanan diterima oleh tukang",
+            "created_at": "2025-10-28 10:15:00"
+          },
+          {
+            "status": "dalam_proses",
+            "keterangan": "Pekerjaan dimulai",
+            "created_at": "2025-10-30 09:10:00"
+          },
+          {
+            "status": "selesai",
+            "keterangan": "Pekerjaan selesai",
+            "created_at": "2025-10-30 11:05:00"
+          }
+        ]
+      }
+    }
+
+15. CANCEL TRANSACTION
+    URL: http://localhost/admintukang/api/client/transactions/{transaksi_id}/cancel
+    Method: PUT / POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "alasan_pembatalan": "Perubahan rencana renovasi"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/client/transactions/1/cancel
+
+16. REQUEST TOP-UP
+    URL: http://localhost/admintukang/api/client/topup
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: multipart/form-data
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Form Data:
+    - jumlah: integer (required) - Jumlah top-up
+    - bukti_pembayaran: file (required) - Image/PDF max 2MB
+    
+    Example Form Data:
+    jumlah=100000
+    bukti_pembayaran=[file upload]
+
+17. GET TOP-UP HISTORY
+    URL: http://localhost/admintukang/api/client/topup
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters (Optional):
+    - status: string (pending, berhasil, ditolak, kadaluarsa)
+    - limit: integer
+    - offset: integer
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Riwayat top-up berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "user_id": 2,
+          "jumlah": 100000,
+          "metode_pembayaran": "qris",
+          "bukti_pembayaran": "uploads/topup/bukti_abc123.jpg",
+          "status": "berhasil",
+          "alasan_penolakan": null,
+          "diverifikasi_oleh": 1,
+          "nama_admin": "Super Administrator",
+          "waktu_verifikasi": "2025-10-28 11:00:00",
+          "kadaluarsa_pada": "2025-10-29 10:00:00",
+          "created_at": "2025-10-28 10:00:00"
+        },
+        {
+          "id": 2,
+          "user_id": 2,
+          "jumlah": 50000,
+          "metode_pembayaran": "qris",
+          "bukti_pembayaran": "uploads/topup/bukti_xyz456.jpg",
+          "status": "pending",
+          "alasan_penolakan": null,
+          "diverifikasi_oleh": null,
+          "nama_admin": null,
+          "waktu_verifikasi": null,
+          "kadaluarsa_pada": "2025-10-29 14:00:00",
+          "created_at": "2025-10-28 14:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 2,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+18. SUBMIT RATING
+    URL: http://localhost/admintukang/api/client/rating
+    Method: POST
+    Auth: Bearer Token (Client)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "transaksi_id": 1,
+      "rating": 5,  // 1-5
+      "ulasan": "Kerja cepat dan rapi! Recommended."
+    }
+
+19. GET CLIENT STATISTICS
+    URL: http://localhost/admintukang/api/client/statistics
+    Method: GET
+    Auth: Bearer Token (Client)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Statistik client berhasil diambil",
+      "data": {
+        "saldo_poin": 200000,
+        "transaksi": {
+          "total": 5,
+          "pending": 0,
+          "diterima": 1,
+          "dalam_proses": 0,
+          "selesai": 3,
+          "dibatalkan": 1,
+          "ditolak": 0,
+          "total_pengeluaran": 450000
+        },
+        "topup": {
+          "total": 3,
+          "pending": 0,
+          "berhasil": 3,
+          "ditolak": 0,
+          "kadaluarsa": 0,
+          "total_topup_berhasil": 500000
+        },
+        "rating_diberikan": 3
+      }
+    }
+
+================================================================================
+🔨 TUKANG ENDPOINTS (Protected - JWT + Role Tukang)
+================================================================================
+Total: 14 endpoints untuk tukang yang sudah login dan verified
+
+⚠️ FLOW TUKANG:
+1. Register → Menunggu verifikasi admin (is_verified = false)
+2. Setelah verified → Atur profil lengkap
+3. Terima/Tolak pesanan dari client
+4. Update status: Diterima → Dikerjakan → Selesai
+5. Untuk POIN: Otomatis dapat poin setelah selesai
+6. Untuk TUNAI: Konfirmasi pembayaran cash
+7. Withdrawal poin ke rekening bank
+
+---[ PROFILE MANAGEMENT ]-------------------------------------------------------
+
+20. GET TUKANG PROFILE
+    URL: http://localhost/admintukang/api/tukang/profile
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data profil tukang berhasil diambil",
+      "data": {
+        "id": 7,
+        "username": "agus_listrik",
+        "email": "agus@gmail.com",
+        "nama_lengkap": "Agus Prasetyo",
+        "no_telp": "082134567891",
+        "alamat": "Jl. Raya Bekasi No. 89",
+        "kota": "Jakarta Timur",
+        "provinsi": "DKI Jakarta",
+        "foto_profil": "uploads/profiles/agus.jpg",
+        "poin": 350000,
+        "is_active": true,
+        "is_verified": true,
+        "id_role": 3,
+        "profil_tukang": {
+          "id": 1,
+          "pengalaman_tahun": 8,
+          "tarif_per_jam": 75000,
+          "bio": "Ahli instalasi listrik",
+          "keahlian": ["instalasi listrik", "perbaikan listrik"],
+          "radius_layanan_km": 10,
+          "rata_rata_rating": 4.8,
+          "total_rating": 25,
+          "total_pekerjaan_selesai": 30,
+          "status_ketersediaan": "tersedia",
+          "nama_bank": "BCA",
+          "nomor_rekening": "1234567890",
+          "nama_pemilik_rekening": "Agus Prasetyo"
+        },
+        "kategori": [
+          {
+            "id": 1,
+            "nama": "Tukang Listrik"
+          }
+        ]
+      }
+    }
+
+21. UPDATE TUKANG PROFILE
+    URL: http://localhost/admintukang/api/tukang/profile
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    
+    Request Body:
+    {
+      "nama_lengkap": "Agus Prasetyo Updated",
+      "email": "agus.new@gmail.com",
+      "no_telp": "082134567891",
+      "alamat": "Jl. Raya Bekasi No. 89",
+      "kota": "Jakarta Timur",
+      "provinsi": "DKI Jakarta",
+      "pengalaman_tahun": 9,
+      "tarif_per_jam": 80000,
+      "bio": "Ahli instalasi listrik rumah dan gedung",
+      "keahlian": ["instalasi listrik", "perbaikan listrik"],
+      "radius_layanan_km": 15,
+      "nama_bank": "BCA",
+      "nomor_rekening": "1234567890",
+      "nama_pemilik_rekening": "Agus Prasetyo",
+      "kategori_ids": [1, 15],  // Optional: update kategori
+      "foto_profil": "base64_image_string"  // Optional
+    }
+
+22. UPDATE AVAILABILITY
+    URL: http://localhost/admintukang/api/tukang/availability
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    
+    ⚠️ Gunakan untuk update status ketersediaan
+    
+    Request Body:
+    {
+      "status_ketersediaan": "tersedia"  // "tersedia" atau "tidak_tersedia"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Status ketersediaan berhasil diupdate"
+    }
+
+---[ ORDER MANAGEMENT ]--------------------------------------------------------
+
+23. GET ORDERS
+    URL: http://localhost/admintukang/api/tukang/orders
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    Query Parameters (Semua optional):
+    - status: string (pending, diterima, dalam_proses, selesai, dibatalkan, ditolak)
+    - metode_pembayaran: string (poin, tunai)
+    - start_date: date (YYYY-MM-DD)
+    - end_date: date (YYYY-MM-DD)
+    - limit: integer (default 10)
+    - offset: integer (default 0)
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders?status=pending
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data pesanan berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "nomor_pesanan": "TRX-20251028-0001",
+          "client_id": 2,
+          "nama_client": "Budi Santoso",
+          "foto_client": "uploads/profiles/budi.jpg",
+          "no_telp_client": "081234567890",
+          "kategori_id": 1,
+          "nama_kategori": "Tukang Listrik",
+          "judul_layanan": "Instalasi stop kontak",
+          "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+          "tanggal_jadwal": "2025-10-30",
+          "waktu_jadwal": "09:00:00",
+          "estimasi_durasi_jam": 2,
+          "total_biaya": 150000,
+          "metode_pembayaran": "poin",
+          "status": "pending",
+          "created_at": "2025-10-28 10:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 5,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+24. GET ORDER DETAIL
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail pesanan berhasil diambil",
+      "data": {
+        "id": 1,
+        "nomor_pesanan": "TRX-20251028-0001",
+        "client_id": 2,
+        "nama_client": "Budi Santoso",
+        "foto_client": "uploads/profiles/budi.jpg",
+        "no_telp_client": "081234567890",
+        "kategori_id": 1,
+        "nama_kategori": "Tukang Listrik",
+        "judul_layanan": "Instalasi stop kontak",
+        "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+        "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+        "tanggal_jadwal": "2025-10-30",
+        "waktu_jadwal": "09:00:00",
+        "estimasi_durasi_jam": 2,
+        "harga_dasar": 150000,
+        "biaya_tambahan": 0,
+        "total_biaya": 150000,
+        "metode_pembayaran": "poin",
+        "status": "pending",
+        "catatan_client": "Tolong bawa stop kontak sendiri",
+        "created_at": "2025-10-28 10:00:00"
+      }
+    }
+
+25. ACCEPT ORDER
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/accept
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    
+    ⚠️ PENTING:
+    - Hanya bisa accept jika status "pending"
+    - Status akan berubah menjadi "diterima"
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/accept
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Pesanan berhasil diterima"
+    }
+
+26. REJECT ORDER
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/reject
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    
+    ⚠️ PENTING:
+    - Hanya bisa reject jika status "pending"
+    - Wajib isi alasan penolakan
+    - Jika metode POIN, saldo client dikembalikan otomatis
+    
+    Request Body:
+    {
+      "alasan_penolakan": "Jadwal bentrok dengan pekerjaan lain"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Pesanan berhasil ditolak"
+    }
+
+27. START WORK
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/start
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    
+    ⚠️ PENTING:
+    - Hanya bisa start jika status "diterima"
+    - Status akan berubah menjadi "dalam_proses"
+    - Waktu mulai aktual akan dicatat
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/start
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Pekerjaan berhasil dimulai"
+    }
+
+28. COMPLETE WORK
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/complete
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    
+    ⚠️ PENTING - Dual Payment:
+    - Metode POIN: Poin otomatis transfer dari client ke tukang
+    - Metode TUNAI: Menunggu konfirmasi pembayaran dari tukang
+    
+    Request Body (Optional):
+    {
+      "catatan_tukang": "Semua stop kontak sudah terpasang dengan baik"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Pekerjaan berhasil diselesaikan",
+      "data": {
+        "poin_diterima": 150000  // Hanya jika metode poin
+      }
+    }
+
+29. CONFIRM TUNAI PAYMENT
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/confirm-tunai
+    Method: PUT atau POST
+    Auth: Bearer Token (Tukang)
+    
+    ⚠️ PENTING:
+    - Hanya untuk transaksi metode "tunai"
+    - Hanya bisa konfirmasi jika status "selesai"
+    - Konfirmasi bahwa tukang sudah terima uang cash dari client
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/confirm-tunai
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Pembayaran tunai berhasil dikonfirmasi"
+    }
+
+---[ RATINGS & REVIEWS ]-------------------------------------------------------
+
+30. GET RATINGS
+    URL: http://localhost/admintukang/api/tukang/ratings
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    ⚠️ Lihat semua rating yang diterima dari client
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Rating berhasil diambil",
+      "data": {
+        "ratings": [
+          {
+            "id": 1,
+            "transaksi_id": 1,
+            "nomor_pesanan": "TRX-20251028-0001",
+            "rating": 5,
+            "ulasan": "Kerja cepat dan rapi!",
+            "nama_client": "Budi Santoso",
+            "foto_client": "uploads/profiles/budi.jpg",
+            "created_at": "2025-10-30 11:30:00"
+          }
+        ],
+        "statistik": {
+          "total_rating": 25,
+          "rata_rata": 4.8,
+          "bintang_5": 15,
+          "bintang_4": 8,
+          "bintang_3": 2,
+          "bintang_2": 0,
+          "bintang_1": 0
+        }
+      }
+    }
+
+---[ WITHDRAWAL ]--------------------------------------------------------------
+
+31. REQUEST WITHDRAWAL
+    URL: http://localhost/admintukang/api/tukang/withdrawal
+    Method: POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    
+    ⚠️ PENTING:
+    - Minimum withdrawal: Rp 50,000
+    - Fee: 2% (maksimal Rp 5,000)
+    - Hanya bisa withdraw poin dari transaksi metode "poin"
+    - Menunggu approval admin untuk transfer ke rekening
+    
+    Request Body:
+    {
+      "jumlah": 100000,
+      "nama_bank": "BCA",
+      "nomor_rekening": "1234567890",
+      "nama_pemilik_rekening": "Agus Prasetyo"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Request penarikan berhasil dibuat",
+      "data": {
+        "withdrawal_id": 1,
+        "jumlah": 100000,
+        "fee": 2000,
+        "jumlah_diterima": 98000,
+        "status": "pending"
+      }
+    }
+
+32. GET WITHDRAWAL HISTORY
+    URL: http://localhost/admintukang/api/tukang/withdrawal
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    Query Parameters (Optional):
+    - status: string (pending, diproses, selesai, ditolak)
+    - limit: integer (default 10)
+    - offset: integer (default 0)
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Riwayat penarikan berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "tukang_id": 7,
+          "jumlah": 100000,
+          "fee": 2000,
+          "jumlah_diterima": 98000,
+          "nama_bank": "BCA",
+          "nomor_rekening": "1234567890",
+          "nama_pemilik_rekening": "Agus Prasetyo",
+          "status": "selesai",
+          "alasan_penolakan": null,
+          "diproses_oleh": 1,
+          "nama_admin": "Super Administrator",
+          "waktu_diproses": "2025-10-28 11:00:00",
+          "waktu_selesai": "2025-10-28 14:00:00",
+          "created_at": "2025-10-28 10:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 3,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+---[ STATISTICS ]--------------------------------------------------------------
+
+33. GET TUKANG STATISTICS
+    URL: http://localhost/admintukang/api/tukang/statistics
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    
+    ⚠️ Gunakan untuk dashboard tukang
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Statistik tukang berhasil diambil",
+      "data": {
+        "saldo_poin": 350000,
+        "total_pekerjaan_selesai": 30,
+        "rata_rata_rating": 4.8,
+        "total_rating": 25,
+        "transaksi": {
+          "total": 35,
+          "pending": 2,
+          "diterima": 1,
+          "dalam_proses": 1,
+          "selesai": 30,
+          "ditolak": 1,
+          "dibatalkan": 0,
+          "total_pendapatan": 2250000
+        },
+        "penarikan": {
+          "total": 3,
+          "pending": 0,
+          "diproses": 0,
+          "selesai": 3,
+          "ditolak": 0,
+          "total_ditarik": 300000
+        }
+      }
+    }
+
+================================================================================
+    URL: http://localhost/admintukang/api/tukang/profile
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data profil tukang berhasil diambil",
+      "data": {
+        "user": {
+          "id": 7,
+          "username": "agus_listrik",
+          "email": "agus.listrik@gmail.com",
+          "nama_lengkap": "Agus Prasetyo",
+          "no_telp": "082134567891",
+          "alamat": "Jl. Raya Bekasi No. 89",
+          "kota": "Jakarta Timur",
+          "provinsi": "DKI Jakarta",
+          "kode_pos": "13920",
+          "foto_profil": "uploads/profiles/agus.jpg",
+          "poin": 350000,
+          "is_active": true,
+          "is_verified": true,
+          "tanggal_bergabung": "2025-09-15 10:00:00",
+          "id_role": 3
+        },
+        "profil_tukang": {
+          "id": 1,
+          "pengalaman_tahun": 8,
+          "tarif_per_jam": 75000,
+          "bio": "Ahli instalasi listrik rumah dan gedung dengan pengalaman 8 tahun",
+          "keahlian": ["instalasi listrik", "perbaikan listrik", "instalasi CCTV"],
+          "radius_layanan_km": 10,
+          "rata_rata_rating": 4.8,
+          "total_rating": 25,
+          "total_pekerjaan_selesai": 30,
+          "status_ketersediaan": "tersedia",
+          "nama_bank": "BCA",
+          "nomor_rekening": "1234567890",
+          "nama_pemilik_rekening": "Agus Prasetyo"
+        },
+        "kategori": [
+          {
+            "id": 1,
+            "nama": "Tukang Listrik"
+          },
+          {
+            "id": 15,
+            "nama": "Instalasi CCTV"
+          }
+        ]
+      }
+    }
+
+21. UPDATE TUKANG PROFILE
+    URL: http://localhost/admintukang/api/tukang/profile
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "nama_lengkap": "Agus Prasetyo Updated",
+      "email": "agus.new@gmail.com",
+      "no_telp": "082134567891",
+      "alamat": "Jl. Raya Bekasi No. 89",
+      "kota": "Jakarta Timur",
+      "provinsi": "DKI Jakarta",
+      "pengalaman_tahun": 9,
+      "tarif_per_jam": 80000,
+      "bio": "Ahli instalasi listrik rumah dan gedung",
+      "keahlian": ["instalasi listrik", "perbaikan listrik", "CCTV"],
+      "radius_layanan_km": 15,
+      "nama_bank": "BCA",
+      "nomor_rekening": "1234567890",
+      "nama_pemilik_rekening": "Agus Prasetyo",
+      "foto_profil": "base64_image_string"  // optional
+    }
+
+22. UPDATE AVAILABILITY
+    URL: http://localhost/admintukang/api/tukang/availability
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "status_ketersediaan": "tersedia"  // tersedia atau tidak_tersedia
+    }
+
+23. GET ORDERS
+    URL: http://localhost/admintukang/api/tukang/orders
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters (Optional):
+    - status: string (pending, diterima, dalam_proses, selesai, dibatalkan, ditolak)
+    - metode_pembayaran: string (poin, tunai)
+    - start_date: date (YYYY-MM-DD)
+    - end_date: date (YYYY-MM-DD)
+    - limit: integer
+    - offset: integer
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders?status=pending
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data pesanan berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "nomor_pesanan": "TRX-20251028-0001",
+          "client_id": 2,
+          "nama_client": "Budi Santoso",
+          "foto_client": "uploads/profiles/budi.jpg",
+          "no_telp_client": "081234567890",
+          "kategori_id": 1,
+          "nama_kategori": "Tukang Listrik",
+          "judul_layanan": "Instalasi stop kontak tambahan",
+          "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+          "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+          "tanggal_jadwal": "2025-10-30",
+          "waktu_jadwal": "09:00:00",
+          "estimasi_durasi_jam": 2,
+          "total_biaya": 150000,
+          "metode_pembayaran": "poin",
+          "status": "pending",
+          "catatan_client": "Tolong bawa stop kontak sendiri",
+          "created_at": "2025-10-28 10:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 5,
+        "limit": 10,
+        "offset": 0,
+        "current_page": 1,
+        "total_pages": 1
+      }
+    }
+
+24. GET ORDER DETAIL
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Detail pesanan berhasil diambil",
+      "data": {
+        "id": 1,
+        "nomor_pesanan": "TRX-20251028-0001",
+        "client_id": 2,
+        "nama_client": "Budi Santoso",
+        "foto_client": "uploads/profiles/budi.jpg",
+        "email_client": "budi.santoso@gmail.com",
+        "no_telp_client": "081234567890",
+        "alamat_client": "Jl. Sudirman No. 123",
+        "kategori_id": 1,
+        "nama_kategori": "Tukang Listrik",
+        "judul_layanan": "Instalasi stop kontak tambahan",
+        "deskripsi_layanan": "Butuh 5 stop kontak di ruang tamu",
+        "lokasi_kerja": "Jl. Sudirman No. 123, Jakarta",
+        "tanggal_jadwal": "2025-10-30",
+        "waktu_jadwal": "09:00:00",
+        "estimasi_durasi_jam": 2,
+        "harga_dasar": 150000,
+        "biaya_tambahan": 0,
+        "total_biaya": 150000,
+        "metode_pembayaran": "poin",
+        "status": "pending",
+        "poin_terpotong": true,
+        "sudah_dibayar_tunai": false,
+        "catatan_client": "Tolong bawa stop kontak sendiri",
+        "catatan_tukang": null,
+        "created_at": "2025-10-28 10:00:00",
+        "waktu_diterima": null,
+        "waktu_mulai_aktual": null,
+        "waktu_selesai_aktual": null,
+        "riwayat_status": [
+          {
+            "status": "pending",
+            "keterangan": "Pesanan dibuat",
+            "created_at": "2025-10-28 10:00:00"
+          }
+        ]
+      }
+    }
+
+25. ACCEPT ORDER
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/accept
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/accept
+
+26. REJECT ORDER
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/reject
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "alasan_penolakan": "Jadwal bertabrakan dengan pekerjaan lain"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/reject
+
+27. START WORK
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/start
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/start
+
+28. COMPLETE WORK
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/complete
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body (Optional):
+    {
+      "catatan_tukang": "Semua stop kontak sudah terpasang dengan baik"
+    }
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/complete
+
+29. CONFIRM TUNAI PAYMENT
+    URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/confirm-tunai
+    Method: PUT / POST
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Note: Hanya untuk transaksi dengan metode_pembayaran = 'tunai'
+    
+    Example:
+    http://localhost/admintukang/api/tukang/orders/1/confirm-tunai
+
+30. GET RATINGS
+    URL: http://localhost/admintukang/api/tukang/ratings
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters (Optional):
+    - rating: integer (1-5) - Filter by rating value
+    - limit: integer
+    - offset: integer
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Data rating berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "transaksi_id": 1,
+          "nomor_pesanan": "TRX-20251028-0001",
+          "client_id": 2,
+          "nama_client": "Budi Santoso",
+          "foto_client": "uploads/profiles/budi.jpg",
+          "rating": 5,
+          "ulasan": "Kerja cepat dan rapi! Sangat recommended.",
+          "judul_layanan": "Instalasi stop kontak tambahan",
+          "created_at": "2025-10-30 11:30:00"
+        },
+        {
+          "id": 2,
+          "transaksi_id": 5,
+          "nomor_pesanan": "TRX-20251015-0003",
+          "client_id": 3,
+          "nama_client": "Siti Nurhaliza",
+          "foto_client": "uploads/profiles/siti.jpg",
+          "rating": 4,
+          "ulasan": "Bagus, tapi datang agak telat",
+          "judul_layanan": "Perbaikan instalasi listrik",
+          "created_at": "2025-10-15 16:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 25,
+        "limit": 10,
+        "offset": 0,
+        "current_page": 1,
+        "total_pages": 3
+      },
+      "summary": {
+        "rata_rata_rating": 4.8,
+        "total_rating": 25,
+        "bintang_5": 15,
+        "bintang_4": 8,
+        "bintang_3": 2,
+        "bintang_2": 0,
+        "bintang_1": 0
+      }
+    }
+
+31. REQUEST WITHDRAWAL
+    URL: http://localhost/admintukang/api/tukang/withdrawal
+    Method: POST
+    Auth: Bearer Token (Tukang)
+    Content-Type: application/json
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Request Body:
+    {
+      "jumlah": 400000,
+      "nama_bank": "BCA",
+      "nomor_rekening": "1234567890",
+      "nama_pemilik_rekening": "Agus Prasetyo"
+    }
+    
+    Note:
+    - Minimum withdrawal: Rp 50,000
+    - Biaya admin: 2% (max Rp 5,000)
+    - Jumlah bersih = jumlah - biaya_admin
+
+32. GET WITHDRAWAL HISTORY
+    URL: http://localhost/admintukang/api/tukang/withdrawal
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Query Parameters (Optional):
+    - status: string (pending, diproses, selesai, ditolak)
+    - limit: integer
+    - offset: integer
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Riwayat penarikan berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "user_id": 7,
+          "jumlah": 400000,
+          "biaya_admin": 5000,
+          "jumlah_bersih": 395000,
+          "nama_bank": "BCA",
+          "nomor_rekening": "1234567890",
+          "nama_pemilik_rekening": "Agus Prasetyo",
+          "status": "selesai",
+          "alasan_penolakan": null,
+          "diproses_oleh": 1,
+          "nama_admin": "Super Administrator",
+          "waktu_diproses": "2025-10-25 14:00:00",
+          "bukti_transfer": "uploads/withdrawal/bukti_transfer_abc123.jpg",
+          "created_at": "2025-10-25 10:00:00"
+        },
+        {
+          "id": 2,
+          "user_id": 7,
+          "jumlah": 200000,
+          "biaya_admin": 4000,
+          "jumlah_bersih": 196000,
+          "nama_bank": "BCA",
+          "nomor_rekening": "1234567890",
+          "nama_pemilik_rekening": "Agus Prasetyo",
+          "status": "pending",
+          "alasan_penolakan": null,
+          "diproses_oleh": null,
+          "nama_admin": null,
+          "waktu_diproses": null,
+          "bukti_transfer": null,
+          "created_at": "2025-10-28 09:00:00"
+        }
+      ],
+      "pagination": {
+        "total": 8,
+        "limit": 10,
+        "offset": 0
+      }
+    }
+
+33. GET TUKANG STATISTICS
+    URL: http://localhost/admintukang/api/tukang/statistics
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Statistik tukang berhasil diambil",
+      "data": {
+        "saldo_poin": 350000,
+        "total_pekerjaan_selesai": 30,
+        "rata_rata_rating": 4.8,
+        "total_rating": 25,
+        "transaksi": {
+          "total": 35,
+          "pending": 2,
+          "diterima": 1,
+          "dalam_proses": 1,
+          "selesai": 30,
+          "dibatalkan": 0,
+          "ditolak": 1,
+          "total_pendapatan": 4650000
+        },
+        "penarikan": {
+          "total": 8,
+          "pending": 1,
+          "diproses": 0,
+          "selesai": 6,
+          "ditolak": 1,
+          "total_penarikan": 3500000,
+          "total_biaya_admin": 70000
+        },
+        "rating_breakdown": {
+          "bintang_5": 15,
+          "bintang_4": 8,
+          "bintang_3": 2,
+          "bintang_2": 0,
+          "bintang_1": 0
+        },
+        "pendapatan_bulan_ini": 450000,
+        "pekerjaan_bulan_ini": 5
+      }
+    }
+
+================================================================================
+📊 RESPONSE FORMAT
+================================================================================
+
+SUCCESS RESPONSE:
+{
+  "status": "success",
+  "message": "Deskripsi sukses",
+  "data": {
+    // Data response
+  }
+}
+
+ERROR RESPONSE:
+{
+  "status": "error",
+  "message": "Deskripsi error",
+  "errors": {
+    // Detail error validation (optional)
+  }
+}
+
+PAGINATION RESPONSE:
+{
+  "status": "success",
+  "message": "Data berhasil diambil",
+  "data": [
+    // Array data
+  ],
+  "pagination": {
+    "total": 100,
+    "limit": 10,
+    "offset": 0,
+    "current_page": 1,
+    "total_pages": 10
+  }
+}
+
+================================================================================
+🔒 HTTP STATUS CODES
+================================================================================
+
+200 - OK (Success)
+201 - Created (Resource created successfully)
+400 - Bad Request (Invalid input/validation error)
+401 - Unauthorized (Invalid/missing token)
+403 - Forbidden (Insufficient permissions)
+404 - Not Found (Resource not found)
+409 - Conflict (Duplicate data, e.g., username exists)
+422 - Unprocessable Entity (Validation failed)
+500 - Internal Server Error
+
+================================================================================
+🎯 TESTING CREDENTIALS
+================================================================================
+
+ADMIN:
+Username: admin
+Email: admin@rampungin.id
+Password: password123
+
+CLIENT:
+Username: budi_santoso
+Email: budi.santoso@gmail.com
+Password: password123
+
+TUKANG:
+Username: agus_listrik
+Email: agus.listrik@gmail.com
+Password: password123
+
+================================================================================
+📝 ADDITIONAL IMPORTANT NOTES
+================================================================================
+
+✅ JWT Token:
+   - Valid selama 30 hari sejak login
+   - Format header: Authorization: Bearer {token}
+   - Token otomatis blacklist saat logout
+   - Token tidak bisa digunakan lagi setelah logout
+
+✅ File Upload:
+   - Top-up bukti: Max 2MB (jpg, jpeg, png, pdf)
+   - Foto profil: Max 2MB (jpg, jpeg, png)
+   - Upload path: writable/uploads/
+
+✅ Payment Methods:
+   POIN (QRIS Digital):
+   - Client top-up → verifikasi admin → saldo masuk
+   - Saat booking: poin dipotong otomatis dari client
+   - Saat selesai: poin transfer otomatis ke tukang
+   - Tukang bisa withdrawal ke rekening bank
+   
+   TUNAI (Cash on Service):
+   - Tidak perlu top-up
+   - Langsung booking tanpa potong poin
+   - Bayar cash ke tukang setelah pekerjaan selesai
+   - Tukang konfirmasi pembayaran via app
+
+✅ Top-up QRIS:
+   - Metode: QRIS only
+   - Upload bukti transfer → verifikasi admin
+   - Auto-expire 24 jam jika tidak diverifikasi
+   - Status: pending → berhasil/ditolak/kadaluarsa
+
+✅ Withdrawal:
+   - Minimum: Rp 50,000
+   - Fee: 2% dari jumlah withdraw (maksimal Rp 5,000)
+   - Hanya untuk poin dari transaksi metode "poin"
+   - Perlu approval admin untuk transfer ke rekening
+   - Status: pending → diproses → selesai/ditolak
+
+✅ Rating System:
+   - Hanya bisa rating transaksi dengan status "selesai"
+   - Rating range: 1-5 bintang
+   - Ulasan (optional): max 500 karakter
+   - Rating hanya bisa diberikan 1x per transaksi
+   - Auto-update rata-rata rating tukang
+
+✅ Transaction Status Flow:
+   1. pending (baru dibuat, menunggu accept tukang)
+      ↓
+   2. diterima (tukang accept) / ditolak (tukang reject) / dibatalkan (client cancel)
+      ↓
+   3. dalam_proses (tukang mulai kerja)
+      ↓
+   4. selesai (pekerjaan selesai)
+   
+   Notes:
+   - Cancel hanya bisa dilakukan di status "pending" atau "diterima"
+   - Status "dalam_proses" dan "selesai" tidak bisa di-cancel
+   - Jika ditolak/dibatalkan dengan metode poin, saldo otomatis dikembalikan
+
+✅ Tukang Verification:
+   - Tukang baru: is_verified = false (tidak bisa terima order)
+   - Setelah verified admin: is_verified = true (bisa terima order)
+   - Client baru: is_verified = true (otomatis verified)
+
+✅ Error Handling:
+   - 400: Bad Request (parameter salah/tidak lengkap)
+   - 401: Unauthorized (token tidak valid/expired)
+   - 403: Forbidden (role tidak sesuai/tukang belum verified)
+   - 404: Not Found (data tidak ditemukan)
+   - 422: Unprocessable Entity (validasi gagal)
+   - 500: Internal Server Error (error di server)
+
+✅ Pagination:
+   - Default limit: 10
+   - Max limit: 50
+   - Response selalu include total, current_page, total_pages
+
+================================================================================
+                            END OF API DOCUMENTATION
+================================================================================
+
+📊 SUMMARY:
+Total Endpoints: 33 endpoints
+- 🔓 Public Auth: 2 endpoints (register, login)
+- 🔐 Protected Auth: 3 endpoints (logout, me, change-password)
+- 👤 Client: 14 endpoints (profile, browse, booking, topup, rating)
+- 🔨 Tukang: 14 endpoints (profile, orders, ratings, withdrawal)
+
+🔗 Base URL: http://localhost/admintukang
+📅 Version: 1.0.0
+📆 Last Updated: October 29, 2025
+👨‍💻 Backend: CodeIgniter 4 + PostgreSQL + JWT Authentication
+
+================================================================================
+
