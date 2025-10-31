@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:rampungin_id_userside/tukang_screens/Login/login.dart';
+import 'package:rampungin_id_userside/Auth_screens/login.dart';
 
 class Setting extends StatelessWidget {
   Setting({super.key});

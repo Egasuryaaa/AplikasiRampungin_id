@@ -14,74 +14,74 @@ class ApiConfig {
   };
 
   // ==================== AUTH ENDPOINTS ====================
-  static const String authRegister = '/api/v1/auth/register';
-  static const String authLogin = '/api/v1/auth/login';
-  static const String authLogout = '/api/v1/auth/logout';
-  static const String authMe = '/api/v1/auth/me';
-  static const String authChangePassword = '/api/v1/auth/change-password';
+  static const String authRegister = '/api/auth/register';
+  static const String authLogin = '/api/auth/login';
+  static const String authLogout = '/api/auth/logout';
+  static const String authMe = '/api/auth/me';
+  static const String authChangePassword = '/api/auth/change-password';
 
   // ==================== CLIENT ENDPOINTS ====================
   // Profile
-  static const String clientProfile = '/api/v1/client/profile';
-  static const String clientUpdateProfile = '/api/v1/client/profile/update';
+  static const String clientProfile = '/api/client/profile';
+  static const String clientUpdateProfile = '/api/client/profile/update';
 
   // Browse Tukang
-  static const String clientTukang = '/api/v1/client/tukang';
-  static String clientTukangDetail(int id) => '/api/v1/client/tukang/$id';
+  static const String clientTukang = '/api/client/tukang';
+  static String clientTukangDetail(int id) => '/api/client/tukang/$id';
   static String clientTukangSearch(String query) =>
-      '/api/v1/client/tukang/search?q=$query';
+      '/api/client/tukang/search?q=$query';
   static String clientTukangCategory(int categoryId) =>
-      '/api/v1/client/tukang/category/$categoryId';
+      '/api/client/tukang/category/$categoryId';
   static String clientTukangRatings(int tukangId) =>
-      '/api/v1/client/tukang/$tukangId/ratings';
+      '/api/client/tukang/$tukangId/ratings';
 
   // Transactions (Client side)
-  static const String clientTransactions = '/api/v1/client/transactions';
+  static const String clientTransactions = '/api/client/transactions';
   static String clientTransactionDetail(int id) =>
-      '/api/v1/client/transactions/$id';
+      '/api/client/transactions/$id';
   static const String clientCreateTransaction =
-      '/api/v1/client/transactions/create';
+      '/api/client/transactions/create';
   static String clientCancelTransaction(int id) =>
-      '/api/v1/client/transactions/$id/cancel';
+      '/api/client/transactions/$id/cancel';
 
   // Rating
   static String clientRateTukang(int transactionId) =>
-      '/api/v1/client/transactions/$transactionId/rate';
+      '/api/client/transactions/$transactionId/rate';
 
   // TopUp
-  static const String clientTopup = '/api/v1/client/topup';
-  static const String clientTopupHistory = '/api/v1/client/topup/history';
+  static const String clientTopup = '/api/client/topup';
+  static const String clientTopupHistory = '/api/client/topup/history';
 
   // Balance
-  static const String clientBalance = '/api/v1/client/balance';
+  static const String clientBalance = '/api/client/balance';
 
   // ==================== TUKANG ENDPOINTS ====================
   // Profile
-  static const String tukangProfile = '/api/v1/tukang/profile';
-  static const String tukangUpdateProfile = '/api/v1/tukang/profile/update';
-  static const String tukangUpdateStatus = '/api/v1/tukang/profile/status';
-  static const String tukangUploadKtp = '/api/v1/tukang/profile/upload-ktp';
+  static const String tukangProfile = '/api/tukang/profile';
+  static const String tukangUpdateProfile = '/api/tukang/profile/update';
+  static const String tukangUpdateStatus = '/api/tukang/profile/status';
+  static const String tukangUploadKtp = '/api/tukang/profile/upload-ktp';
 
   // Orders (Tukang side)
-  static const String tukangOrders = '/api/v1/tukang/orders';
-  static String tukangOrderDetail(int id) => '/api/v1/tukang/orders/$id';
-  static String tukangAcceptOrder(int id) => '/api/v1/tukang/orders/$id/accept';
-  static String tukangRejectOrder(int id) => '/api/v1/tukang/orders/$id/reject';
-  static String tukangStartOrder(int id) => '/api/v1/tukang/orders/$id/start';
+  static const String tukangOrders = '/api/tukang/orders';
+  static String tukangOrderDetail(int id) => '/api/tukang/orders/$id';
+  static String tukangAcceptOrder(int id) => '/api/tukang/orders/$id/accept';
+  static String tukangRejectOrder(int id) => '/api/tukang/orders/$id/reject';
+  static String tukangStartOrder(int id) => '/api/tukang/orders/$id/start';
   static String tukangCompleteOrder(int id) =>
-      '/api/v1/tukang/orders/$id/complete';
+      '/api/tukang/orders/$id/complete';
 
   // Ratings (Tukang side)
-  static const String tukangRatings = '/api/v1/tukang/ratings';
+  static const String tukangRatings = '/api/tukang/ratings';
 
   // Earnings & Withdrawal
-  static const String tukangEarnings = '/api/v1/tukang/earnings';
-  static const String tukangWithdraw = '/api/v1/tukang/earnings/withdraw';
+  static const String tukangEarnings = '/api/tukang/earnings';
+  static const String tukangWithdraw = '/api/tukang/earnings/withdraw';
   static const String tukangWithdrawalHistory =
-      '/api/v1/tukang/earnings/withdrawal-history';
+      '/api/tukang/earnings/withdrawal-history';
 
   // Statistics
-  static const String tukangStatistics = '/api/v1/tukang/statistics';
+  static const String tukangStatistics = '/api/tukang/statistics';
 
   // ==================== HELPER METHODS ====================
   static String getFullUrl(String endpoint) {

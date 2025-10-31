@@ -1,7 +1,8 @@
 // File: lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:rampungin_id_userside/services/auth_service.dart';
+import 'package:rampungin_id_userside/models/user_model.dart';
 // import 'package:rampungin_id_userside/client_screens/Login/google_signin.dart';
-import 'package:rampungin_id_userside/client_screens/content_bottom/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
+  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -35,15 +37,26 @@ class _LoginScreenState extends State<LoginScreen>
   bool _emailFocused = false;
   bool _passwordFocused = false;
 
-  // Dummy user untuk simulasi login
-  final String userEmail = "coba@gmail.com";
-  final String userPass = "123";
-
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _checkAuthentication();
+  }
+
+  // Check if user already logged in
+  Future<void> _checkAuthentication() async {
+    final isAuth = await _authService.isAuthenticated();
+    if (isAuth && mounted) {
+      try {
+        final user = await _authService.getCurrentUser();
+        _navigateToHome(user);
+      } catch (e) {
+        // Token invalid, stay on login
+        print('Token invalid: $e');
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -119,6 +132,68 @@ class _LoginScreenState extends State<LoginScreen>
     _shakeController.forward();
   }
 
+  // Navigate based on user role (jenis_akun)
+  void _navigateToHome(UserModel user) {
+    // Debug logging
+    print('========== NAVIGATION DEBUG ==========');
+    print('User ID: ${user.id}');
+    print('User Name: ${user.nama}');
+    print('User Email: ${user.email}');
+    print('Jenis Akun: ${user.jenisAkun}');
+    print('Status Verifikasi: ${user.statusVerifikasi}');
+    print('=====================================');
+
+    if (user.jenisAkun == 'client') {
+      print('Navigating to CLIENT screen: /bottom_navigation');
+      Navigator.pushReplacementNamed(context, '/bottom_navigation');
+    } else if (user.jenisAkun == 'tukang') {
+      // Check verification status for tukang
+      if (user.statusVerifikasi == 'verified') {
+        print('Navigating to TUKANG screen: /main_container');
+        Navigator.pushReplacementNamed(context, '/main_container');
+      } else if (user.statusVerifikasi == 'pending') {
+        print('Showing PENDING verification dialog');
+        showDialog(
+          context: context,
+          builder:
+              (ctx) => AlertDialog(
+                title: const Text('Verifikasi Pending'),
+                content: const Text(
+                  'Akun Anda sedang dalam proses verifikasi. Mohon tunggu.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      } else {
+        print('Showing REJECTED verification dialog');
+        showDialog(
+          context: context,
+          builder:
+              (ctx) => AlertDialog(
+                title: const Text('Verifikasi Ditolak'),
+                content: const Text(
+                  'Akun Anda ditolak. Silakan hubungi admin.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      }
+    } else {
+      print('WARNING: Unknown jenis_akun: ${user.jenisAkun}');
+    }
+  }
+
+  // Handle login with API
   void login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -127,28 +202,75 @@ class _LoginScreenState extends State<LoginScreen>
       notif = "";
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      final response = await _authService.login(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
 
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (emailController.text == userEmail &&
-        passwordController.text == userPass) {
       if (!mounted) return;
+
+      // Debug logging
+      print('========== LOGIN RESPONSE ==========');
+      print('Message: ${response.message}');
+      print('Token: ${response.token != null ? "Token received" : "No token"}');
+      print(
+        'User: ${response.user != null ? "User data received" : "No user data"}',
+      );
+      if (response.user != null) {
+        print('User Jenis Akun: ${response.user!.jenisAkun}');
+        print('User Status Verifikasi: ${response.user!.statusVerifikasi}');
+      }
+      print('====================================');
+
+      if (response.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text("Login berhasil!"),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!mounted) return;
+        _navigateToHome(response.user!);
+      } else {
+        print('ERROR: Login success but user data is null');
+        setState(() {
+          notif = "Login berhasil tapi data user kosong!";
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        notif = "Email atau password salah!";
+        _isLoading = false;
+      });
+      _shakeForm();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text("Login berhasil!"),
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text("Login gagal: $e")),
             ],
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -156,20 +278,10 @@ class _LoginScreenState extends State<LoginScreen>
           margin: const EdgeInsets.all(16),
         ),
       );
-
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      if (!mounted) return;
-      setState(() {
-        notif = "Email atau password salah!";
-      });
-      _shakeForm();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

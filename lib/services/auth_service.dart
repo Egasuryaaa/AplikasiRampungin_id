@@ -81,6 +81,12 @@ class AuthService {
       );
 
       final data = _client.parseResponse(response);
+
+      // Debug logging
+      print('========== AUTH SERVICE LOGIN ==========');
+      print('Raw response data: $data');
+      print('=======================================');
+
       final authResponse = AuthResponse.fromJson(data);
 
       // Save token

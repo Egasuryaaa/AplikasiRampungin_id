@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:rampungin_id_userside/services/client_service.dart';
+import 'package:rampungin_id_userside/services/auth_service.dart';
+import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/bangunan_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/katagoribangunan_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/elektronik_screen.dart';
@@ -16,6 +19,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final int _currentIndex = 1;
+  final ClientService _clientService = ClientService();
+  final AuthService _authService = AuthService();
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -23,92 +28,85 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Data tukang per kategori
-  final Map<String, List<Map<String, dynamic>>> _techniciansByCategory = {
-    'Bangunan': [
-      {
-        'name': 'Budi Santoso',
-        'description': 'Tukang Bangunan',
-        'experience': '15 tahun pengalaman',
-        'rating': 4.8,
-        'reviews': 127,
-        'specialty': 'Renovasi & Bangun Rumah',
-        'price': 'Rp 150.000/hari',
-        'status': 'online',
-        'technicianId': 'tech_build_001',
-        'image': 'assets/img/technician1.png', // Placeholder
-      },
-      {
-        'name': 'Agus Wijaya',
-        'description': 'Tukang Cat',
-        'experience': '10 tahun pengalaman',
-        'rating': 4.9,
-        'reviews': 95,
-        'specialty': 'Pengecatan Interior & Eksterior',
-        'price': 'Rp 120.000/hari',
-        'status': 'online',
-        'technicianId': 'tech_build_002',
-        'image': 'assets/img/technician2.png',
-      },
-      {
-        'name': 'Hendra Kusuma',
-        'description': 'Tukang Batu',
-        'experience': '12 tahun pengalaman',
-        'rating': 4.7,
-        'reviews': 143,
-        'specialty': 'Pasang Keramik & Ubin',
-        'price': 'Rp 130.000/hari',
-        'status': 'online',
-        'technicianId': 'tech_build_003',
-        'image': 'assets/img/technician3.png',
-      },
-    ],
-    'Elektronik': [
-      {
-        'name': 'Andi Pratama',
-        'description': 'Service TV & Home Theater',
-        'experience': '9 tahun pengalaman',
-        'rating': 4.9,
-        'reviews': 156,
-        'specialty': 'Elektronik Entertainment',
-        'price': 'Rp 100.000 + sparepart',
-        'status': 'online',
-        'technicianId': 'tech_elec_001',
-        'image': 'assets/img/technician4.png',
-      },
-      {
-        'name': 'Dedi Kurniawan',
-        'description': 'Teknisi AC',
-        'experience': '12 tahun pengalaman',
-        'rating': 4.8,
-        'reviews': 234,
-        'specialty': 'AC Semua Merk',
-        'price': 'Rp 120.000 + sparepart',
-        'status': 'online',
-        'technicianId': 'tech_elec_002',
-        'image': 'assets/img/technician5.png',
-      },
-    ],
-    'Cleaning Service': [
-      {
-        'name': 'Siti Aminah',
-        'description': 'Cleaning Professional',
-        'experience': '7 tahun pengalaman',
-        'rating': 4.9,
-        'reviews': 189,
-        'specialty': 'Pembersihan Rumah & Kantor',
-        'price': 'Rp 80.000/hari',
-        'status': 'online',
-        'technicianId': 'tech_cs_001',
-        'image': 'assets/img/technician6.png',
-      },
-    ],
-  };
+  // API Data
+  List<UserModel> _allTukangList = [];
+  UserModel? _currentUser;
+  double _userBalance = 0.0;
+  bool _isLoadingTukang = true;
+  bool _isLoadingProfile = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _loadUserProfile();
+    _loadAllTukang();
+  }
+
+  // Load current user profile and balance
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      final balance = await _clientService.getBalance();
+
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _userBalance = balance;
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+        print('Error loading profile: $e');
+      }
+    }
+  }
+
+  // Load all tukang from API
+  Future<void> _loadAllTukang() async {
+    try {
+      final tukangList = await _clientService.getAllTukang();
+
+      if (mounted) {
+        setState(() {
+          _allTukangList = tukangList;
+          _isLoadingTukang = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoadingTukang = false;
+        });
+        print('Error loading tukang: $e');
+      }
+    }
+  }
+
+  // Get tukang by category
+  List<UserModel> _getTukangByCategory(String categoryName) {
+    return _allTukangList.where((tukang) {
+      return tukang.namaKategori?.toLowerCase() == categoryName.toLowerCase();
+    }).toList();
+  }
+
+  // Group tukang by category
+  Map<String, List<UserModel>> get _techniciansByCategory {
+    final Map<String, List<UserModel>> grouped = {};
+    for (var tukang in _allTukangList) {
+      final category = tukang.namaKategori ?? 'Lainnya';
+      if (!grouped.containsKey(category)) {
+        grouped[category] = [];
+      }
+      grouped[category]!.add(tukang);
+    }
+    return grouped;
   }
 
   void _initializeAnimations() {
@@ -417,6 +415,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMainContent() {
+    // Show loading indicator while fetching data
+    if (_isLoadingTukang) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(50),
+          child: CircularProgressIndicator(color: Color(0xFFF3B950)),
+        ),
+      );
+    }
+
+    // Show error message if loading failed
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 60, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Gagal memuat data',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoadingTukang = true;
+                    _errorMessage = null;
+                  });
+                  _loadAllTukang();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF3B950),
+                ),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
@@ -453,10 +504,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return widgets;
   }
 
-  Widget _buildCategorySection(
-    String category,
-    List<Map<String, dynamic>> technicians,
-  ) {
+  Widget _buildCategorySection(String category, List<UserModel> technicians) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -502,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTechnicianCard(Map<String, dynamic> technician) {
+  Widget _buildTechnicianCard(UserModel technician) {
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 16),
@@ -550,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     // Nama
                     Text(
-                      technician['name'],
+                      technician.nama ?? 'Nama Tukang',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -566,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const Icon(Icons.star, size: 14, color: Colors.amber),
                         const SizedBox(width: 4),
                         Text(
-                          '${technician['rating']} (${technician['reviews']})',
+                          '${technician.rating?.toStringAsFixed(1) ?? '0.0'} (${technician.jumlahPesanan ?? 0} pesanan)',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.grey,
@@ -575,9 +623,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    // Harga
+                    // Status
                     Text(
-                      technician['price'],
+                      technician.statusAktif == 'online'
+                          ? '🟢 Online'
+                          : '⚫ Offline',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -637,11 +687,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
-  void _navigateToDetailOrder(Map<String, dynamic> technicianData) {
+  void _navigateToDetailOrder(UserModel technicianData) {
+    // Convert UserModel to Map for compatibility with existing DetailOrder
+    final Map<String, dynamic> techData = {
+      'id': technicianData.id,
+      'name': technicianData.nama,
+      'email': technicianData.email,
+      'no_hp': technicianData.noHp,
+      'alamat': technicianData.alamat,
+      'kategori': technicianData.namaKategori,
+      'rating': technicianData.rating,
+      'jumlah_pesanan': technicianData.jumlahPesanan,
+      'status_aktif': technicianData.statusAktif,
+      'foto_profile': technicianData.fotoProfile,
+    };
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DetailOrder(technicianData: technicianData),
+        builder: (context) => DetailOrder(technicianData: techData),
       ),
     );
   }
@@ -695,10 +759,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: 13),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Saldo Anda',
                     style: TextStyle(
                       fontSize: 14,
@@ -706,14 +770,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: Colors.grey,
                     ),
                   ),
-                  Text(
-                    'Rp. xx.xxx.xxx',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
+                  _isLoadingProfile
+                      ? const SizedBox(
+                        width: 100,
+                        height: 24,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFF3B950),
+                            ),
+                          ),
+                        ),
+                      )
+                      : Text(
+                        'Rp ${_userBalance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
                 ],
               ),
             ],
