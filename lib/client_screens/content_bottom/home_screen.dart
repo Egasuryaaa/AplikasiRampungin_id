@@ -4,7 +4,9 @@ import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
-import 'package:rampungin_id_userside/client_screens/detail/detail_order.dart';
+import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
+import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
+import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -217,6 +219,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TransactionListScreen(),
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFFF3B950),
+        icon: const Icon(Icons.receipt_long, color: Colors.white),
+        label: const Text(
+          'Riwayat',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       bottomNavigationBar: _buildAnimatedBottomNav(),
@@ -706,46 +724,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _navigateToCategory(String category) {
-    // For now, just show a snackbar, since the category screens don't exist yet
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Kategori: $category')));
+  void _navigateToCategory(String categoryName) {
+    // Find category by name to get its ID
+    final category = _techniciansByCategory.keys.firstWhere(
+      (cat) => cat == categoryName,
+      orElse: () => categoryName,
+    );
 
-    // You can add navigation to category screens when they are created
-    // switch (category) {
-    //   case 'Bangunan':
-    //     Navigator.push(context, MaterialPageRoute(builder: (context) => const BangunanScreen()));
-    //     break;
-    //   case 'Elektronik':
-    //     Navigator.push(context, MaterialPageRoute(builder: (context) => const ElektronikScreen()));
-    //     break;
-    //   default:
-    //     break;
-    // }
-  }
-
-  void _navigateToDetailOrder(UserModel technicianData) {
-    // Convert UserModel to Map for compatibility with existing DetailOrder
-    final Map<String, dynamic> techData = {
-      'id': technicianData.id,
-      'name': technicianData.nama,
-      'email': technicianData.email,
-      'no_hp': technicianData.noHp,
-      'alamat': technicianData.alamat,
-      'kategori': technicianData.namaKategori,
-      'rating': technicianData.rating,
-      'jumlah_pesanan': technicianData.jumlahPesanan,
-      'status_aktif': technicianData.statusAktif,
-      'foto_profile': technicianData.fotoProfile,
-    };
-
+    // Navigate to BrowseTukangScreen filtered by this category
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DetailOrder(technicianData: techData),
+        builder: (context) => BrowseTukangScreen(kategoriNama: category),
       ),
     );
+  }
+
+  void _navigateToDetailOrder(UserModel technicianData) {
+    // Navigate to Tukang Detail Screen instead of direct booking
+    if (technicianData.id != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => TukangDetailScreen(tukangId: technicianData.id!),
+        ),
+      );
+    }
   }
 
   Widget _buildAnimatedCard(Widget child, {int delay = 0}) {
@@ -896,14 +901,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             const Icon(Icons.search, color: Colors.grey, size: 20),
             const SizedBox(width: 10),
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Cari tukang disini...',
-                  hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to BrowseTukangScreen with search capability
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const BrowseTukangScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: const Text(
+                    'Cari tukang disini...',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
                 ),
               ),
             ),
@@ -911,7 +925,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(15),
-                onTap: () {},
+                onTap: () {
+                  // Navigate to BrowseTukangScreen with filters open
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const BrowseTukangScreen(),
+                    ),
+                  );
+                },
                 child: Container(
                   width: 30,
                   height: 30,

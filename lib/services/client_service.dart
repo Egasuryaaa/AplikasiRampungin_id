@@ -6,6 +6,7 @@ import '../models/rating_model.dart';
 import '../models/topup_model.dart';
 import '../models/category_model.dart';
 import '../models/statistics_model.dart';
+import '../models/tukang_detail_model.dart';
 
 /// Client Service - Handles all client-related endpoints
 class ClientService {
@@ -119,6 +120,36 @@ class ClientService {
       return tukangList.map((json) => UserModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to browse tukang: $e');
+    }
+  }
+
+  /// Get tukang detail by ID (Full detail with ratings)
+  Future<TukangDetailModel> getTukangDetailFull(int tukangId) async {
+    try {
+      print('ClientService: Fetching tukang detail for ID: $tukangId');
+
+      final response = await _client.get(
+        ApiConfig.clientTukangDetail(tukangId),
+      );
+
+      print('ClientService: Response received');
+
+      final data = _client.parseResponse(response);
+
+      print('ClientService: Response parsed successfully');
+      print('ClientService: Data keys: ${data.keys.toList()}');
+
+      if (data['data'] != null) {
+        print('ClientService: Creating TukangDetailModel from data');
+        return TukangDetailModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+
+      print('ClientService: Creating TukangDetailModel from root');
+      return TukangDetailModel.fromJson(data);
+    } catch (e, stackTrace) {
+      print('ClientService: Error getting tukang detail: $e');
+      print('ClientService: Stack trace: $stackTrace');
+      throw Exception('Failed to get tukang detail: $e');
     }
   }
 

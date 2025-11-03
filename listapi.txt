@@ -79,12 +79,15 @@ Total: 2 endpoints untuk register dan login
    URL: http://localhost/admintukang/api/auth/register
    Method: POST
    Auth: No
-   Content-Type: application/json
    
    ⚠️ PENTING:
    - Client otomatis verified (is_verified = true)
    - Tukang perlu verifikasi admin dulu (is_verified = false)
    - Gunakan field "role" untuk menentukan: "client" atau "tukang"
+   - Support 2 format: JSON (tanpa foto) dan Multipart (dengan foto)
+   
+   ---[ FORMAT 1: JSON (Tanpa Foto Profil) ]---
+   Content-Type: application/json
    
    Request Body (Client):
    {
@@ -124,6 +127,38 @@ Total: 2 endpoints untuk register dan login
      "nama_pemilik_rekening": "Agus Prasetyo"
    }
    
+   ---[ FORMAT 2: Multipart Form-Data (Dengan Foto Profil) ]---
+   Content-Type: multipart/form-data
+   
+   Form Data Fields:
+   - username: string (required)
+   - email: string (required)
+   - password: string (required, min 8 char)
+   - nama_lengkap: string (required)
+   - no_telp: string (required)
+   - role: string (required, "client" atau "tukang")
+   - alamat: string (optional)
+   - kota: string (optional)
+   - provinsi: string (optional)
+   - kode_pos: string (optional)
+   - foto_profil: file (optional, jpg/jpeg/png, max 2MB)
+   
+   // Khusus untuk Tukang (wajib):
+   - pengalaman_tahun: integer (optional)
+   - tarif_per_jam: decimal (optional)
+   - bio: string (optional)
+   - keahlian: array (optional)
+   - kategori_ids: array (optional)
+   - nama_bank: string (optional)
+   - nomor_rekening: string (optional)
+   - nama_pemilik_rekening: string (optional)
+   
+   ⚠️ CATATAN FOTO PROFIL:
+   - Format yang didukung: JPG, JPEG, PNG
+   - Ukuran maksimal: 2MB
+   - Foto disimpan di: writable/profiles/
+   - Path foto: uploads/profiles/nama_file.ext
+   
    Response Success:
    {
      "status": "success",
@@ -133,6 +168,7 @@ Total: 2 endpoints untuk register dan login
        "username": "agus_listrik",
        "email": "agus@gmail.com",
        "role": "tukang",
+       "foto_profil": "uploads/profiles/abc123def456.jpg",  // jika ada upload
        "is_verified": false  // false untuk tukang, true untuk client
      }
    }
@@ -865,11 +901,17 @@ Total: 14 endpoints untuk client yang sudah login
    URL: http://localhost/admintukang/api/client/profile
    Method: PUT / POST
    Auth: Bearer Token (Client)
-   Content-Type: application/json
    Headers:
    {
      "Authorization": "Bearer {token}"
    }
+   
+   ⚠️ PENTING:
+   - Support 2 format: JSON (tanpa foto) dan Multipart (dengan foto)
+   - Jika upload foto baru, foto lama akan otomatis dihapus
+   
+   ---[ FORMAT 1: JSON (Tanpa Foto Profil) ]---
+   Content-Type: application/json
    
    Request Body:
    {
@@ -879,8 +921,32 @@ Total: 14 endpoints untuk client yang sudah login
      "alamat": "Jl. Sudirman No. 123",
      "kota": "Jakarta",
      "provinsi": "DKI Jakarta",
-     "kode_pos": "10110",
-     "foto_profil": "base64_image_string" // optional
+     "kode_pos": "10110"
+   }
+   
+   ---[ FORMAT 2: Multipart Form-Data (Dengan Foto Profil) ]---
+   Content-Type: multipart/form-data
+   
+   Form Data Fields:
+   - nama_lengkap: string (optional)
+   - email: string (optional)
+   - no_telp: string (optional)
+   - alamat: string (optional)
+   - kota: string (optional)
+   - provinsi: string (optional)
+   - kode_pos: string (optional)
+   - foto_profil: file (optional, jpg/jpeg/png, max 2MB)
+   
+   ⚠️ CATATAN FOTO PROFIL:
+   - Format yang didukung: JPG, JPEG, PNG
+   - Ukuran maksimal: 2MB
+   - Foto lama akan dihapus otomatis saat upload baru
+   - Path foto: uploads/profiles/nama_file.ext
+   
+   Response Success:
+   {
+     "status": "success",
+     "message": "Profil berhasil diperbarui"
    }
 
 8. GET CATEGORIES
@@ -1930,20 +1996,30 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     URL: http://localhost/admintukang/api/tukang/profile
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
-    Content-Type: application/json
     Headers:
     {
       "Authorization": "Bearer {token}"
     }
     
+    ⚠️ PENTING:
+    - Support 2 format: JSON (tanpa foto) dan Multipart (dengan foto)
+    - Jika upload foto baru, foto lama akan otomatis dihapus
+    
+    ---[ FORMAT 1: JSON (Tanpa Foto Profil) ]---
+    Content-Type: application/json
+    
     Request Body:
     {
+      // Data User
       "nama_lengkap": "Agus Prasetyo Updated",
       "email": "agus.new@gmail.com",
       "no_telp": "082134567891",
       "alamat": "Jl. Raya Bekasi No. 89",
       "kota": "Jakarta Timur",
       "provinsi": "DKI Jakarta",
+      "kode_pos": "13920",
+      
+      // Data Profil Tukang
       "pengalaman_tahun": 9,
       "tarif_per_jam": 80000,
       "bio": "Ahli instalasi listrik rumah dan gedung",
@@ -1952,7 +2028,48 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       "nama_bank": "BCA",
       "nomor_rekening": "1234567890",
       "nama_pemilik_rekening": "Agus Prasetyo",
-      "foto_profil": "base64_image_string"  // optional
+      
+      // Kategori Keahlian
+      "kategori_ids": [1, 15]  // optional: update kategori
+    }
+    
+    ---[ FORMAT 2: Multipart Form-Data (Dengan Foto Profil) ]---
+    Content-Type: multipart/form-data
+    
+    Form Data Fields:
+    // Data User
+    - nama_lengkap: string (optional)
+    - email: string (optional)
+    - no_telp: string (optional)
+    - alamat: string (optional)
+    - kota: string (optional)
+    - provinsi: string (optional)
+    - kode_pos: string (optional)
+    - foto_profil: file (optional, jpg/jpeg/png, max 2MB)
+    
+    // Data Profil Tukang
+    - pengalaman_tahun: integer (optional)
+    - tarif_per_jam: decimal (optional)
+    - bio: string (optional)
+    - keahlian: array (optional)
+    - radius_layanan_km: integer (optional)
+    - nama_bank: string (optional)
+    - nomor_rekening: string (optional)
+    - nama_pemilik_rekening: string (optional)
+    
+    // Kategori Keahlian
+    - kategori_ids: array (optional)
+    
+    ⚠️ CATATAN FOTO PROFIL:
+    - Format yang didukung: JPG, JPEG, PNG
+    - Ukuran maksimal: 2MB
+    - Foto lama akan dihapus otomatis saat upload baru
+    - Path foto: uploads/profiles/nama_file.ext
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Profil berhasil diperbarui"
     }
 
 22. UPDATE AVAILABILITY
