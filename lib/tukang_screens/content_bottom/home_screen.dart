@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
+import 'package:rampungin_id_userside/models/user_model.dart';
+import 'package:rampungin_id_userside/models/transaction_model.dart';
+import 'package:rampungin_id_userside/models/statistics_model.dart';
 import '../detail/detail_order.dart';
 import '../detail/profile.dart';
 import '../detail/notification.dart';
 import '../../Auth_screens/login.dart';
-// import '../form/form_tukang.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +20,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final int _currentIndex = 1; // Home is index 1
   final TukangService _tukangService = TukangService();
   final AuthService _authService = AuthService();
+
+  // Data from API
+  List<TransactionModel> _pendingOrders = [];
+  StatisticsModel? _statistics;
+  UserModel? _currentUser; // ignore: unused_field
+  bool _isLoadingData = true;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -138,44 +146,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Load tukang profile, orders, and statistics
   Future<void> _loadTukangData() async {
     await Future.wait([_loadProfile(), _loadOrders(), _loadStatistics()]);
+
+    if (mounted) {
+      setState(() {
+        _isLoadingData = false;
+      });
+    }
   }
 
   Future<void> _loadProfile() async {
     try {
-      await _authService.getCurrentUser();
+      final user = await _authService.getCurrentUser();
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _currentUser = user;
+        });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {});
-      }
+      // Silently fail
     }
   }
 
   Future<void> _loadOrders() async {
     try {
-      await _tukangService.getOrders();
+      // Get pending orders
+      final orders = await _tukangService.getOrders(status: 'pending');
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _pendingOrders = orders;
+        });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {});
-      }
+      // Silently fail
     }
   }
 
   Future<void> _loadStatistics() async {
     try {
-      await _tukangService.getStatistics();
+      final stats = await _tukangService.getStatistics();
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _statistics = stats;
+        });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {});
-      }
+      // Silently fail
     }
   }
 
@@ -305,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStaticJobOrderItem(int index) {
+  Widget _buildJobOrderItem(TransactionModel order) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
@@ -363,21 +378,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'JOB ORDER',
-                        style: TextStyle(
+                        order.deskripsiPekerjaan ?? 'JOB ORDER',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF8B4513),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Pekerjaan baru tersedia',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        order.namaClient ?? 'Client',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -859,14 +881,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  Text(
-                                    'RP. XX.XXX.XXX',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _isLoadingData
+                                      ? SizedBox(
+                                        height: 22,
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFFF3B950),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      : Text(
+                                        'Rp ${(_statistics?.saldoPoin ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
                                 ],
                               ),
                             ),
@@ -1010,16 +1054,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                               padding: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  _buildStaticJobOrderItem(0),
-                                  const SizedBox(height: 12),
-                                  _buildStaticJobOrderItem(1),
-                                  const SizedBox(height: 12),
-                                  _buildStaticJobOrderItem(2),
-                                  const SizedBox(height: 20),
-                                ],
-                              ),
+                              child:
+                                  _isLoadingData
+                                      ? Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20),
+                                          child: CircularProgressIndicator(
+                                            color: Color(0xFFF3B950),
+                                          ),
+                                        ),
+                                      )
+                                      : _pendingOrders.isEmpty
+                                      ? Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                Icons.inbox_outlined,
+                                                size: 60,
+                                                color: Colors.grey[400],
+                                              ),
+                                              SizedBox(height: 12),
+                                              Text(
+                                                'Belum ada order masuk',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                      : Column(
+                                        children: [
+                                          for (
+                                            int i = 0;
+                                            i < _pendingOrders.length && i < 3;
+                                            i++
+                                          )
+                                            Padding(
+                                              padding: EdgeInsets.only(
+                                                bottom:
+                                                    i <
+                                                                _pendingOrders
+                                                                        .length -
+                                                                    1 &&
+                                                            i < 2
+                                                        ? 12
+                                                        : 0,
+                                              ),
+                                              child: _buildJobOrderItem(
+                                                _pendingOrders[i],
+                                              ),
+                                            ),
+                                          SizedBox(height: 20),
+                                        ],
+                                      ),
                             ),
                           ],
                         ),

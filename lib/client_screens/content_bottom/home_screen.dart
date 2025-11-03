@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/client_service.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
-import 'package:rampungin_id_userside/client_screens/detail/bangunan_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/katagoribangunan_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/elektronik_screen.dart';
-// import 'package:rampungin_id_userside/client_screens/detail/car_screen.dart';
-// import 'package:rampungin_id_userside/client_screens/detail/lisrik_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/cs_screen.dart';
+import 'package:rampungin_id_userside/models/category_model.dart';
+import 'package:rampungin_id_userside/models/statistics_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/detail_order.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // API Data
   List<UserModel> _allTukangList = [];
+  List<CategoryModel> _categoryList = []; // ignore: unused_field
+  StatisticsModel? _statistics; // ignore: unused_field
+  UserModel? _currentUser;
   double _userBalance = 0.0;
   bool _isLoadingTukang = true;
   bool _isLoadingProfile = true;
@@ -39,19 +38,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadUserProfile();
-    _loadAllTukang();
+    _loadAllData();
   }
 
-  // Load current user profile and balance
+  // Load all data from API
+  Future<void> _loadAllData() async {
+    await Future.wait([
+      _loadUserProfile(),
+      _loadCategories(),
+      _loadTukangList(),
+      _loadStatistics(),
+    ]);
+  }
+
+  // Load current user profile
   Future<void> _loadUserProfile() async {
     try {
-      await _authService.getCurrentUser();
-      final balance = await _clientService.getBalance();
+      final user = await _authService.getCurrentUser();
 
       if (mounted) {
         setState(() {
-          _userBalance = balance;
+          _currentUser = user;
           _isLoadingProfile = false;
         });
       }
@@ -64,10 +71,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  // Load all tukang from API
-  Future<void> _loadAllTukang() async {
+  // Load categories
+  Future<void> _loadCategories() async {
     try {
-      final tukangList = await _clientService.getAllTukang();
+      final categories = await _clientService.getCategories();
+
+      if (mounted) {
+        setState(() {
+          _categoryList = categories;
+        });
+      }
+    } catch (e) {
+      // Silently fail, categories are optional
+    }
+  }
+
+  // Load all tukang from API
+  Future<void> _loadTukangList() async {
+    try {
+      // Browse tukang with status "tersedia" and order by rating
+      final tukangList = await _clientService.browseTukang(
+        status: 'tersedia',
+        orderBy: 'rata_rata_rating',
+        orderDir: 'DESC',
+        limit: 50,
+      );
 
       if (mounted) {
         setState(() {
@@ -80,6 +108,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _errorMessage = e.toString();
           _isLoadingTukang = false;
+        });
+      }
+    }
+  }
+
+  // Load statistics (for balance)
+  Future<void> _loadStatistics() async {
+    try {
+      final stats = await _clientService.getStatistics();
+
+      if (mounted) {
+        setState(() {
+          _statistics = stats;
+          _userBalance = stats.saldoPoin ?? 0.0;
+        });
+      }
+    } catch (e) {
+      // Silently fail, balance will show 0
+      if (mounted) {
+        setState(() {
+          _userBalance = 0.0;
         });
       }
     }
@@ -334,9 +383,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 23),
-                const Text(
-                  'Selamat Datang (nama)',
-                  style: TextStyle(
+                Text(
+                  'Selamat Datang ${_currentUser?.nama ?? "Client"}',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
@@ -444,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _isLoadingTukang = true;
                     _errorMessage = null;
                   });
-                  _loadAllTukang();
+                  _loadTukangList();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF3B950),
@@ -658,22 +707,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _navigateToCategory(String category) {
-    Widget screen;
-    switch (category) {
-      case 'Bangunan':
-        screen = const BangunanScreen();
-        break;
-      case 'Elektronik':
-        screen = const ElektronikScreen();
-        break;
-      case 'Cleaning Service':
-        screen = const CsScreen();
-        break;
-      default:
-        screen = const KategoriBangunanScreen();
-    }
+    // For now, just show a snackbar, since the category screens don't exist yet
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Kategori: $category')));
 
-    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+    // You can add navigation to category screens when they are created
+    // switch (category) {
+    //   case 'Bangunan':
+    //     Navigator.push(context, MaterialPageRoute(builder: (context) => const BangunanScreen()));
+    //     break;
+    //   case 'Elektronik':
+    //     Navigator.push(context, MaterialPageRoute(builder: (context) => const ElektronikScreen()));
+    //     break;
+    //   default:
+    //     break;
+    // }
   }
 
   void _navigateToDetailOrder(UserModel technicianData) {

@@ -4,6 +4,8 @@ import '../models/user_model.dart';
 import '../models/transaction_model.dart';
 import '../models/rating_model.dart';
 import '../models/topup_model.dart';
+import '../models/category_model.dart';
+import '../models/statistics_model.dart';
 
 /// Client Service - Handles all client-related endpoints
 class ClientService {
@@ -27,26 +29,27 @@ class ClientService {
   }
 
   /// Update client profile
-  ///
-  /// Optional params: nama, no_hp, alamat, foto_profile
   Future<UserModel> updateProfile({
     String? nama,
+    String? email,
     String? noHp,
     String? alamat,
+    String? kota,
+    String? provinsi,
     String? fotoProfile,
   }) async {
     try {
       final body = {
-        if (nama != null) 'nama': nama,
-        if (noHp != null) 'no_hp': noHp,
+        if (nama != null) 'nama_lengkap': nama,
+        if (email != null) 'email': email,
+        if (noHp != null) 'no_telp': noHp,
         if (alamat != null) 'alamat': alamat,
-        if (fotoProfile != null) 'foto_profile': fotoProfile,
+        if (kota != null) 'kota': kota,
+        if (provinsi != null) 'provinsi': provinsi,
+        if (fotoProfile != null) 'foto_profil': fotoProfile,
       };
 
-      final response = await _client.put(
-        ApiConfig.clientUpdateProfile,
-        body: body,
-      );
+      final response = await _client.put(ApiConfig.clientProfile, body: body);
 
       final data = _client.parseResponse(response);
 
@@ -59,18 +62,63 @@ class ClientService {
     }
   }
 
-  // ==================== BROWSE TUKANG ====================
+  // ==================== CATEGORIES ====================
 
-  /// Get all tukang (workers)
-  Future<List<UserModel>> getAllTukang() async {
+  /// Get all categories
+  Future<List<CategoryModel>> getCategories() async {
     try {
-      final response = await _client.get(ApiConfig.clientTukang);
+      final response = await _client.get(ApiConfig.clientCategories);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> tukangList = data['data'] ?? data['tukang'] ?? [];
+      final List<dynamic> categoryList = data['data'] ?? [];
+      return categoryList.map((json) => CategoryModel.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to get categories: $e');
+    }
+  }
+
+  // ==================== BROWSE TUKANG ====================
+
+  /// Browse tukang with filters
+  Future<List<UserModel>> browseTukang({
+    int? kategoriId,
+    String? kota,
+    String? status,
+    double? minRating,
+    int? maxTarif,
+    String? orderBy,
+    String? orderDir,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        if (kategoriId != null) 'kategori_id': kategoriId.toString(),
+        if (kota != null) 'kota': kota,
+        if (status != null) 'status': status,
+        if (minRating != null) 'min_rating': minRating.toString(),
+        if (maxTarif != null) 'max_tarif': maxTarif.toString(),
+        if (orderBy != null) 'order_by': orderBy,
+        if (orderDir != null) 'order_dir': orderDir,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      var url = ApiConfig.clientTukang;
+      if (queryParams.isNotEmpty) {
+        final query = queryParams.entries
+            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        url = '$url?$query';
+      }
+
+      final response = await _client.get(url);
+      final data = _client.parseResponse(response);
+
+      final List<dynamic> tukangList = data['data'] ?? [];
       return tukangList.map((json) => UserModel.fromJson(json)).toList();
     } catch (e) {
-      throw Exception('Failed to get tukang list: $e');
+      throw Exception('Failed to browse tukang: $e');
     }
   }
 
@@ -91,59 +139,116 @@ class ClientService {
     }
   }
 
-  /// Search tukang by name
-  Future<List<UserModel>> searchTukang(String query) async {
+  /// Search tukang
+  Future<List<UserModel>> searchTukang({
+    required String keyword,
+    int? kategoriId,
+    String? kota,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final response = await _client.get(ApiConfig.clientTukangSearch(query));
+      final queryParams = <String, String>{
+        'keyword': keyword,
+        if (kategoriId != null) 'kategori_id': kategoriId.toString(),
+        if (kota != null) 'kota': kota,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      final query = queryParams.entries
+          .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+
+      final response = await _client.get(
+        '${ApiConfig.clientSearchTukang}?$query',
+      );
       final data = _client.parseResponse(response);
 
-      final List<dynamic> tukangList = data['data'] ?? data['results'] ?? [];
+      final List<dynamic> tukangList = data['data'] ?? [];
       return tukangList.map((json) => UserModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to search tukang: $e');
     }
   }
 
-  /// Get tukang by category
-  Future<List<UserModel>> getTukangByCategory(int categoryId) async {
+  // ==================== BOOKING & TRANSACTIONS ====================
+
+  /// Create booking
+  Future<TransactionModel> createBooking({
+    required int tukangId,
+    required int kategoriId,
+    required String judulLayanan,
+    required String deskripsiLayanan,
+    required String lokasiKerja,
+    required String tanggalJadwal,
+    required String waktuJadwal,
+    required int estimasiDurasiJam,
+    required double hargaDasar,
+    double? biayaTambahan,
+    required String metodePembayaran, // 'poin' or 'tunai'
+    String? catatanClient,
+  }) async {
     try {
-      final response = await _client.get(
-        ApiConfig.clientTukangCategory(categoryId),
-      );
+      final body = {
+        'tukang_id': tukangId,
+        'kategori_id': kategoriId,
+        'judul_layanan': judulLayanan,
+        'deskripsi_layanan': deskripsiLayanan,
+        'lokasi_kerja': lokasiKerja,
+        'tanggal_jadwal': tanggalJadwal,
+        'waktu_jadwal': waktuJadwal,
+        'estimasi_durasi_jam': estimasiDurasiJam,
+        'harga_dasar': hargaDasar,
+        'biaya_tambahan': biayaTambahan ?? 0,
+        'metode_pembayaran': metodePembayaran,
+        if (catatanClient != null) 'catatan_client': catatanClient,
+      };
+
+      final response = await _client.post(ApiConfig.clientBooking, body: body);
+
       final data = _client.parseResponse(response);
 
-      final List<dynamic> tukangList = data['data'] ?? data['tukang'] ?? [];
-      return tukangList.map((json) => UserModel.fromJson(json)).toList();
+      if (data['data'] != null) {
+        return TransactionModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return TransactionModel.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to get tukang by category: $e');
+      throw Exception('Failed to create booking: $e');
     }
   }
-
-  /// Get tukang ratings
-  Future<List<RatingModel>> getTukangRatings(int tukangId) async {
-    try {
-      final response = await _client.get(
-        ApiConfig.clientTukangRatings(tukangId),
-      );
-      final data = _client.parseResponse(response);
-
-      final List<dynamic> ratingList = data['data'] ?? data['ratings'] ?? [];
-      return ratingList.map((json) => RatingModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to get tukang ratings: $e');
-    }
-  }
-
-  // ==================== TRANSACTIONS ====================
 
   /// Get all client transactions
-  Future<List<TransactionModel>> getTransactions() async {
+  Future<List<TransactionModel>> getTransactions({
+    String? status,
+    String? metodePembayaran,
+    String? startDate,
+    String? endDate,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final response = await _client.get(ApiConfig.clientTransactions);
+      final queryParams = <String, String>{
+        if (status != null) 'status': status,
+        if (metodePembayaran != null) 'metode_pembayaran': metodePembayaran,
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      var url = ApiConfig.clientTransactions;
+      if (queryParams.isNotEmpty) {
+        final query = queryParams.entries
+            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        url = '$url?$query';
+      }
+
+      final response = await _client.get(url);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> transactionList =
-          data['data'] ?? data['transactions'] ?? [];
+      final List<dynamic> transactionList = data['data'] ?? [];
       return transactionList
           .map((json) => TransactionModel.fromJson(json))
           .toList();
@@ -169,64 +274,7 @@ class ClientService {
     }
   }
 
-  /// Create new transaction (booking)
-  ///
-  /// Required params:
-  /// - id_tukang: Tukang ID
-  /// - id_kategori: Category ID
-  /// - deskripsi_pekerjaan: Job description
-  /// - alamat_pekerjaan: Job address
-  /// - latitude, longitude: Location coordinates
-  /// - tanggal_pekerjaan: Date (YYYY-MM-DD)
-  /// - waktu_pekerjaan: Time (HH:MM)
-  /// - metode_pembayaran: 'POIN' or 'TUNAI'
-  /// - harga_penawaran: Offer price
-  Future<TransactionModel> createTransaction({
-    required int idTukang,
-    required int idKategori,
-    required String deskripsiPekerjaan,
-    required String alamatPekerjaan,
-    required double latitude,
-    required double longitude,
-    required String tanggalPekerjaan,
-    required String waktuPekerjaan,
-    required String metodePembayaran, // 'POIN' or 'TUNAI'
-    required double hargaPenawaran,
-  }) async {
-    try {
-      final body = {
-        'id_tukang': idTukang,
-        'id_kategori': idKategori,
-        'deskripsi_pekerjaan': deskripsiPekerjaan,
-        'alamat_pekerjaan': alamatPekerjaan,
-        'latitude': latitude,
-        'longitude': longitude,
-        'tanggal_pekerjaan': tanggalPekerjaan,
-        'waktu_pekerjaan': waktuPekerjaan,
-        'metode_pembayaran': metodePembayaran,
-        'harga_penawaran': hargaPenawaran,
-      };
-
-      final response = await _client.post(
-        ApiConfig.clientCreateTransaction,
-        body: body,
-      );
-
-      final data = _client.parseResponse(response);
-
-      if (data['data'] != null) {
-        return TransactionModel.fromJson(data['data'] as Map<String, dynamic>);
-      }
-      return TransactionModel.fromJson(data);
-    } catch (e) {
-      throw Exception('Failed to create transaction: $e');
-    }
-  }
-
   /// Cancel transaction
-  ///
-  /// Required params:
-  /// - alasan_pembatalan: Cancellation reason
   Future<Map<String, dynamic>> cancelTransaction(
     int transactionId,
     String alasanPembatalan,
@@ -234,7 +282,7 @@ class ClientService {
     try {
       final body = {'alasan_pembatalan': alasanPembatalan};
 
-      final response = await _client.post(
+      final response = await _client.put(
         ApiConfig.clientCancelTransaction(transactionId),
         body: body,
       );
@@ -247,23 +295,20 @@ class ClientService {
 
   // ==================== RATING ====================
 
-  /// Rate tukang after transaction complete
-  ///
-  /// Required params:
-  /// - rating: 1-5 stars
-  /// - ulasan: Review text
-  Future<RatingModel> rateTukang({
-    required int transactionId,
+  /// Submit rating
+  Future<RatingModel> submitRating({
+    required int transaksiId,
     required int rating,
     required String ulasan,
   }) async {
     try {
-      final body = {'rating': rating, 'ulasan': ulasan};
+      final body = {
+        'transaksi_id': transaksiId,
+        'rating': rating,
+        'ulasan': ulasan,
+      };
 
-      final response = await _client.post(
-        ApiConfig.clientRateTukang(transactionId),
-        body: body,
-      );
+      final response = await _client.post(ApiConfig.clientRating, body: body);
 
       final data = _client.parseResponse(response);
 
@@ -272,63 +317,83 @@ class ClientService {
       }
       return RatingModel.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to rate tukang: $e');
+      throw Exception('Failed to submit rating: $e');
     }
   }
 
   // ==================== TOPUP ====================
 
-  /// Create topup request (QRIS payment)
-  ///
-  /// Required params:
-  /// - nominal: Amount to topup
-  Future<TopUpModel> createTopup(double nominal) async {
+  /// Request top-up (QRIS payment)
+  Future<TopUpModel> requestTopup({
+    required double jumlah,
+    required String buktiPembayaranPath,
+  }) async {
     try {
-      final body = {'nominal': nominal};
+      final response = await _client.postMultipart(
+        ApiConfig.clientTopup,
+        'bukti_pembayaran',
+        buktiPembayaranPath,
+        fields: {'jumlah': jumlah.toString()},
+      );
 
-      final response = await _client.post(ApiConfig.clientTopup, body: body);
+      final responseBody = await response.stream.bytesToString();
 
-      final data = _client.parseResponse(response);
-
-      if (data['data'] != null) {
-        return TopUpModel.fromJson(data['data'] as Map<String, dynamic>);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // Parse the response if needed
+        return TopUpModel.fromJson({'jumlah': jumlah, 'status': 'pending'});
+      } else {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: responseBody,
+        );
       }
-      return TopUpModel.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to create topup: $e');
+      throw Exception('Failed to request topup: $e');
     }
   }
 
-  /// Get topup history
-  Future<List<TopUpModel>> getTopupHistory() async {
+  /// Get top-up history
+  Future<List<TopUpModel>> getTopupHistory({
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final response = await _client.get(ApiConfig.clientTopupHistory);
+      final queryParams = <String, String>{
+        if (status != null) 'status': status,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      var url = ApiConfig.clientTopup;
+      if (queryParams.isNotEmpty) {
+        final query = queryParams.entries
+            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        url = '$url?$query';
+      }
+
+      final response = await _client.get(url);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> topupList = data['data'] ?? data['history'] ?? [];
+      final List<dynamic> topupList = data['data'] ?? [];
       return topupList.map((json) => TopUpModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to get topup history: $e');
     }
   }
 
-  // ==================== BALANCE ====================
+  // ==================== STATISTICS ====================
 
-  /// Get client balance (POIN)
-  Future<double> getBalance() async {
+  /// Get client statistics
+  Future<StatisticsModel> getStatistics() async {
     try {
-      final response = await _client.get(ApiConfig.clientBalance);
+      final response = await _client.get(ApiConfig.clientStatistics);
       final data = _client.parseResponse(response);
 
-      if (data['saldo'] != null) {
-        return (data['saldo'] as num).toDouble();
-      } else if (data['balance'] != null) {
-        return (data['balance'] as num).toDouble();
-      }
-
-      return 0.0;
+      return StatisticsModel.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to get balance: $e');
+      throw Exception('Failed to get statistics: $e');
     }
   }
 }

@@ -28,26 +28,44 @@ class TukangService {
   }
 
   /// Update tukang profile
-  ///
-  /// Optional params: nama, no_hp, alamat, foto_profile
   Future<UserModel> updateProfile({
     String? nama,
+    String? email,
     String? noHp,
     String? alamat,
+    String? kota,
+    String? provinsi,
+    int? pengalamanTahun,
+    double? tarifPerJam,
+    String? bio,
+    List<String>? keahlian,
+    int? radiusLayananKm,
+    String? namaBank,
+    String? nomorRekening,
+    String? namaPemilikRekening,
     String? fotoProfile,
   }) async {
     try {
       final body = {
-        if (nama != null) 'nama': nama,
-        if (noHp != null) 'no_hp': noHp,
+        if (nama != null) 'nama_lengkap': nama,
+        if (email != null) 'email': email,
+        if (noHp != null) 'no_telp': noHp,
         if (alamat != null) 'alamat': alamat,
-        if (fotoProfile != null) 'foto_profile': fotoProfile,
+        if (kota != null) 'kota': kota,
+        if (provinsi != null) 'provinsi': provinsi,
+        if (pengalamanTahun != null) 'pengalaman_tahun': pengalamanTahun,
+        if (tarifPerJam != null) 'tarif_per_jam': tarifPerJam,
+        if (bio != null) 'bio': bio,
+        if (keahlian != null) 'keahlian': keahlian,
+        if (radiusLayananKm != null) 'radius_layanan_km': radiusLayananKm,
+        if (namaBank != null) 'nama_bank': namaBank,
+        if (nomorRekening != null) 'nomor_rekening': nomorRekening,
+        if (namaPemilikRekening != null)
+          'nama_pemilik_rekening': namaPemilikRekening,
+        if (fotoProfile != null) 'foto_profil': fotoProfile,
       };
 
-      final response = await _client.put(
-        ApiConfig.tukangUpdateProfile,
-        body: body,
-      );
+      final response = await _client.put(ApiConfig.tukangProfile, body: body);
 
       final data = _client.parseResponse(response);
 
@@ -60,65 +78,57 @@ class TukangService {
     }
   }
 
-  /// Update tukang status (online/offline/busy)
-  ///
-  /// Required params:
-  /// - status_aktif: 'online', 'offline', or 'busy'
-  Future<Map<String, dynamic>> updateStatus(String statusAktif) async {
+  /// Update tukang availability status
+  Future<Map<String, dynamic>> updateAvailability(
+    String statusKetersediaan,
+  ) async {
     try {
-      final body = {'status_aktif': statusAktif};
+      final body = {'status_ketersediaan': statusKetersediaan};
 
       final response = await _client.put(
-        ApiConfig.tukangUpdateStatus,
+        ApiConfig.tukangAvailability,
         body: body,
       );
 
       return _client.parseResponse(response);
     } catch (e) {
-      throw Exception('Failed to update status: $e');
-    }
-  }
-
-  /// Upload KTP photo (multipart form data)
-  ///
-  /// Required params:
-  /// - ktpFilePath: Absolute path to KTP image file
-  Future<Map<String, dynamic>> uploadKtp(String ktpFilePath) async {
-    try {
-      final response = await _client.postMultipart(
-        ApiConfig.tukangUploadKtp,
-        'ktp_photo',
-        ktpFilePath,
-      );
-
-      // Read response stream
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return {
-          'message': 'KTP uploaded successfully',
-          'status': response.statusCode,
-        };
-      } else {
-        throw ApiException(
-          statusCode: response.statusCode,
-          message: responseBody,
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to upload KTP: $e');
+      throw Exception('Failed to update availability: $e');
     }
   }
 
   // ==================== ORDERS ====================
 
-  /// Get all tukang orders
-  Future<List<TransactionModel>> getOrders() async {
+  /// Get all tukang orders with filters
+  Future<List<TransactionModel>> getOrders({
+    String? status,
+    String? metodePembayaran,
+    String? startDate,
+    String? endDate,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final response = await _client.get(ApiConfig.tukangOrders);
+      final queryParams = <String, String>{
+        if (status != null) 'status': status,
+        if (metodePembayaran != null) 'metode_pembayaran': metodePembayaran,
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      var url = ApiConfig.tukangOrders;
+      if (queryParams.isNotEmpty) {
+        final query = queryParams.entries
+            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        url = '$url?$query';
+      }
+
+      final response = await _client.get(url);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> orderList = data['data'] ?? data['orders'] ?? [];
+      final List<dynamic> orderList = data['data'] ?? [];
       return orderList.map((json) => TransactionModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to get orders: $e');
@@ -143,7 +153,7 @@ class TukangService {
   /// Accept order
   Future<Map<String, dynamic>> acceptOrder(int orderId) async {
     try {
-      final response = await _client.post(ApiConfig.tukangAcceptOrder(orderId));
+      final response = await _client.put(ApiConfig.tukangAcceptOrder(orderId));
 
       return _client.parseResponse(response);
     } catch (e) {
@@ -152,9 +162,6 @@ class TukangService {
   }
 
   /// Reject order
-  ///
-  /// Required params:
-  /// - alasan_penolakan: Rejection reason
   Future<Map<String, dynamic>> rejectOrder(
     int orderId,
     String alasanPenolakan,
@@ -162,7 +169,7 @@ class TukangService {
     try {
       final body = {'alasan_penolakan': alasanPenolakan};
 
-      final response = await _client.post(
+      final response = await _client.put(
         ApiConfig.tukangRejectOrder(orderId),
         body: body,
       );
@@ -176,7 +183,7 @@ class TukangService {
   /// Start order (mark as in progress)
   Future<Map<String, dynamic>> startOrder(int orderId) async {
     try {
-      final response = await _client.post(ApiConfig.tukangStartOrder(orderId));
+      final response = await _client.put(ApiConfig.tukangStartOrder(orderId));
 
       return _client.parseResponse(response);
     } catch (e) {
@@ -185,17 +192,14 @@ class TukangService {
   }
 
   /// Complete order
-  ///
-  /// Required params:
-  /// - harga_akhir: Final price
   Future<Map<String, dynamic>> completeOrder(
-    int orderId,
-    double hargaAkhir,
-  ) async {
+    int orderId, {
+    String? catatanTukang,
+  }) async {
     try {
-      final body = {'harga_akhir': hargaAkhir};
+      final body = {if (catatanTukang != null) 'catatan_tukang': catatanTukang};
 
-      final response = await _client.post(
+      final response = await _client.put(
         ApiConfig.tukangCompleteOrder(orderId),
         body: body,
       );
@@ -203,6 +207,17 @@ class TukangService {
       return _client.parseResponse(response);
     } catch (e) {
       throw Exception('Failed to complete order: $e');
+    }
+  }
+
+  /// Confirm tunai payment (for cash on service)
+  Future<Map<String, dynamic>> confirmTunaiPayment(int orderId) async {
+    try {
+      final response = await _client.put(ApiConfig.tukangConfirmTunai(orderId));
+
+      return _client.parseResponse(response);
+    } catch (e) {
+      throw Exception('Failed to confirm tunai payment: $e');
     }
   }
 
@@ -223,38 +238,25 @@ class TukangService {
 
   // ==================== EARNINGS & WITHDRAWAL ====================
 
-  /// Get tukang earnings summary
-  Future<Map<String, dynamic>> getEarnings() async {
-    try {
-      final response = await _client.get(ApiConfig.tukangEarnings);
-      return _client.parseResponse(response);
-    } catch (e) {
-      throw Exception('Failed to get earnings: $e');
-    }
-  }
-
   /// Request withdrawal
-  ///
-  /// Required params:
-  /// - nominal: Amount to withdraw
-  /// - nomor_rekening: Bank account number
-  /// - nama_bank: Bank name
-  /// - atas_nama: Account holder name
   Future<WithdrawalModel> requestWithdrawal({
-    required double nominal,
+    required double jumlah,
     required String nomorRekening,
     required String namaBank,
-    required String atasNama,
+    required String namaPemilikRekening,
   }) async {
     try {
       final body = {
-        'nominal': nominal,
+        'jumlah': jumlah,
         'nomor_rekening': nomorRekening,
         'nama_bank': namaBank,
-        'atas_nama': atasNama,
+        'nama_pemilik_rekening': namaPemilikRekening,
       };
 
-      final response = await _client.post(ApiConfig.tukangWithdraw, body: body);
+      final response = await _client.post(
+        ApiConfig.tukangWithdrawal,
+        body: body,
+      );
 
       final data = _client.parseResponse(response);
 
@@ -268,13 +270,30 @@ class TukangService {
   }
 
   /// Get withdrawal history
-  Future<List<WithdrawalModel>> getWithdrawalHistory() async {
+  Future<List<WithdrawalModel>> getWithdrawalHistory({
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final response = await _client.get(ApiConfig.tukangWithdrawalHistory);
+      final queryParams = <String, String>{
+        if (status != null) 'status': status,
+        if (limit != null) 'limit': limit.toString(),
+        if (offset != null) 'offset': offset.toString(),
+      };
+
+      var url = ApiConfig.tukangWithdrawal;
+      if (queryParams.isNotEmpty) {
+        final query = queryParams.entries
+            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        url = '$url?$query';
+      }
+
+      final response = await _client.get(url);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> withdrawalList =
-          data['data'] ?? data['history'] ?? [];
+      final List<dynamic> withdrawalList = data['data'] ?? [];
       return withdrawalList
           .map((json) => WithdrawalModel.fromJson(json))
           .toList();
