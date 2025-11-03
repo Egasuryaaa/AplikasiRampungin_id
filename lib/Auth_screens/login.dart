@@ -54,7 +54,6 @@ class _LoginScreenState extends State<LoginScreen>
         _navigateToHome(user);
       } catch (e) {
         // Token invalid, stay on login
-        print('Token invalid: $e');
       }
     }
   }
@@ -134,25 +133,13 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Navigate based on user role (jenis_akun)
   void _navigateToHome(UserModel user) {
-    // Debug logging
-    print('========== NAVIGATION DEBUG ==========');
-    print('User ID: ${user.id}');
-    print('User Name: ${user.nama}');
-    print('User Email: ${user.email}');
-    print('Jenis Akun: ${user.jenisAkun}');
-    print('Status Verifikasi: ${user.statusVerifikasi}');
-    print('=====================================');
-
     if (user.jenisAkun == 'client') {
-      print('Navigating to CLIENT screen: /bottom_navigation');
       Navigator.pushReplacementNamed(context, '/bottom_navigation');
     } else if (user.jenisAkun == 'tukang') {
       // Check verification status for tukang
       if (user.statusVerifikasi == 'verified') {
-        print('Navigating to TUKANG screen: /main_container');
         Navigator.pushReplacementNamed(context, '/main_container');
       } else if (user.statusVerifikasi == 'pending') {
-        print('Showing PENDING verification dialog');
         showDialog(
           context: context,
           builder:
@@ -170,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
         );
       } else {
-        print('Showing REJECTED verification dialog');
         showDialog(
           context: context,
           builder:
@@ -188,8 +174,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
         );
       }
-    } else {
-      print('WARNING: Unknown jenis_akun: ${user.jenisAkun}');
     }
   }
 
@@ -209,19 +193,6 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (!mounted) return;
-
-      // Debug logging
-      print('========== LOGIN RESPONSE ==========');
-      print('Message: ${response.message}');
-      print('Token: ${response.token != null ? "Token received" : "No token"}');
-      print(
-        'User: ${response.user != null ? "User data received" : "No user data"}',
-      );
-      if (response.user != null) {
-        print('User Jenis Akun: ${response.user!.jenisAkun}');
-        print('User Status Verifikasi: ${response.user!.statusVerifikasi}');
-      }
-      print('====================================');
 
       if (response.user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -247,7 +218,6 @@ class _LoginScreenState extends State<LoginScreen>
         if (!mounted) return;
         _navigateToHome(response.user!);
       } else {
-        print('ERROR: Login success but user data is null');
         setState(() {
           notif = "Login berhasil tapi data user kosong!";
           _isLoading = false;

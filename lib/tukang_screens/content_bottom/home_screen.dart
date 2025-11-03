@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
-import 'package:rampungin_id_userside/models/user_model.dart';
-import 'package:rampungin_id_userside/models/transaction_model.dart';
-import 'package:rampungin_id_userside/models/statistics_model.dart';
 import '../detail/detail_order.dart';
 import '../detail/profile.dart';
 import '../detail/notification.dart';
@@ -29,15 +26,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pulseAnimation;
-
-  // API Data
-  UserModel? _currentUser;
-  List<TransactionModel> _ordersList = [];
-  StatisticsModel? _statistics;
-  bool _isLoadingProfile = true;
-  bool _isLoadingOrders = true;
-  bool _isLoadingStats = true;
-  String? _errorMessage;
 
   void _handleNavigation(int index) {
     switch (index) {
@@ -127,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       await _authService.logout();
     } catch (e) {
-      print('Logout error: $e');
+      // Ignore logout errors
     }
 
     // Navigate back to LoginScreen and clear all previous routes
@@ -154,78 +142,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadProfile() async {
     try {
-      final user = await _authService.getCurrentUser();
+      await _authService.getCurrentUser();
       if (mounted) {
-        setState(() {
-          _currentUser = user;
-          _isLoadingProfile = false;
-        });
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoadingProfile = false;
-        });
-        print('Error loading profile: $e');
+        setState(() {});
       }
     }
   }
 
   Future<void> _loadOrders() async {
     try {
-      final orders = await _tukangService.getOrders();
+      await _tukangService.getOrders();
       if (mounted) {
-        setState(() {
-          _ordersList = orders;
-          _isLoadingOrders = false;
-        });
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoadingOrders = false;
-          _errorMessage = e.toString();
-        });
-        print('Error loading orders: $e');
+        setState(() {});
       }
     }
   }
 
   Future<void> _loadStatistics() async {
     try {
-      final stats = await _tukangService.getStatistics();
+      await _tukangService.getStatistics();
       if (mounted) {
-        setState(() {
-          _statistics = stats;
-          _isLoadingStats = false;
-        });
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoadingStats = false;
-        });
-        print('Error loading statistics: $e');
+        setState(() {});
       }
     }
-  }
-
-  // Get pending orders
-  List<TransactionModel> get _pendingOrders {
-    return _ordersList
-        .where((order) => order.statusPesanan == 'pending')
-        .toList();
-  }
-
-  // Get active orders (accepted or in_progress)
-  List<TransactionModel> get _activeOrders {
-    return _ordersList
-        .where(
-          (order) =>
-              order.statusPesanan == 'accepted' ||
-              order.statusPesanan == 'in_progress',
-        )
-        .toList();
   }
 
   void _initializeAnimations() {

@@ -81,12 +81,6 @@ class AuthService {
       );
 
       final data = _client.parseResponse(response);
-
-      // Debug logging
-      print('========== AUTH SERVICE LOGIN ==========');
-      print('Raw response data: $data');
-      print('=======================================');
-
       final authResponse = AuthResponse.fromJson(data);
 
       // Save token
@@ -98,9 +92,7 @@ class AuthService {
     } catch (e) {
       throw Exception('Login failed: $e');
     }
-  }
-
-  // ==================== LOGOUT ====================
+  }  // ==================== LOGOUT ====================
 
   /// Logout current user
   /// Blacklists the current JWT token

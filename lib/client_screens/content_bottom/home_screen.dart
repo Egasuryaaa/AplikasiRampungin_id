@@ -30,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // API Data
   List<UserModel> _allTukangList = [];
-  UserModel? _currentUser;
   double _userBalance = 0.0;
   bool _isLoadingTukang = true;
   bool _isLoadingProfile = true;
@@ -47,12 +46,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Load current user profile and balance
   Future<void> _loadUserProfile() async {
     try {
-      final user = await _authService.getCurrentUser();
+      await _authService.getCurrentUser();
       final balance = await _clientService.getBalance();
 
       if (mounted) {
         setState(() {
-          _currentUser = user;
           _userBalance = balance;
           _isLoadingProfile = false;
         });
@@ -62,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _isLoadingProfile = false;
         });
-        print('Error loading profile: $e');
       }
     }
   }
@@ -84,16 +81,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _errorMessage = e.toString();
           _isLoadingTukang = false;
         });
-        print('Error loading tukang: $e');
       }
     }
-  }
-
-  // Get tukang by category
-  List<UserModel> _getTukangByCategory(String categoryName) {
-    return _allTukangList.where((tukang) {
-      return tukang.namaKategori?.toLowerCase() == categoryName.toLowerCase();
-    }).toList();
   }
 
   // Group tukang by category
