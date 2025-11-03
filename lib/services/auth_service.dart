@@ -1,72 +1,73 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../models/user_model.dart';
 
-/// Authentication Service
 class AuthService {
   final ApiClient _client = ApiClient();
 
   // ==================== REGISTER ====================
-
-  /// Register new user (client or tukang)
-  ///
-  /// Required params:
-  /// - nama: User's full name
-  /// - email: Email address
-  /// - password: Password (min 8 characters)
-  /// - no_hp: Phone number
-  /// - alamat: Address
-  /// - jenis_akun: 'client' or 'tukang'
-  /// - id_kategori: Category ID (only for tukang)
-  Future<AuthResponse> register({
-    required String nama,
-    required String email,
-    required String password,
-    required String noHp,
-    required String alamat,
-    required String jenisAkun, // 'client' or 'tukang'
-    int? idKategori, // Required for tukang
-  }) async {
+  Future<AuthResponse> register(Map<String, dynamic> registrationData) async {
     try {
-      final body = {
-        'nama': nama,
-        'email': email,
-        'password': password,
-        'no_hp': noHp,
-        'alamat': alamat,
-        'jenis_akun': jenisAkun,
-        if (idKategori != null) 'id_kategori': idKategori,
+      final Map<String, String> body = {
+        "username": registrationData['username'] ?? "",
+        "email": registrationData['email'] ?? "",
+        "password": registrationData['password'] ?? "",
+        "nama_lengkap": registrationData['namaLengkap'] ?? "",
+        "no_telp": registrationData['noTelp'] ?? "",
+        "role": registrationData['role'] ?? "",
+        "alamat": registrationData['alamat'] ?? "",
+        "kota": registrationData['kota'] ?? "",
+        "provinsi": registrationData['provinsi'] ?? "",
+        "kode_pos": registrationData['kodePos'] ?? "",
       };
 
-      final response = await _client.post(
-        ApiConfig.authRegister,
-        body: body,
-        requiresAuth: false,
-      );
-
-      final data = _client.parseResponse(response);
-      final authResponse = AuthResponse.fromJson(data);
-
-      // Save token if registration includes auto-login
-      if (authResponse.token != null) {
-        await _client.saveToken(authResponse.token!);
+      if (registrationData['role'] == 'tukang') {
+        body.addAll({
+          'pengalaman_tahun': '${registrationData['pengalaman_tahun'] ?? 0}',
+          'tarif_per_jam': '${registrationData['tarif_per_jam'] ?? 0}',
+          'bio': registrationData['bio'] ?? '',
+          'keahlian': (registrationData['keahlian'] as List).join(','),
+          'kategori_ids': registrationData['kategori_ids'] ?? '[]',
+          'nama_bank': registrationData['nama_bank'] ?? '',
+          'nomor_rekening': registrationData['nomor_rekening'] ?? '',
+          'nama_pemilik_rekening':
+              registrationData['nama_pemilik_rekening'] ?? '',
+        });
       }
 
-      return authResponse;
+      // Handle optional photo if provided
+      File? fotoProfil = registrationData['fotoProfil'];
+
+      http.Response response;
+
+      if (fotoProfil != null) {
+        final streamedResponse = await _client.postMultipart(
+          ApiConfig.authRegister,
+          'foto_profil',
+          fotoProfil.path,
+          fields: body,
+          requiresAuth: false,
+        );
+
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        response = await _client.post(
+          ApiConfig.authRegister,
+          body: body,
+          requiresAuth: false,
+        );
+      }
+
+      final data = _client.parseResponse(response);
+      return AuthResponse.fromJson(data);
     } catch (e) {
       throw Exception('Registration failed: $e');
     }
   }
 
   // ==================== LOGIN ====================
-
-  /// Login user
-  ///
-  /// Required params:
-  /// - email: Email address
-  /// - password: Password
-  ///
-  /// Returns AuthResponse with JWT token (valid 30 days)
   Future<AuthResponse> login({
     required String email,
     required String password,
@@ -83,7 +84,6 @@ class AuthService {
       final data = _client.parseResponse(response);
       final authResponse = AuthResponse.fromJson(data);
 
-      // Save token
       if (authResponse.token != null) {
         await _client.saveToken(authResponse.token!);
       }

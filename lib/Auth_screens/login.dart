@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
+import 'register.dart';
+// import 'package:rampungin_id_userside/Auth_screens/register.dart'
 // import 'package:rampungin_id_userside/client_screens/Login/google_signin.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -763,74 +765,28 @@ class _LoginScreenState extends State<LoginScreen>
 
                                   const SizedBox(height: 24),
 
-                                  // Enhanced Google Sign-in Button
-                                  Container(
-                                    height: 54,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(50),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                          blurRadius: 10,
-                                          spreadRadius: 1,
-                                          offset: const Offset(0, 4),
+                                  // Register Navigation
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  const Register(),
                                         ),
-                                      ],
-                                    ),
-                                    child: OutlinedButton.icon(
-                                      onPressed: () {
-                                        // Google Sign-in functionality
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        side: BorderSide(
-                                          color: Colors.grey.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 1.5,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            50,
-                                          ),
-                                        ),
-                                      ).copyWith(
-                                        overlayColor: WidgetStateProperty.all(
-                                          Colors.grey.withValues(alpha: 0.1),
-                                        ),
-                                      ),
-                                      icon: Image.asset(
-                                        "assets/img/google.png",
-                                        width: 24,
-                                        height: 24,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return const Icon(
-                                            Icons.account_circle,
-                                            size: 24,
-                                          );
-                                        },
-                                      ),
-                                      label: const Text(
-                                        "Sign in with Google",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Belum punya akun? Daftar sekarang",
+                                      style: TextStyle(
+                                        color: Color(0xFFE8A63C),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ),
-
-                                  const SizedBox(height: 24),
                                 ],
                               ),
                             ),
