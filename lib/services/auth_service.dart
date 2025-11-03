@@ -92,7 +92,7 @@ class AuthService {
     } catch (e) {
       throw Exception('Login failed: $e');
     }
-  }  // ==================== LOGOUT ====================
+  } // ==================== LOGOUT ====================
 
   /// Logout current user
   /// Blacklists the current JWT token
