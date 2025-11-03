@@ -13,7 +13,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     with SingleTickerProviderStateMixin {
   final TukangService _tukangService = TukangService();
   final TextEditingController _jumlahController = TextEditingController();
-  final TextEditingController _nomorRekeningController = TextEditingController();
+  final TextEditingController _nomorRekeningController =
+      TextEditingController();
   final TextEditingController _namaBankController = TextEditingController();
   final TextEditingController _atasNamaController = TextEditingController();
   late TabController _tabController;
@@ -94,9 +95,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     }
 
     if (jumlah > _currentBalance) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saldo tidak mencukupi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Saldo tidak mencukupi')));
       return;
     }
 
@@ -108,9 +109,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     }
 
     if (_namaBankController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama bank harus diisi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Nama bank harus diisi')));
       return;
     }
 
@@ -235,10 +236,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
               children: [
                 const Text(
                   'Saldo Tersedia',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -270,10 +268,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                 Expanded(
                   child: Text(
                     'Permintaan withdrawal akan diproses dalam 1-3 hari kerja.',
-                    style: TextStyle(
-                      color: Colors.blue[900],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.blue[900], fontSize: 13),
                   ),
                 ),
               ],
@@ -285,10 +280,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
           // Form
           const Text(
             'Jumlah Withdrawal',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -318,7 +310,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                 OutlinedButton(
                   onPressed: () {
                     setState(() {
-                      _jumlahController.text = _currentBalance.toInt().toString();
+                      _jumlahController.text =
+                          _currentBalance.toInt().toString();
                     });
                   },
                   style: OutlinedButton.styleFrom(
@@ -339,10 +332,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           const Text(
             'Informasi Rekening',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -404,16 +394,17 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Kirim Permintaan Withdrawal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+              child:
+                  _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                        'Kirim Permintaan Withdrawal',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
             ),
           ),
         ],
@@ -430,9 +421,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       },
       style: OutlinedButton.styleFrom(
         side: const BorderSide(color: Color(0xFFF3B950)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: Text(
         'Rp ${amount >= 1000000 ? '${amount ~/ 1000000}jt' : '${amount ~/ 1000}k'}',
@@ -451,18 +440,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.history,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.history, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'Belum ada riwayat withdrawal',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -534,10 +516,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                   const SizedBox(height: 8),
                   Text(
                     withdrawal.createdAt?.toString().substring(0, 16) ?? 'N/A',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                   if (withdrawal.alasanPenolakan != null &&
                       withdrawal.alasanPenolakan!.isNotEmpty) ...[
@@ -583,18 +562,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       children: [
         Text(
           '$label: ',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -612,18 +585,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Request Withdrawal'),
-            Tab(text: 'Riwayat'),
-          ],
+          tabs: const [Tab(text: 'Request Withdrawal'), Tab(text: 'Riwayat')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildRequestTab(),
-          _buildHistoryTab(),
-        ],
+        children: [_buildRequestTab(), _buildHistoryTab()],
       ),
     );
   }

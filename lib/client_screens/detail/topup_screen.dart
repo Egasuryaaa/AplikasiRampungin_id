@@ -11,11 +11,12 @@ class TopUpScreen extends StatefulWidget {
   State<TopUpScreen> createState() => _TopUpScreenState();
 }
 
-class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStateMixin {
+class _TopUpScreenState extends State<TopUpScreen>
+    with SingleTickerProviderStateMixin {
   final ClientService _clientService = ClientService();
   final TextEditingController _jumlahController = TextEditingController();
   late TabController _tabController;
-  
+
   File? _selectedImage;
   bool _isLoading = false;
   bool _isLoadingHistory = false;
@@ -123,7 +124,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
 
         // Reload history
         _loadTopUpHistory();
-        
+
         // Switch to history tab
         _tabController.animateTo(1);
       }
@@ -194,10 +195,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
                 Expanded(
                   child: Text(
                     'Transfer ke QRIS dan upload bukti pembayaran. Admin akan memverifikasi dalam 1x24 jam.',
-                    style: TextStyle(
-                      color: Colors.blue[900],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.blue[900], fontSize: 13),
                   ),
                 ),
               ],
@@ -223,10 +221,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
               children: [
                 const Text(
                   'Scan QRIS untuk Top-Up',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -237,11 +232,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
                   ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.qr_code,
-                        size: 150,
-                        color: Colors.grey[600],
-                      ),
+                      Icon(Icons.qr_code, size: 150, color: Colors.grey[600]),
                       const SizedBox(height: 8),
                       Text(
                         'QRIS Code Here',
@@ -259,10 +250,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
           // Form
           const Text(
             'Jumlah Top-Up',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -296,10 +284,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
 
           const Text(
             'Bukti Pembayaran',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
 
@@ -314,29 +299,27 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[300]!),
               ),
-              child: _selectedImage == null
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.cloud_upload,
-                          size: 60,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap untuk upload bukti pembayaran',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.cover,
+              child:
+                  _selectedImage == null
+                      ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_upload,
+                            size: 60,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap untuk upload bukti pembayaran',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      )
+                      : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(_selectedImage!, fit: BoxFit.cover),
                       ),
-                    ),
             ),
           ),
 
@@ -370,16 +353,17 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Kirim Permintaan Top-Up',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+              child:
+                  _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                        'Kirim Permintaan Top-Up',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
             ),
           ),
         ],
@@ -396,9 +380,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
       },
       style: OutlinedButton.styleFrom(
         side: const BorderSide(color: Color(0xFFF3B950)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: Text(
         'Rp ${amount ~/ 1000}k',
@@ -417,18 +399,11 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.history,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.history, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'Belum ada riwayat top-up',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -494,10 +469,7 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
                   const SizedBox(height: 4),
                   Text(
                     topup.createdAt?.toString().substring(0, 16) ?? 'N/A',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                 ],
               ),
@@ -519,18 +491,12 @@ class _TopUpScreenState extends State<TopUpScreen> with SingleTickerProviderStat
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Request Top-Up'),
-            Tab(text: 'Riwayat'),
-          ],
+          tabs: const [Tab(text: 'Request Top-Up'), Tab(text: 'Riwayat')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildRequestTab(),
-          _buildHistoryTab(),
-        ],
+        children: [_buildRequestTab(), _buildHistoryTab()],
       ),
     );
   }

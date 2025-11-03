@@ -56,23 +56,24 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
   Future<void> _acceptOrder() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Terima Pesanan'),
-        content: const Text('Apakah Anda yakin ingin menerima pesanan ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Terima Pesanan'),
+            content: const Text(
+              'Apakah Anda yakin ingin menerima pesanan ini?',
             ),
-            child: const Text('Ya, Terima'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Ya, Terima'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -152,9 +153,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
                 }
                 Navigator.pop(context, alasanController.text);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Tolak'),
             ),
           ],
@@ -204,23 +203,24 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
   Future<void> _startOrder() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Mulai Pekerjaan'),
-        content: const Text('Apakah Anda sudah siap memulai pekerjaan ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Belum'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Mulai Pekerjaan'),
+            content: const Text(
+              'Apakah Anda sudah siap memulai pekerjaan ini?',
             ),
-            child: const Text('Ya, Mulai'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Belum'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text('Ya, Mulai'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -265,25 +265,22 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
   Future<void> _completeOrder() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Selesaikan Pekerjaan'),
-        content: const Text(
-          'Apakah pekerjaan sudah selesai dengan baik?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Belum'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Selesaikan Pekerjaan'),
+            content: const Text('Apakah pekerjaan sudah selesai dengan baik?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Belum'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Ya, Selesai'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
-            child: const Text('Ya, Selesai'),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -328,25 +325,24 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
   Future<void> _confirmTunaiPayment() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Pembayaran Tunai'),
-        content: const Text(
-          'Apakah pembayaran tunai sudah diterima dari client?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Belum'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Pembayaran Tunai'),
+            content: const Text(
+              'Apakah pembayaran tunai sudah diterima dari client?',
             ),
-            child: const Text('Sudah Diterima'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Belum'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Sudah Diterima'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -444,20 +440,14 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
             flex: 2,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
           ),
           Expanded(
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -606,225 +596,226 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
         title: const Text('Detail Pesanan'),
         elevation: 0,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _order == null
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _order == null
               ? const Center(child: Text('Data tidak ditemukan'))
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Status Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(_order!.statusPesanan),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              _getStatusText(_order!.statusPesanan),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Pesanan #${_order!.id}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(_order!.statusPesanan),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Client Info
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
+                      child: Column(
+                        children: [
+                          Text(
+                            _getStatusText(_order!.statusPesanan),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Informasi Client',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Divider(),
-                            _buildInfoRow(
-                              'Nama',
-                              _order!.namaClient ?? 'N/A',
-                              icon: Icons.person,
-                            ),
-                            _buildInfoRow(
-                              'Kontak',
-                              _order!.noHpClient ?? 'N/A',
-                              icon: Icons.phone,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Job Details
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Detail Pekerjaan',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Divider(),
-                            _buildInfoRow(
-                              'Kategori',
-                              _order!.namaKategori ?? 'N/A',
-                              icon: Icons.category,
-                            ),
-                            _buildInfoRow(
-                              'Deskripsi',
-                              _order!.deskripsiPekerjaan ?? 'N/A',
-                              icon: Icons.description,
-                            ),
-                            _buildInfoRow(
-                              'Lokasi',
-                              _order!.alamatPekerjaan ?? 'N/A',
-                              icon: Icons.location_on,
-                            ),
-                            _buildInfoRow(
-                              'Tanggal',
-                              _order!.tanggalPekerjaan ?? 'N/A',
-                              icon: Icons.calendar_today,
-                            ),
-                            _buildInfoRow(
-                              'Waktu',
-                              _order!.waktuPekerjaan ?? 'N/A',
-                              icon: Icons.access_time,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Payment Info
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Informasi Pembayaran',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Divider(),
-                            _buildInfoRow(
-                              'Metode',
-                              _order!.metodePembayaran?.toUpperCase() ?? 'N/A',
-                              icon: Icons.payment,
-                            ),
-                            _buildInfoRow(
-                              'Harga Penawaran',
-                              'Rp ${_order!.hargaPenawaran?.toStringAsFixed(0) ?? 'N/A'}',
-                              icon: Icons.money,
-                            ),
-                            if (_order!.hargaAkhir != null)
-                              _buildInfoRow(
-                                'Harga Akhir',
-                                'Rp ${_order!.hargaAkhir?.toStringAsFixed(0) ?? 'N/A'}',
-                                icon: Icons.check_circle,
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      if (_order!.alasanPembatalan != null) ...[
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Alasan Pembatalan',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(_order!.alasanPembatalan ?? ''),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'Pesanan #${_order!.id}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Client Info
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Informasi Client',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Divider(),
+                          _buildInfoRow(
+                            'Nama',
+                            _order!.namaClient ?? 'N/A',
+                            icon: Icons.person,
+                          ),
+                          _buildInfoRow(
+                            'Kontak',
+                            _order!.noHpClient ?? 'N/A',
+                            icon: Icons.phone,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Job Details
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Detail Pekerjaan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Divider(),
+                          _buildInfoRow(
+                            'Kategori',
+                            _order!.namaKategori ?? 'N/A',
+                            icon: Icons.category,
+                          ),
+                          _buildInfoRow(
+                            'Deskripsi',
+                            _order!.deskripsiPekerjaan ?? 'N/A',
+                            icon: Icons.description,
+                          ),
+                          _buildInfoRow(
+                            'Lokasi',
+                            _order!.alamatPekerjaan ?? 'N/A',
+                            icon: Icons.location_on,
+                          ),
+                          _buildInfoRow(
+                            'Tanggal',
+                            _order!.tanggalPekerjaan ?? 'N/A',
+                            icon: Icons.calendar_today,
+                          ),
+                          _buildInfoRow(
+                            'Waktu',
+                            _order!.waktuPekerjaan ?? 'N/A',
+                            icon: Icons.access_time,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Payment Info
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Informasi Pembayaran',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Divider(),
+                          _buildInfoRow(
+                            'Metode',
+                            _order!.metodePembayaran?.toUpperCase() ?? 'N/A',
+                            icon: Icons.payment,
+                          ),
+                          _buildInfoRow(
+                            'Harga Penawaran',
+                            'Rp ${_order!.hargaPenawaran?.toStringAsFixed(0) ?? 'N/A'}',
+                            icon: Icons.money,
+                          ),
+                          if (_order!.hargaAkhir != null)
+                            _buildInfoRow(
+                              'Harga Akhir',
+                              'Rp ${_order!.hargaAkhir?.toStringAsFixed(0) ?? 'N/A'}',
+                              icon: Icons.check_circle,
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    if (_order!.alasanPembatalan != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red),
                         ),
-                      ],
-
-                      const SizedBox(height: 24),
-
-                      // Action Buttons
-                      if (_isProcessing)
-                        const Center(child: CircularProgressIndicator())
-                      else
-                        _buildActionButtons(),
-
-                      const SizedBox(height: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Alasan Pembatalan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(_order!.alasanPembatalan ?? ''),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
+
+                    const SizedBox(height: 24),
+
+                    // Action Buttons
+                    if (_isProcessing)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      _buildActionButtons(),
+
+                    const SizedBox(height: 24),
+                  ],
                 ),
+              ),
     );
   }
 }
