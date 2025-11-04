@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final int _currentIndex = 1;
+  final int _currentIndex = 0;
   final ClientService _clientService = ClientService();
   final AuthService _authService = AuthService();
 
@@ -190,11 +190,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _fadeController.reverse().then((_) {
       switch (index) {
         case 0:
-          Navigator.of(context).pushReplacementNamed('/ChatScreen');
           break;
         case 1:
-          break;
-        case 2:
           Navigator.of(context).pushReplacementNamed('/PaymentScreen');
           break;
       }
@@ -269,19 +266,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             _buildNavItem(
               0,
-              Icons.chat_bubble_outline,
-              Icons.chat_bubble,
-              'Chat',
-            ),
-            _buildNavItem(
-              1,
               Icons.home_outlined,
               Icons.home,
               'Home',
               isCenter: true,
             ),
             _buildNavItem(
-              2,
+              1,
               Icons.account_balance_wallet_outlined,
               Icons.account_balance_wallet,
               'Payment',

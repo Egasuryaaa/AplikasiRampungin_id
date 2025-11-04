@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../models/user_model.dart';
@@ -30,6 +31,7 @@ class ClientService {
   }
 
   /// Update client profile
+  /// Supports both JSON and multipart (with photo upload)
   Future<UserModel> updateProfile({
     String? nama,
     String? email,
@@ -37,20 +39,35 @@ class ClientService {
     String? alamat,
     String? kota,
     String? provinsi,
-    String? fotoProfile,
+    String? fotoProfilePath,
   }) async {
     try {
-      final body = {
+      final Map<String, String> fields = {
         if (nama != null) 'nama_lengkap': nama,
         if (email != null) 'email': email,
         if (noHp != null) 'no_telp': noHp,
         if (alamat != null) 'alamat': alamat,
         if (kota != null) 'kota': kota,
         if (provinsi != null) 'provinsi': provinsi,
-        if (fotoProfile != null) 'foto_profil': fotoProfile,
       };
 
-      final response = await _client.put(ApiConfig.clientProfile, body: body);
+      http.Response response;
+
+      // If photo is provided, use multipart
+      if (fotoProfilePath != null && fotoProfilePath.isNotEmpty) {
+        final streamedResponse = await _client.postMultipart(
+          ApiConfig.clientProfile,
+          'foto_profil',
+          fotoProfilePath,
+          fields: fields,
+          requiresAuth: true,
+        );
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Otherwise use regular PUT
+        final body = fields.map((key, value) => MapEntry(key, value));
+        response = await _client.put(ApiConfig.clientProfile, body: body);
+      }
 
       final data = _client.parseResponse(response);
 

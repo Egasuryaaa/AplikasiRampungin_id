@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../models/user_model.dart';
@@ -28,6 +29,7 @@ class TukangService {
   }
 
   /// Update tukang profile
+  /// Supports both JSON and multipart (with photo upload)
   Future<UserModel> updateProfile({
     String? nama,
     String? email,
@@ -43,29 +45,46 @@ class TukangService {
     String? namaBank,
     String? nomorRekening,
     String? namaPemilikRekening,
-    String? fotoProfile,
+    String? fotoProfilePath,
   }) async {
     try {
-      final body = {
+      final Map<String, String> fields = {
         if (nama != null) 'nama_lengkap': nama,
         if (email != null) 'email': email,
         if (noHp != null) 'no_telp': noHp,
         if (alamat != null) 'alamat': alamat,
         if (kota != null) 'kota': kota,
         if (provinsi != null) 'provinsi': provinsi,
-        if (pengalamanTahun != null) 'pengalaman_tahun': pengalamanTahun,
-        if (tarifPerJam != null) 'tarif_per_jam': tarifPerJam,
+        if (pengalamanTahun != null)
+          'pengalaman_tahun': pengalamanTahun.toString(),
+        if (tarifPerJam != null) 'tarif_per_jam': tarifPerJam.toString(),
         if (bio != null) 'bio': bio,
-        if (keahlian != null) 'keahlian': keahlian,
-        if (radiusLayananKm != null) 'radius_layanan_km': radiusLayananKm,
+        if (keahlian != null) 'keahlian': keahlian.join(','),
+        if (radiusLayananKm != null)
+          'radius_layanan_km': radiusLayananKm.toString(),
         if (namaBank != null) 'nama_bank': namaBank,
         if (nomorRekening != null) 'nomor_rekening': nomorRekening,
         if (namaPemilikRekening != null)
           'nama_pemilik_rekening': namaPemilikRekening,
-        if (fotoProfile != null) 'foto_profil': fotoProfile,
       };
 
-      final response = await _client.put(ApiConfig.tukangProfile, body: body);
+      http.Response response;
+
+      // If photo is provided, use multipart
+      if (fotoProfilePath != null && fotoProfilePath.isNotEmpty) {
+        final streamedResponse = await _client.postMultipart(
+          ApiConfig.tukangProfile,
+          'foto_profil',
+          fotoProfilePath,
+          fields: fields,
+          requiresAuth: true,
+        );
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Otherwise use regular PUT
+        final body = fields.map((key, value) => MapEntry(key, value));
+        response = await _client.put(ApiConfig.tukangProfile, body: body);
+      }
 
       final data = _client.parseResponse(response);
 

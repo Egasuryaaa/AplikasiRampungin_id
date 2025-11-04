@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final int _currentIndex = 1; // Home is index 1
+  final int _currentIndex = 0; // Home is index 0
   final TukangService _tukangService = TukangService();
   final AuthService _authService = AuthService();
 
@@ -38,12 +38,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _handleNavigation(int index) {
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacementNamed('/ChatScreen');
-        break;
-      case 1:
         // Already on home, do nothing
         break;
-      case 2:
+      case 1:
         Navigator.of(context).pushReplacementNamed('/PaymentScreen');
         break;
     }
@@ -1154,19 +1151,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 children: [
                   _buildNavItem(
                     0,
-                    Icons.chat_bubble_outline,
-                    Icons.chat_bubble,
-                    'Chat',
-                  ),
-                  _buildNavItem(
-                    1,
                     Icons.home_outlined,
                     Icons.home,
                     'Home',
                     isCenter: true,
                   ),
                   _buildNavItem(
-                    2,
+                    1,
                     Icons.account_balance_wallet_outlined,
                     Icons.account_balance_wallet,
                     'Payment',

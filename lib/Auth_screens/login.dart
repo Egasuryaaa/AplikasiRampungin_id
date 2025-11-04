@@ -136,7 +136,8 @@ class _LoginScreenState extends State<LoginScreen>
   // Navigate based on user role (jenis_akun)
   void _navigateToHome(UserModel user) {
     if (user.jenisAkun == 'client') {
-      Navigator.pushReplacementNamed(context, '/bottom_navigation');
+      // Navigate directly to HomeScreen for client
+      Navigator.pushReplacementNamed(context, '/HomeScreen');
     } else if (user.jenisAkun == 'tukang') {
       // Check verification status for tukang
       if (user.statusVerifikasi == 'verified') {
@@ -227,8 +228,24 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       if (!mounted) return;
+
+      String errorMessage = "Email atau password salah!";
+
+      // Check for specific errors
+      if (e.toString().contains('JWT configuration error')) {
+        errorMessage =
+            "Backend error: JWT tidak dikonfigurasi dengan benar. Hubungi admin.";
+      } else if (e.toString().contains('401')) {
+        errorMessage = "Email atau password salah!";
+      } else if (e.toString().contains('Connection') ||
+          e.toString().contains('SocketException')) {
+        errorMessage = "Tidak dapat terhubung ke server. Cek koneksi internet.";
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage = "Request timeout. Coba lagi.";
+      }
+
       setState(() {
-        notif = "Email atau password salah!";
+        notif = errorMessage;
         _isLoading = false;
       });
       _shakeForm();
@@ -239,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               const Icon(Icons.error_outline, color: Colors.white),
               const SizedBox(width: 8),
-              Expanded(child: Text("Login gagal: $e")),
+              Expanded(child: Text(errorMessage)),
             ],
           ),
           backgroundColor: Colors.red,
@@ -248,6 +265,7 @@ class _LoginScreenState extends State<LoginScreen>
             borderRadius: BorderRadius.circular(10),
           ),
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 5),
         ),
       );
     } finally {
@@ -772,8 +790,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         context,
                                         MaterialPageRoute(
                                           builder:
-                                              (context) =>
-                                                  const Register(),
+                                              (context) => const Register(),
                                         ),
                                       );
                                     },

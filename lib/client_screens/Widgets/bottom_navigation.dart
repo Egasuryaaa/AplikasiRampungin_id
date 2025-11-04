@@ -4,12 +4,8 @@ import 'package:flutter/material.dart';
 class BottomNavigation extends StatefulWidget {
   final Function(int)? onTap;
   final int currentIndex;
-  
-  const BottomNavigation({
-    super.key,
-    this.onTap,
-    this.currentIndex = 1, 
-  });
+
+  const BottomNavigation({super.key, this.onTap, this.currentIndex = 0});
 
   @override
   State<BottomNavigation> createState() => _BottomNavigationState();
@@ -19,16 +15,13 @@ class _BottomNavigationState extends State<BottomNavigation> {
   void _handleNavigation(int index) {
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacementNamed('/ChatScreen');
-        break;
-      case 1:
         Navigator.of(context).pushReplacementNamed('/HomeScreen');
         break;
-      case 2:
+      case 1:
         Navigator.of(context).pushReplacementNamed('/PaymentScreen');
         break;
     }
-    
+
     if (widget.onTap != null) {
       widget.onTap!(index);
     }
@@ -42,10 +35,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE6B366),
-            Color(0xFFF3B950),
-          ],
+          colors: [Color(0xFFE6B366), Color(0xFFF3B950)],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(25),
@@ -53,7 +43,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha:0.15),
+            color: const Color(0xFF000000).withValues(alpha: 0.15),
             offset: const Offset(0, -4),
             blurRadius: 16,
           ),
@@ -64,41 +54,58 @@ class _BottomNavigationState extends State<BottomNavigation> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNavItem(0, Icons.chat_bubble_outline, Icons.chat_bubble, 'Chat'),
-            _buildNavItem(1, Icons.home_outlined, Icons.home, 'Home', isCenter: true),
-            _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'Payment'),
+            _buildNavItem(
+              0,
+              Icons.home_outlined,
+              Icons.home,
+              'Home',
+              isCenter: true,
+            ),
+            _buildNavItem(
+              1,
+              Icons.account_balance_wallet_outlined,
+              Icons.account_balance_wallet,
+              'Payment',
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, {bool isCenter = false}) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label, {
+    bool isCenter = false,
+  }) {
     bool isSelected = widget.currentIndex == index;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleNavigation(index),
         child: Container(
           height: 60,
           margin: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: isCenter && isSelected
-              ? BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha:0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                )
-              : isSelected && !isCenter
+          decoration:
+              isCenter && isSelected
                   ? BoxDecoration(
-                      color: Colors.white.withValues(alpha:0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    )
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  )
+                  : isSelected && !isCenter
+                  ? BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  )
                   : null,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -106,11 +113,12 @@ class _BottomNavigationState extends State<BottomNavigation> {
               Icon(
                 isSelected ? activeIcon : icon,
                 size: isCenter ? 28 : 24,
-                color: isCenter && isSelected
-                    ? const Color(0xFFF3B950)
-                    : isSelected
+                color:
+                    isCenter && isSelected
+                        ? const Color(0xFFF3B950)
+                        : isSelected
                         ? Colors.white
-                        : Colors.white.withValues(alpha:0.7),
+                        : Colors.white.withValues(alpha: 0.7),
               ),
               const SizedBox(height: 2),
               Text(
@@ -118,11 +126,12 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isCenter && isSelected
-                      ? const Color(0xFFF3B950)
-                      : isSelected
+                  color:
+                      isCenter && isSelected
+                          ? const Color(0xFFF3B950)
+                          : isSelected
                           ? Colors.white
-                          : Colors.white.withValues(alpha:0.7),
+                          : Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],

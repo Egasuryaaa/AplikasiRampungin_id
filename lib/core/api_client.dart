@@ -74,6 +74,7 @@ class ApiClient {
     final headers = await _buildHeaders(requiresAuth);
 
     _logger.d('POST $url');
+    _logger.d('Headers: $headers');
     _logger.d('Body: ${jsonEncode(body)}');
 
     try {
@@ -89,6 +90,8 @@ class ApiClient {
       return response;
     } catch (e) {
       _logger.e('POST request failed: $e');
+      _logger.e('Full URL: $url');
+      _logger.e('Headers sent: $headers');
       rethrow;
     }
   }
