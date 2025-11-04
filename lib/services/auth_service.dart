@@ -38,15 +38,30 @@ class AuthService {
       }
 
       // Handle optional photo if provided
-      File? fotoProfil = registrationData['fotoProfil'];
+      var fotoProfil = registrationData['fotoProfil'];
 
       http.Response response;
 
       if (fotoProfil != null) {
+        List<int> fileBytes;
+        String filename;
+
+        // Support both File (dart:io) and bytes
+        if (fotoProfil is File) {
+          fileBytes = await fotoProfil.readAsBytes();
+          filename = fotoProfil.path.split('/').last;
+        } else if (fotoProfil is Map && fotoProfil.containsKey('bytes')) {
+          fileBytes = fotoProfil['bytes'] as List<int>;
+          filename = fotoProfil['filename'] as String;
+        } else {
+          throw Exception('Invalid photo format');
+        }
+
         final streamedResponse = await _client.postMultipart(
           ApiConfig.authRegister,
           'foto_profil',
-          fotoProfil.path,
+          fileBytes,
+          filename,
           fields: body,
           requiresAuth: false,
         );

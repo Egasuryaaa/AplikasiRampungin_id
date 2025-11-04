@@ -3,7 +3,7 @@ import 'Auth_screens/welcome.dart';
 import 'Auth_screens/login.dart';
 import 'package:rampungin_id_userside/Auth_screens/register.dart';
 import 'client_screens/content_bottom/home_screen.dart';
-import 'client_screens/content_bottom/payment_screen.dart';
+import 'client_screens/detail/topup_screen.dart';
 import 'tukang_screens/form/form_tukang.dart';
 import 'client_screens/Widgets/bottom_navigation.dart';
 import 'tukang_screens/main_container.dart';
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const Register(),
         '/formtukang': (context) => const FormTukang(),
         '/HomeScreen': (context) => const HomeScreen(),
-        '/PaymentScreen': (context) => const PaymentScreen(),
+        '/TopUpScreen': (context) => const TopUpScreen(),
         '/bottom_navigation': (context) => const BottomNavigation(),
         '/main_container': (context) => const MainContainer(),
         '/detail_order': (context) => DetailOrder(technicianData: {}),

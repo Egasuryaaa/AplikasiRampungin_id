@@ -45,7 +45,8 @@ class TukangService {
     String? namaBank,
     String? nomorRekening,
     String? namaPemilikRekening,
-    String? fotoProfilePath,
+    List<int>? fotoProfileBytes,
+    String? fotoProfileFilename,
   }) async {
     try {
       final Map<String, String> fields = {
@@ -71,11 +72,12 @@ class TukangService {
       http.Response response;
 
       // If photo is provided, use multipart
-      if (fotoProfilePath != null && fotoProfilePath.isNotEmpty) {
+      if (fotoProfileBytes != null && fotoProfileFilename != null) {
         final streamedResponse = await _client.postMultipart(
           ApiConfig.tukangProfile,
           'foto_profil',
-          fotoProfilePath,
+          fotoProfileBytes,
+          fotoProfileFilename,
           fields: fields,
           requiresAuth: true,
         );

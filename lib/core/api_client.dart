@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'api_config.dart';
@@ -149,10 +150,12 @@ class ApiClient {
   }
 
   /// POST Multipart Request (for file uploads like KTP)
+  /// Uses bytes instead of path for web compatibility
   Future<http.StreamedResponse> postMultipart(
     String endpoint,
     String fieldName,
-    String filePath, {
+    List<int> fileBytes,
+    String filename, {
     Map<String, String>? fields,
     bool requiresAuth = true,
   }) async {
@@ -169,12 +172,37 @@ class ApiClient {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // Add file
-      request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+      // Add file using bytes (web-compatible)
+      // Determine content type from filename extension
+      String? mimeType;
+      final ext = filename.toLowerCase().split('.').last;
+      if (ext == 'jpg' || ext == 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (ext == 'png') {
+        mimeType = 'image/png';
+      } else if (ext == 'gif') {
+        mimeType = 'image/gif';
+      } else if (ext == 'webp') {
+        mimeType = 'image/webp';
+      }
+
+      _logger.d(
+        '📎 Uploading file: $filename (${fileBytes.length} bytes, type: $mimeType)',
+      );
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          fileBytes,
+          filename: filename,
+          contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+        ),
+      );
 
       // Add other fields
       if (fields != null) {
         request.fields.addAll(fields);
+        _logger.d('📝 Fields: $fields');
       }
 
       final response = await request.send();

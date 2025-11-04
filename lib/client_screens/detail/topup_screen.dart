@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rampungin_id_userside/services/client_service.dart';
@@ -17,7 +17,7 @@ class _TopUpScreenState extends State<TopUpScreen>
   final TextEditingController _jumlahController = TextEditingController();
   late TabController _tabController;
 
-  File? _selectedImage;
+  XFile? _selectedImage;
   bool _isLoading = false;
   bool _isLoadingHistory = false;
   List<TopUpModel> _topupHistory = [];
@@ -70,7 +70,7 @@ class _TopUpScreenState extends State<TopUpScreen>
 
     if (image != null) {
       setState(() {
-        _selectedImage = File(image.path);
+        _selectedImage = image;
       });
     }
   }
@@ -103,9 +103,14 @@ class _TopUpScreenState extends State<TopUpScreen>
     });
 
     try {
+      // Read file bytes for web compatibility
+      final bytes = await _selectedImage!.readAsBytes();
+      final filename = _selectedImage!.name;
+
       await _clientService.requestTopup(
         jumlah: jumlah,
-        buktiPembayaranPath: _selectedImage!.path,
+        buktiPembayaranBytes: bytes,
+        buktiPembayaranFilename: filename,
       );
 
       if (mounted) {
@@ -148,12 +153,15 @@ class _TopUpScreenState extends State<TopUpScreen>
     switch (status?.toLowerCase()) {
       case 'pending':
         return Colors.orange;
+      case 'berhasil':
       case 'disetujui':
       case 'approved':
         return Colors.green;
       case 'ditolak':
       case 'rejected':
         return Colors.red;
+      case 'kadaluarsa':
+        return Colors.grey;
       default:
         return Colors.grey;
     }
@@ -163,12 +171,16 @@ class _TopUpScreenState extends State<TopUpScreen>
     switch (status?.toLowerCase()) {
       case 'pending':
         return 'Menunggu Verifikasi';
+      case 'berhasil':
+        return 'Berhasil';
       case 'disetujui':
       case 'approved':
         return 'Disetujui';
       case 'ditolak':
       case 'rejected':
         return 'Ditolak';
+      case 'kadaluarsa':
+        return 'Kadaluarsa';
       default:
         return status ?? 'Unknown';
     }
@@ -318,7 +330,24 @@ class _TopUpScreenState extends State<TopUpScreen>
                       )
                       : ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                        child: FutureBuilder<Uint8List>(
+                          future: _selectedImage!.readAsBytes(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                              );
+                            } else if (snapshot.hasError) {
+                              return const Center(
+                                child: Icon(Icons.error, color: Colors.red),
+                              );
+                            }
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                        ),
                       ),
             ),
           ),
@@ -443,11 +472,11 @@ class _TopUpScreenState extends State<TopUpScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(topup.statusTopup),
+                          color: _getStatusColor(topup.status),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _getStatusText(topup.statusTopup),
+                          _getStatusText(topup.status),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -459,7 +488,7 @@ class _TopUpScreenState extends State<TopUpScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rp ${topup.nominal?.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                    'Rp ${topup.jumlah?.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

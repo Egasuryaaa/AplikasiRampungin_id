@@ -1,58 +1,67 @@
 /// TopUp Model
 class TopUpModel {
-  final int? id;
-  final int? idClient;
-  final String? namaClient;
-  final double? nominal;
-  final String? metodePembayaran; // 'QRIS'
-  final String? statusTopup; // 'pending', 'success', 'failed'
-  final String? qrisUrl;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final String? id;
+  final String? userId;
+  final double? jumlah;
+  final String? metodePembayaran; // 'qris'
+  final String? buktiPembayaran;
+  final String? status; // 'pending', 'berhasil', 'ditolak', 'kadaluarsa'
+  final String? diverifikasiOleh;
+  final String? waktuVerifikasi;
+  final String? alasanPenolakan;
+  final String? kadaluarsaPada;
+  final String? createdAt;
+  final String? updatedAt;
 
   TopUpModel({
     this.id,
-    this.idClient,
-    this.namaClient,
-    this.nominal,
+    this.userId,
+    this.jumlah,
     this.metodePembayaran,
-    this.statusTopup,
-    this.qrisUrl,
+    this.buktiPembayaran,
+    this.status,
+    this.diverifikasiOleh,
+    this.waktuVerifikasi,
+    this.alasanPenolakan,
+    this.kadaluarsaPada,
     this.createdAt,
     this.updatedAt,
   });
 
   factory TopUpModel.fromJson(Map<String, dynamic> json) {
     return TopUpModel(
-      id: json['id'] as int?,
-      idClient: json['id_client'] as int?,
-      namaClient: json['nama_client'] as String?,
-      nominal: (json['nominal'] as num?)?.toDouble(),
+      id: json['id']?.toString(),
+      userId: json['user_id']?.toString(),
+      jumlah:
+          json['jumlah'] != null
+              ? double.tryParse(json['jumlah'].toString())
+              : null,
       metodePembayaran: json['metode_pembayaran'] as String?,
-      statusTopup: json['status_topup'] as String?,
-      qrisUrl: json['qris_url'] as String?,
-      createdAt:
-          json['created_at'] != null
-              ? DateTime.parse(json['created_at'] as String)
-              : null,
-      updatedAt:
-          json['updated_at'] != null
-              ? DateTime.parse(json['updated_at'] as String)
-              : null,
+      buktiPembayaran: json['bukti_pembayaran'] as String?,
+      status: json['status'] as String?,
+      diverifikasiOleh: json['diverifikasi_oleh']?.toString(),
+      waktuVerifikasi: json['waktu_verifikasi'] as String?,
+      alasanPenolakan: json['alasan_penolakan'] as String?,
+      kadaluarsaPada: json['kadaluarsa_pada'] as String?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'id_client': idClient,
-      'nama_client': namaClient,
-      'nominal': nominal,
+      'user_id': userId,
+      'jumlah': jumlah,
       'metode_pembayaran': metodePembayaran,
-      'status_topup': statusTopup,
-      'qris_url': qrisUrl,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'bukti_pembayaran': buktiPembayaran,
+      'status': status,
+      'diverifikasi_oleh': diverifikasiOleh,
+      'waktu_verifikasi': waktuVerifikasi,
+      'alasan_penolakan': alasanPenolakan,
+      'kadaluarsa_pada': kadaluarsaPada,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }

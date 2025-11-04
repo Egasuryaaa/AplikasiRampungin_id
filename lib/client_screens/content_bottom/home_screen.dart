@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         case 0:
           break;
         case 1:
-          Navigator.of(context).pushReplacementNamed('/PaymentScreen');
+          Navigator.of(context).pushReplacementNamed('/TopUpScreen');
           break;
       }
     });
@@ -843,7 +843,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () {
-          Navigator.of(context).pushNamed('/PaymentScreen');
+          Navigator.of(context).pushNamed('/TopUpScreen');
         },
         child: Column(
           children: [

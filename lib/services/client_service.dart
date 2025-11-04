@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import '../core/api_config.dart';
@@ -39,7 +40,8 @@ class ClientService {
     String? alamat,
     String? kota,
     String? provinsi,
-    String? fotoProfilePath,
+    List<int>? fotoProfileBytes,
+    String? fotoProfileFilename,
   }) async {
     try {
       final Map<String, String> fields = {
@@ -54,11 +56,12 @@ class ClientService {
       http.Response response;
 
       // If photo is provided, use multipart
-      if (fotoProfilePath != null && fotoProfilePath.isNotEmpty) {
+      if (fotoProfileBytes != null && fotoProfileFilename != null) {
         final streamedResponse = await _client.postMultipart(
           ApiConfig.clientProfile,
           'foto_profil',
-          fotoProfilePath,
+          fotoProfileBytes,
+          fotoProfileFilename,
           fields: fields,
           requiresAuth: true,
         );
@@ -374,21 +377,30 @@ class ClientService {
   /// Request top-up (QRIS payment)
   Future<TopUpModel> requestTopup({
     required double jumlah,
-    required String buktiPembayaranPath,
+    required List<int> buktiPembayaranBytes,
+    required String buktiPembayaranFilename,
   }) async {
     try {
       final response = await _client.postMultipart(
         ApiConfig.clientTopup,
         'bukti_pembayaran',
-        buktiPembayaranPath,
+        buktiPembayaranBytes,
+        buktiPembayaranFilename,
         fields: {'jumlah': jumlah.toString()},
       );
 
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Parse the response if needed
-        return TopUpModel.fromJson({'jumlah': jumlah, 'status': 'pending'});
+        // Parse the JSON response
+        final data = json.decode(responseBody);
+
+        if (data['status'] == 'success' && data['data'] != null) {
+          return TopUpModel.fromJson(data['data'] as Map<String, dynamic>);
+        } else {
+          // Fallback if no data returned
+          return TopUpModel.fromJson({'jumlah': jumlah, 'status': 'pending'});
+        }
       } else {
         throw ApiException(
           statusCode: response.statusCode,
