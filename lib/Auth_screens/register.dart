@@ -281,8 +281,9 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                     controller: kodePosController,
                     validator: (v) {
                       if (v == null || v.isEmpty) return "Kode pos wajib diisi";
-                      if (int.tryParse(v) == null)
+                      if (int.tryParse(v) == null) {
                         return "Kode pos harus berupa angka";
+                      }
                       return null;
                     },
                   ),
@@ -310,7 +311,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<String>(
-                    value: _jenisAkun,
+                    initialValue: _jenisAkun,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: "Jenis Akun",
@@ -346,8 +347,9 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       controller: pengalamanController,
                       validator: (v) {
                         if (v == null || v.isEmpty) return "Wajib diisi";
-                        if (int.tryParse(v) == null)
+                        if (int.tryParse(v) == null) {
                           return "Harus berupa angka";
+                        }
                         return null;
                       },
                     ),
@@ -358,8 +360,9 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       controller: tarifController,
                       validator: (v) {
                         if (v == null || v.isEmpty) return "Wajib diisi";
-                        if (int.tryParse(v) == null)
+                        if (int.tryParse(v) == null) {
                           return "Harus berupa angka";
+                        }
                         return null;
                       },
                     ),

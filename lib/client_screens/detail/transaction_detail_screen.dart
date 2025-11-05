@@ -196,7 +196,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.pop(context);
+                final messenger = ScaffoldMessenger.of(context);
+                final navigator = Navigator.of(context);
+
+                // Close the dialog first
+                navigator.pop();
 
                 try {
                   await _clientService.submitRating(
@@ -205,23 +209,24 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     ulasan: ulasanController.text,
                   );
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Rating berhasil dikirim'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Rating berhasil dikirim'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+
+                  // Reload the transaction details to show updated rating
+                  _loadTransactionDetail();
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Gagal mengirim rating: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal mengirim rating: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(

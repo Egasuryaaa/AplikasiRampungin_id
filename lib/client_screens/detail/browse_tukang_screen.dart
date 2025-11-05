@@ -357,7 +357,7 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                         const Icon(Icons.star, size: 16, color: Colors.amber),
                         const SizedBox(width: 4),
                         Text(
-                          '${tukang.rating?.toStringAsFixed(1) ?? '0.0'}',
+                          tukang.rating?.toStringAsFixed(1) ?? '0.0',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -575,7 +575,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int?>(
-                    value: _kategoriId,
+                    initialValue: _kategoriId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
@@ -634,7 +634,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _status,
+                    initialValue: _status,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
@@ -725,7 +725,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _orderBy,
+                    initialValue: _orderBy,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
@@ -760,29 +760,105 @@ class _FilterDialogState extends State<_FilterDialog> {
                   Row(
                     children: [
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Tertinggi'),
-                          value: 'DESC',
-                          groupValue: _orderDir,
-                          activeColor: const Color(0xFFF3B950),
-                          onChanged: (value) {
-                            setState(() {
-                              _orderDir = value!;
-                            });
-                          },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _orderDir = 'DESC';
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFF3B950),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color:
+                                              _orderDir == 'DESC'
+                                                  ? const Color(0xFFF3B950)
+                                                  : Colors.transparent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Tertinggi',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Terendah'),
-                          value: 'ASC',
-                          groupValue: _orderDir,
-                          activeColor: const Color(0xFFF3B950),
-                          onChanged: (value) {
-                            setState(() {
-                              _orderDir = value!;
-                            });
-                          },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _orderDir = 'ASC';
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFF3B950),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color:
+                                              _orderDir == 'ASC'
+                                                  ? const Color(0xFFF3B950)
+                                                  : Colors.transparent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Terendah',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],

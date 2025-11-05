@@ -4,6 +4,7 @@ import 'package:rampungin_id_userside/models/tukang_detail_model.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/rating_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/booking_screen.dart';
+import 'dart:developer' as developer;
 
 class TukangDetailScreen extends StatefulWidget {
   final int tukangId;
@@ -37,14 +38,26 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
     });
 
     try {
-      print('Loading tukang detail for ID: ${widget.tukangId}');
+      developer.log(
+        'Loading tukang detail for ID: ${widget.tukangId}',
+        name: 'TukangDetailScreen',
+      );
 
       // Use getTukangDetailFull to get full profile including ratings
       final tukang = await _clientService.getTukangDetailFull(widget.tukangId);
 
-      print('Tukang loaded successfully: ${tukang.namaLengkap}');
-      print('Ratings count: ${tukang.ratings?.length ?? 0}');
-      print('Rating stats: ${tukang.ratingStats?.total ?? 0}');
+      developer.log(
+        'Tukang loaded successfully: ${tukang.namaLengkap}',
+        name: 'TukangDetailScreen',
+      );
+      developer.log(
+        'Ratings count: ${tukang.ratings?.length ?? 0}',
+        name: 'TukangDetailScreen',
+      );
+      developer.log(
+        'Rating stats: ${tukang.ratingStats?.total ?? 0}',
+        name: 'TukangDetailScreen',
+      );
 
       if (mounted) {
         setState(() {
@@ -67,8 +80,12 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('Error loading tukang detail: $e');
-      print('Stack trace: $stackTrace');
+      developer.log(
+        'Error loading tukang detail: $e',
+        name: 'TukangDetailScreen',
+        error: e,
+        stackTrace: stackTrace,
+      );
 
       if (mounted) {
         setState(() {
@@ -225,7 +242,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                           const Icon(Icons.star, color: Colors.amber, size: 24),
                           const SizedBox(width: 4),
                           Text(
-                            '${_tukangData!.rataRataRating?.toStringAsFixed(1) ?? '0.0'}',
+                            (_tukangData!.rataRataRating?.toStringAsFixed(1) ?? '0.0'),
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,

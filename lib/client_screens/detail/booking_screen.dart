@@ -446,31 +446,146 @@ class _BookingScreenState extends State<BookingScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('POIN'),
-                          subtitle: const Text('Bayar dengan saldo'),
-                          value: 'poin',
-                          groupValue: _metodePembayaran,
-                          onChanged: (value) {
-                            setState(() {
-                              _metodePembayaran = value!;
-                            });
-                          },
-                          activeColor: const Color(0xFFF3B950),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () {
+                                setState(() {
+                                  _metodePembayaran = 'poin';
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: const Color(0xFFF3B950),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: _metodePembayaran == 'poin'
+                                                ? const Color(0xFFF3B950)
+                                                : Colors.transparent,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'POIN',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bayar dengan saldo',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('TUNAI'),
-                          subtitle: const Text('Bayar di lokasi'),
-                          value: 'tunai',
-                          groupValue: _metodePembayaran,
-                          onChanged: (value) {
-                            setState(() {
-                              _metodePembayaran = value!;
-                            });
-                          },
-                          activeColor: const Color(0xFFF3B950),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () {
+                                setState(() {
+                                  _metodePembayaran = 'tunai';
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: const Color(0xFFF3B950),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: _metodePembayaran == 'tunai'
+                                                ? const Color(0xFFF3B950)
+                                                : Colors.transparent,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'TUNAI',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bayar di lokasi',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],

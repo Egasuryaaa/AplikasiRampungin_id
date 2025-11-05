@@ -437,7 +437,7 @@ class Setting extends StatelessWidget {
                 // Update state here
               });
             },
-            activeColor: const Color(0xFFF3B950),
+            activeThumbColor: const Color(0xFFF3B950),
           ),
         );
       },

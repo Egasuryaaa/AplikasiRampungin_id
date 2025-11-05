@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:rampungin_id_userside/models/rating_model.dart';
 
 /// Tukang Detail Model - Extended version with ratings and stats
@@ -90,8 +91,13 @@ class TukangDetailModel {
           if (decoded is List) {
             keahlian = decoded.map((e) => e.toString()).toList();
           }
-        } catch (e) {
-          print('Error parsing keahlian JSON string: $e');
+        } catch (e, stackTrace) {
+          developer.log(
+            'Error parsing keahlian JSON string: $e',
+            name: 'TukangDetailModel',
+            error: e,
+            stackTrace: stackTrace,
+          );
           keahlian = null;
         }
       }
