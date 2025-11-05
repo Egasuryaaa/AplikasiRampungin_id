@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:rampungin_id_userside/Auth_screens/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Setting extends StatelessWidget {
-  Setting({super.key});
+class Setting extends StatefulWidget {
+  const Setting({super.key});
 
+  @override
+  State<Setting> createState() => _SettingState();
+}
+
+class _SettingState extends State<Setting> {
   final logger = Logger();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -457,11 +464,22 @@ class Setting extends StatelessWidget {
                 child: const Text('Batal'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  // Tutup dialog segera
                   Navigator.pop(context);
-                  // Handle logout logic
                   logger.i('User logged out');
-                  // Navigate to login screen
+
+                  // Hapus status login
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.clear(); // atau prefs.remove('isLoggedIn');
+
+                  // Pastikan widget masih terpasang sebelum menggunakan context
+                  if (!mounted) return;
+
+                  // Arahkan ke login screen
+                  if (!context.mounted) {
+                    return;
+                  }
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
@@ -470,7 +488,10 @@ class Setting extends StatelessWidget {
                     (route) => false,
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF3B950),
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Keluar'),
               ),
             ],
