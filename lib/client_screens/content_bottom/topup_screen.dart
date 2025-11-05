@@ -168,7 +168,7 @@ class _TopUpScreenState extends State<TopUpScreen>
     switch (index) {
       case 0:
         // Navigate to Home
-        Navigator.of(context).pushReplacementNamed('/');
+        Navigator.of(context).pushReplacementNamed('/HomeScreen');
         break;
       case 1:
         // Already on Top-Up screen
