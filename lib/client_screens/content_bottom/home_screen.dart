@@ -7,6 +7,8 @@ import 'package:rampungin_id_userside/models/statistics_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
+import 'package:rampungin_id_userside/client_screens/detail/profile_screen.dart';
+import 'package:rampungin_id_userside/client_screens/detail/notification.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -411,13 +413,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 _buildHeaderIcon(
                   Icons.person_outline,
-                  () => Navigator.of(context).pushNamed('/ProfileScreen'),
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfileScreen()),
+                  ),
                   size: 45,
                 ),
                 const SizedBox(width: 8),
                 _buildHeaderIcon(
                   Icons.notifications_none,
-                  () => Navigator.of(context).pushNamed('/NotificationScreen'),
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationScreen(),
+                    ),
+                  ),
                   size: 30,
                   iconSize: 20,
                 ),

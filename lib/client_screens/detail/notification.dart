@@ -7,7 +7,8 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with TickerProviderStateMixin {
+class _NotificationScreenState extends State<NotificationScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -31,7 +32,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -40,18 +41,14 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+    );
   }
 
   void _startAnimations() async {
@@ -64,7 +61,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
   Future<void> _loadNewOrders() async {
     // Simulasi fetch dari database
     // Ganti dengan: await DatabaseService.getNewOrders();
-    
+
     setState(() {
       // Contoh data - akan diganti dengan data dari database
       _newOrders = [
@@ -79,7 +76,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         //   'description': 'AC tidak dingin, perlu dibersihkan',
         // },
       ];
-      
+
       _unreadCount = _newOrders.where((order) => !order['isRead']).length;
     });
   }
@@ -89,7 +86,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       _newOrders[index]['isRead'] = true;
       _unreadCount = _newOrders.where((order) => !order['isRead']).length;
     });
-    
+
     //Update status di database
     // await DatabaseService.markOrderAsRead(_newOrders[index]['orderId']);
   }
@@ -101,7 +98,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       }
       _unreadCount = 0;
     });
-    
+
     //Update semua status di database
     //await DatabaseService.markAllOrdersAsRead();
   }
@@ -110,51 +107,54 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     //Implementasi logika menerima orderan
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 12),
-            Text('Terima Orderan?'),
-          ],
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menerima orderan dari ${order['customerName']}?',
-          style: const TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Batal',
-              style: TextStyle(color: Colors.grey),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              //Kirim konfirmasi ke database
-              // await DatabaseService.acceptOrder(order['orderId']);
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Orderan berhasil diterima!'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 28),
+                SizedBox(width: 12),
+                Text('Terima Orderan?'),
+              ],
+            ),
+            content: Text(
+              'Apakah Anda yakin ingin menerima orderan dari ${order['customerName']}?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            child: const Text('Terima'),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  //Kirim konfirmasi ke database
+                  // await DatabaseService.acceptOrder(order['orderId']);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Orderan berhasil diterima!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Terima'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -174,9 +174,10 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         borderRadius: BorderRadius.circular(20),
         color: isRead ? Colors.white : const Color(0xFFFFF9E6),
         border: Border.all(
-          color: isRead 
-            ? Colors.grey.withValues(alpha: 0.2) 
-            : const Color(0xFFF3B950).withValues(alpha: 0.5),
+          color:
+              isRead
+                  ? Colors.grey.withValues(alpha: 0.2)
+                  : const Color(0xFFF3B950).withValues(alpha: 0.5),
           width: 2,
         ),
         boxShadow: [
@@ -211,7 +212,9 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFF3B950,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -273,14 +276,14 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Divider
                 Divider(color: Colors.grey.shade300, height: 1),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Order Details
                 _buildDetailRow(
                   Icons.person_outline,
@@ -288,29 +291,30 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                   order['customerName'] ?? '',
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildDetailRow(
                   Icons.build_outlined,
                   'Jenis Layanan',
                   order['serviceType'] ?? '',
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildDetailRow(
                   Icons.location_on_outlined,
                   'Lokasi',
                   order['location'] ?? '',
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildDetailRow(
                   Icons.payments_outlined,
                   'Harga',
                   order['price'] ?? '',
                   valueColor: Colors.green.shade700,
                 ),
-                
-                if (order['description'] != null && order['description'].isNotEmpty) ...[
+
+                if (order['description'] != null &&
+                    order['description'].isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildDetailRow(
                     Icons.description_outlined,
@@ -318,9 +322,9 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                     order['description'],
                   ),
                 ],
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Action Buttons
                 Row(
                   children: [
@@ -330,31 +334,35 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                           //Implementasi tolak orderan
                           showDialog(
                             context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Tolak Orderan?'),
-                              content: const Text(
-                                'Orderan ini akan ditawarkan ke tukang lain.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Batal'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    setState(() {
-                                      _newOrders.removeAt(index);
-                                      _unreadCount = _newOrders.where((o) => !o['isRead']).length;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('Tolak Orderan?'),
+                                  content: const Text(
+                                    'Orderan ini akan ditawarkan ke tukang lain.',
                                   ),
-                                  child: const Text('Tolak'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Batal'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        setState(() {
+                                          _newOrders.removeAt(index);
+                                          _unreadCount =
+                                              _newOrders
+                                                  .where((o) => !o['isRead'])
+                                                  .length;
+                                        });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Tolak'),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                           );
                         },
                         icon: const Icon(Icons.close, size: 20),
@@ -397,15 +405,16 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Colors.grey.shade600,
-        ),
+        Icon(icon, size: 20, color: Colors.grey.shade600),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -465,10 +474,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
           const SizedBox(height: 8),
           Text(
             'Orderan baru akan muncul di sini',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -490,10 +496,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF3B950),
-                    Color(0xFFE8A63C),
-                  ],
+                  colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
                 ),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
@@ -568,7 +571,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                         ],
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Notification summary
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -610,28 +613,29 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
 
           // Orders List
           Expanded(
-            child: _newOrders.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
-                    onRefresh: _loadNewOrders,
-                    color: const Color(0xFFF3B950),
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: _newOrders.length,
-                          itemBuilder: (context, index) {
-                            return _buildOrderNotificationCard(
-                              _newOrders[index],
-                              index,
-                            );
-                          },
+            child:
+                _newOrders.isEmpty
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                      onRefresh: _loadNewOrders,
+                      color: const Color(0xFFF3B950),
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: _newOrders.length,
+                            itemBuilder: (context, index) {
+                              return _buildOrderNotificationCard(
+                                _newOrders[index],
+                                index,
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
-                  ),
           ),
         ],
       ),

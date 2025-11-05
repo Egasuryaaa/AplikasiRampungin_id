@@ -6,7 +6,7 @@ import 'package:rampungin_id_userside/models/transaction_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
 import '../detail/detail_order.dart';
 import '../detail/profile.dart';
-import '../detail/notification.dart';
+import '../detail/notification_tk.dart';
 import '../../Auth_screens/login.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -666,7 +666,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     MaterialPageRoute(
                                                       builder:
                                                           (context) =>
-                                                              const NotificationScreen(),
+                                                              const Notificationtk(),
                                                     ),
                                                   );
                                                 },
