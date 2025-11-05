@@ -1,4 +1,6 @@
-/// Transaction/Order Model
+
+import 'dart:developer' as developer;
+
 class TransactionModel {
   final int? id;
   final String? nomorPesanan;
@@ -81,9 +83,18 @@ class TransactionModel {
       return null;
     }
 
-    print('TransactionModel: Parsing transaction ID ${json['id']}');
-    print('TransactionModel: Status = ${json['status']}');
-    print('TransactionModel: Judul = ${json['judul_layanan']}');
+    developer.log(
+      'TransactionModel: Parsing transaction ID ${json['id']}',
+      name: 'TransactionModel',
+    );
+    developer.log(
+      'TransactionModel: Status = ${json['status']}',
+      name: 'TransactionModel',
+    );
+    developer.log(
+      'TransactionModel: Judul = ${json['judul_layanan']}',
+      name: 'TransactionModel',
+    );
 
     return TransactionModel(
       id: parseInt(json['id']),

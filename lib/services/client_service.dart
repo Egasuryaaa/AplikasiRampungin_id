@@ -9,6 +9,7 @@ import '../models/topup_model.dart';
 import '../models/category_model.dart';
 import '../models/statistics_model.dart';
 import '../models/tukang_detail_model.dart';
+import 'dart:developer' as developer;
 
 /// Client Service - Handles all client-related endpoints
 class ClientService {
@@ -146,29 +147,47 @@ class ClientService {
   /// Get tukang detail by ID (Full detail with ratings)
   Future<TukangDetailModel> getTukangDetailFull(int tukangId) async {
     try {
-      print('ClientService: Fetching tukang detail for ID: $tukangId');
+      developer.log(
+        'ClientService: Fetching tukang detail for ID: $tukangId',
+        name: 'ClientService',
+      );
 
       final response = await _client.get(
         ApiConfig.clientTukangDetail(tukangId),
       );
 
-      print('ClientService: Response received');
+      developer.log('ClientService: Response received', name: 'ClientService');
 
       final data = _client.parseResponse(response);
 
-      print('ClientService: Response parsed successfully');
-      print('ClientService: Data keys: ${data.keys.toList()}');
+      developer.log(
+        'ClientService: Response parsed successfully',
+        name: 'ClientService',
+      );
+      developer.log(
+        'ClientService: Data keys: ${data.keys.toList()}',
+        name: 'ClientService',
+      );
 
       if (data['data'] != null) {
-        print('ClientService: Creating TukangDetailModel from data');
+        developer.log(
+          'ClientService: Creating TukangDetailModel from data',
+          name: 'ClientService',
+        );
         return TukangDetailModel.fromJson(data['data'] as Map<String, dynamic>);
       }
-
-      print('ClientService: Creating TukangDetailModel from root');
+      developer.log(
+        'ClientService: Creating TukangDetailModel from root',
+        name: 'ClientService',
+      );
       return TukangDetailModel.fromJson(data);
     } catch (e, stackTrace) {
-      print('ClientService: Error getting tukang detail: $e');
-      print('ClientService: Stack trace: $stackTrace');
+      developer.log(
+        'ClientService: Error getting tukang detail: $e',
+        name: 'ClientService',
+        error: e,
+        stackTrace: stackTrace,
+      );
       throw Exception('Failed to get tukang detail: $e');
     }
   }
