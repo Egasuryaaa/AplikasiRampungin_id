@@ -441,7 +441,7 @@ class _SettingState extends State<Setting> {
             value: isEnabled,
             onChanged: (value) {
               setState(() {
-                // Update state here
+
               });
             },
             activeThumbColor: const Color(0xFFF3B950),
@@ -465,18 +465,19 @@ class _SettingState extends State<Setting> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  // Tutup dialog segera
+              
                   Navigator.pop(context);
                   logger.i('User logged out');
 
                   // Hapus status login
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear(); // atau prefs.remove('isLoggedIn');
+                  await prefs.clear(); 
 
-                  // Pastikan widget masih terpasang sebelum menggunakan context
+
+
                   if (!mounted) return;
 
-                  // Arahkan ke login screen
+                  
                   if (!context.mounted) {
                     return;
                   }
