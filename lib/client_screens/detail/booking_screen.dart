@@ -637,7 +637,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
 
                   const SizedBox(height: 24),
-
+                  
                   // Submit Button
                   SizedBox(
                     width: double.infinity,
