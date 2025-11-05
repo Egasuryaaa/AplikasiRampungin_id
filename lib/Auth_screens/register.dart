@@ -311,7 +311,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<String>(
-                    initialValue: _jenisAkun,
+                    value: _jenisAkun,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: "Jenis Akun",

@@ -440,11 +440,9 @@ class _SettingState extends State<Setting> {
           trailing: Switch(
             value: isEnabled,
             onChanged: (value) {
-              setState(() {
-
-              });
+              setState(() {});
             },
-            activeThumbColor: const Color(0xFFF3B950),
+            activeColor: const Color(0xFFF3B950),
           ),
         );
       },
@@ -465,19 +463,15 @@ class _SettingState extends State<Setting> {
               ),
               ElevatedButton(
                 onPressed: () async {
-              
                   Navigator.pop(context);
                   logger.i('User logged out');
 
                   // Hapus status login
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear(); 
-
-
+                  await prefs.clear();
 
                   if (!mounted) return;
 
-                  
                   if (!context.mounted) {
                     return;
                   }
