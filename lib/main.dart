@@ -4,7 +4,7 @@ import 'Auth_screens/login.dart';
 import 'package:rampungin_id_userside/Auth_screens/register.dart';
 import 'client_screens/content_bottom/home_screen.dart';
 import 'client_screens/client_screen.dart';
-import 'client_screens/detail/topup_screen.dart';
+import 'client_screens/content_bottom/topup_screen.dart';
 import 'tukang_screens/form/form_tukang.dart';
 import 'client_screens/Widgets/bottom_navigation.dart';
 import 'client_screens/detail/notification.dart';
