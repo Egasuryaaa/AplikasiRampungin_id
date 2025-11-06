@@ -39,8 +39,28 @@ class ProfileModel {
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    int? parseIntValue(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
+    bool? parseBoolValue(dynamic value) {
+      if (value == null) return null;
+      if (value is bool) return value;
+      if (value is String) {
+        if (value.toLowerCase() == 'true' || value == '1' || value == 't')
+          return true;
+        if (value.toLowerCase() == 'false' || value == '0' || value == 'f')
+          return false;
+      }
+      if (value is num) return value != 0;
+      return null;
+    }
+
     return ProfileModel(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       username: json['username'] as String?,
       email: json['email'] as String?,
       namaLengkap: json['nama_lengkap'] as String?,
@@ -50,19 +70,22 @@ class ProfileModel {
       provinsi: json['provinsi'] as String?,
       kodePos: json['kode_pos'] as String?,
       fotoProfil: json['foto_profil'] as String?,
-      poin: json['poin'] as int?,
-      isActive: json['is_active'] as bool?,
-      isVerified: json['is_verified'] as bool?,
-      tanggalBergabung: json['tanggal_bergabung'] != null
-          ? DateTime.parse(json['tanggal_bergabung'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
-      idRole: json['id_role'] as int?,
-      role: json['role'] != null
-          ? RoleModel.fromJson(json['role'] as Map<String, dynamic>)
-          : null,
+      poin: parseIntValue(json['poin']),
+      isActive: parseBoolValue(json['is_active']),
+      isVerified: parseBoolValue(json['is_verified']),
+      tanggalBergabung:
+          json['tanggal_bergabung'] != null
+              ? DateTime.parse(json['tanggal_bergabung'] as String)
+              : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.parse(json['updated_at'] as String)
+              : null,
+      idRole: parseIntValue(json['id_role']),
+      role:
+          json['role'] != null
+              ? RoleModel.fromJson(json['role'] as Map<String, dynamic>)
+              : null,
     );
   }
 
@@ -142,11 +165,7 @@ class RoleModel {
   final String? name;
   final String? description;
 
-  RoleModel({
-    this.id,
-    this.name,
-    this.description,
-  });
+  RoleModel({this.id, this.name, this.description});
 
   factory RoleModel.fromJson(Map<String, dynamic> json) {
     return RoleModel(
@@ -157,10 +176,6 @@ class RoleModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-    };
+    return {'id': id, 'name': name, 'description': description};
   }
 }
