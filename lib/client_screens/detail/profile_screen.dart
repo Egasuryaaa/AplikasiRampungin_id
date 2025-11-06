@@ -1,11 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:rampungin_id_userside/client_screens/detail/setting.dart';
+import 'package:rampungin_id_userside/services/client_service.dart';
+import 'package:rampungin_id_userside/models/profile_model.dart';
 
-class ProfileScreen extends StatelessWidget {
-  ProfileScreen({super.key});
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
   final logger = Logger();
+  final ClientService _clientService = ClientService();
+  
+  ProfileModel? _profile;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final profile = await _clientService.getProfile();
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      logger.e('Error loading profile: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,34 +132,48 @@ class ProfileScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const CircleAvatar(
-                            radius: 66,
-                            backgroundColor: Color(0xFFF3B950),
-                            child: Icon(
-                              Icons.person,
-                              size: 80,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator()
+                              : CircleAvatar(
+                                  radius: 66,
+                                  backgroundColor: const Color(0xFFF3B950),
+                                  backgroundImage: _profile?.fotoProfilUrl != null
+                                      ? NetworkImage(_profile!.fotoProfilUrl!)
+                                      : null,
+                                  child: _profile?.fotoProfilUrl == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 80,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
                         ),
                         // Edit icon
-                        Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: const BoxDecoration(
-                              color: Colors.black,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                              size: 16,
+                        if (!_isLoading)
+                          Positioned(
+                            bottom: 10,
+                            right: 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                // TODO: Implement photo picker
+                                logger.i('Edit photo tapped');
+                              },
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: const BoxDecoration(
+                                  color: Colors.black,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -128,9 +181,9 @@ class ProfileScreen extends StatelessWidget {
                   // Name section
                   Transform.translate(
                     offset: const Offset(0, -30),
-                    child: const Text(
-                      'Nama',
-                      style: TextStyle(
+                    child: Text(
+                      _profile?.namaLengkap ?? 'Nama',
+                      style: const TextStyle(
                         color: Color(0xFF000000),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -162,65 +215,109 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                         padding: const EdgeInsets.all(24),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Profile Information
-                              _buildProfileItem('Nama Lengkap', 'John Doe'),
-                              const SizedBox(height: 16),
-                              _buildProfileItem(
-                                'Email',
-                                'john.doe@example.com',
-                              ),
-                              const SizedBox(height: 16),
-                              _buildProfileItem(
-                                'No. Telepon',
-                                '+62 812 3456 7890',
-                              ),
-                              const SizedBox(height: 16),
-                              _buildProfileItem(
-                                'Alamat',
-                                'Jl. Contoh No. 123, Jakarta',
-                              ),
-                              const SizedBox(height: 16),
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _errorMessage != null
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _errorMessage!,
+                                          style: const TextStyle(color: Colors.red),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        ElevatedButton(
+                                          onPressed: _loadProfile,
+                                          child: const Text('Coba Lagi'),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Profile Information
+                                        _buildProfileItem(
+                                          'Username',
+                                          _profile?.username ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Nama Lengkap',
+                                          _profile?.namaLengkap ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Email',
+                                          _profile?.email ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'No. Telepon',
+                                          _profile?.noTelp ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Alamat',
+                                          _profile?.alamat ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Kota',
+                                          _profile?.kota ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Provinsi',
+                                          _profile?.provinsi ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Kode Pos',
+                                          _profile?.kodePos ?? '-',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildProfileItem(
+                                          'Poin',
+                                          _profile?.poin?.toString() ?? '0',
+                                        ),
+                                        const SizedBox(height: 20),
 
-                              const SizedBox(height: 16),
-                              _buildProfileItem('Jenis Kelamin', 'Laki-laki'),
-                              const SizedBox(height: 20),
-
-                              // Edit Profile Button
-                              Center(
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    // Handle edit profile
-                                    logger.i('Edit profile tapped');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF3B950),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 32,
-                                      vertical: 12,
+                                        // Edit Profile Button
+                                        Center(
+                                          child: ElevatedButton(
+                                            onPressed: () {
+                                              // TODO: Navigate to edit profile page
+                                              logger.i('Edit profile tapped');
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFF3B950),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 32,
+                                                vertical: 12,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              elevation: 4,
+                                            ),
+                                            child: const Text(
+                                              'Edit Profile',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    elevation: 4,
                                   ),
-                                  child: const Text(
-                                    'Edit Profile',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                   ),

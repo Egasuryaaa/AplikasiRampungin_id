@@ -85,9 +85,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     try {
       await _clientService.updateProfile(
-        nama: _namaController.text.trim(),
+        namaLengkap: _namaController.text.trim(),
         email: _emailController.text.trim(),
-        noHp: _noHpController.text.trim(),
+        noTelp: _noHpController.text.trim(),
         alamat: _alamatController.text.trim(),
         kota: _kotaController.text.trim(),
         provinsi: _provinsiController.text.trim(),

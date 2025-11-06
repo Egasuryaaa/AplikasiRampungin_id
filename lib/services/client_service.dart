@@ -9,6 +9,7 @@ import '../models/topup_model.dart';
 import '../models/category_model.dart';
 import '../models/statistics_model.dart';
 import '../models/tukang_detail_model.dart';
+import '../models/profile_model.dart';
 import 'dart:developer' as developer;
 
 /// Client Service - Handles all client-related endpoints
@@ -18,51 +19,80 @@ class ClientService {
   // ==================== PROFILE ====================
 
   /// Get client profile
-  Future<UserModel> getProfile() async {
+  Future<ProfileModel> getProfile() async {
     try {
       final response = await _client.get(ApiConfig.clientProfile);
       final data = _client.parseResponse(response);
 
       if (data['data'] != null) {
-        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
+        return ProfileModel.fromJson(data['data'] as Map<String, dynamic>);
       }
-      return UserModel.fromJson(data);
+      return ProfileModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to get profile: $e');
     }
   }
 
-  /// Update client profile
-  /// Supports both JSON and multipart (with photo upload)
-  Future<UserModel> updateProfile({
-    String? nama,
+  /// Update client profile (JSON - without photo)
+  Future<Map<String, dynamic>> updateProfile({
+    String? namaLengkap,
     String? email,
-    String? noHp,
+    String? noTelp,
     String? alamat,
     String? kota,
     String? provinsi,
-    List<int>? fotoProfileBytes,
-    String? fotoProfileFilename,
+    String? kodePos,
   }) async {
     try {
-      final Map<String, String> fields = {
-        if (nama != null) 'nama_lengkap': nama,
-        if (email != null) 'email': email,
-        if (noHp != null) 'no_telp': noHp,
-        if (alamat != null) 'alamat': alamat,
-        if (kota != null) 'kota': kota,
-        if (provinsi != null) 'provinsi': provinsi,
-      };
+      final Map<String, dynamic> body = {};
+      
+      if (namaLengkap != null) body['nama_lengkap'] = namaLengkap;
+      if (email != null) body['email'] = email;
+      if (noTelp != null) body['no_telp'] = noTelp;
+      if (alamat != null) body['alamat'] = alamat;
+      if (kota != null) body['kota'] = kota;
+      if (provinsi != null) body['provinsi'] = provinsi;
+      if (kodePos != null) body['kode_pos'] = kodePos;
+
+      final response = await _client.put(ApiConfig.clientProfile, body: body);
+      return _client.parseResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+
+  /// Update client profile with photo (Multipart)
+  Future<Map<String, dynamic>> updateProfileWithPhoto({
+    String? namaLengkap,
+    String? email,
+    String? noTelp,
+    String? alamat,
+    String? kota,
+    String? provinsi,
+    String? kodePos,
+    List<int>? fotoProfilBytes,
+    String? fotoProfilFilename,
+  }) async {
+    try {
+      final Map<String, String> fields = {};
+      
+      if (namaLengkap != null) fields['nama_lengkap'] = namaLengkap;
+      if (email != null) fields['email'] = email;
+      if (noTelp != null) fields['no_telp'] = noTelp;
+      if (alamat != null) fields['alamat'] = alamat;
+      if (kota != null) fields['kota'] = kota;
+      if (provinsi != null) fields['provinsi'] = provinsi;
+      if (kodePos != null) fields['kode_pos'] = kodePos;
 
       http.Response response;
 
       // If photo is provided, use multipart
-      if (fotoProfileBytes != null && fotoProfileFilename != null) {
+      if (fotoProfilBytes != null && fotoProfilFilename != null) {
         final streamedResponse = await _client.postMultipart(
           ApiConfig.clientProfile,
           'foto_profil',
-          fotoProfileBytes,
-          fotoProfileFilename,
+          fotoProfilBytes,
+          fotoProfilFilename,
           fields: fields,
           requiresAuth: true,
         );
@@ -73,14 +103,9 @@ class ClientService {
         response = await _client.put(ApiConfig.clientProfile, body: body);
       }
 
-      final data = _client.parseResponse(response);
-
-      if (data['data'] != null) {
-        return UserModel.fromJson(data['data'] as Map<String, dynamic>);
-      }
-      return UserModel.fromJson(data);
+      return _client.parseResponse(response);
     } catch (e) {
-      throw Exception('Failed to update profile: $e');
+      throw Exception('Failed to update profile with photo: $e');
     }
   }
 
