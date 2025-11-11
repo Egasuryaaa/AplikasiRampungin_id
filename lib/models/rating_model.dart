@@ -23,14 +23,23 @@ class RatingModel {
   });
 
   factory RatingModel.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely parse int from dynamic value
+    int? parseInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is num) return value.toInt();
+      return null;
+    }
+
     return RatingModel(
-      id: json['id'] as int?,
-      idTransaksi: json['id_transaksi'] as int?,
-      idClient: json['id_client'] as int?,
+      id: parseInt(json['id']),
+      idTransaksi: parseInt(json['transaksi_id'] ?? json['id_transaksi']),
+      idClient: parseInt(json['client_id'] ?? json['id_client']),
       namaClient: json['nama_client'] as String?,
-      idTukang: json['id_tukang'] as int?,
+      idTukang: parseInt(json['tukang_id'] ?? json['id_tukang']),
       namaTukang: json['nama_tukang'] as String?,
-      rating: json['rating'] as int?,
+      rating: parseInt(json['rating']),
       ulasan: json['ulasan'] as String?,
       createdAt:
           json['created_at'] != null

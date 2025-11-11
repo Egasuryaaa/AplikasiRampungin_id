@@ -51,6 +51,21 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
         name: 'TukangDetailScreen',
       );
       developer.log(
+        'Tukang ID: ${tukang.id}, Kategori count: ${tukang.kategori?.length ?? 0}',
+        name: 'TukangDetailScreen',
+      );
+
+      // Log kategori details
+      if (tukang.kategori != null && tukang.kategori!.isNotEmpty) {
+        for (var kat in tukang.kategori!) {
+          developer.log(
+            'Kategori: ID=${kat.id}, Nama=${kat.nama}',
+            name: 'TukangDetailScreen',
+          );
+        }
+      }
+
+      developer.log(
         'Ratings count: ${tukang.ratings?.length ?? 0}',
         name: 'TukangDetailScreen',
       );
@@ -242,7 +257,8 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                           const Icon(Icons.star, color: Colors.amber, size: 24),
                           const SizedBox(width: 4),
                           Text(
-                            (_tukangData!.rataRataRating?.toStringAsFixed(1) ?? '0.0'),
+                            (_tukangData!.rataRataRating?.toStringAsFixed(1) ??
+                                '0.0'),
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -620,35 +636,75 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                 _tukangData!.statusKetersediaan == 'tersedia'
                     ? () {
                       // Navigate to booking dengan tukang ID dan info
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => BookingScreen(
-                                tukangData: UserModel(
-                                  id: _tukangData!.id,
-                                  nama: _tukangData!.namaLengkap,
-                                  email: _tukangData!.email,
-                                  noHp: _tukangData!.noTelp,
-                                  fotoProfile: _tukangData!.fotoProfil,
-                                  alamat: _tukangData!.alamat,
-                                  idKategori:
-                                      _tukangData!.kategori != null &&
-                                              _tukangData!.kategori!.isNotEmpty
-                                          ? _tukangData!.kategori!.first.id
-                                          : null,
-                                  namaKategori:
-                                      _tukangData!.kategori != null &&
-                                              _tukangData!.kategori!.isNotEmpty
-                                          ? _tukangData!.kategori!.first.nama
-                                          : null,
-                                  rating: _tukangData!.rataRataRating,
-                                  jumlahPesanan:
-                                      _tukangData!.totalPekerjaanSelesai,
-                                ),
-                              ),
-                        ),
-                      );
+                      try {
+                        developer.log(
+                          'Preparing booking for tukang ID: ${_tukangData!.id}',
+                          name: 'TukangDetailScreen',
+                        );
+
+                        // Safely extract kategori info
+                        int? kategoriId;
+                        String? kategoriNama;
+
+                        if (_tukangData!.kategori != null &&
+                            _tukangData!.kategori!.isNotEmpty) {
+                          final firstKategori = _tukangData!.kategori!.first;
+                          kategoriId = firstKategori.id;
+                          kategoriNama = firstKategori.nama;
+
+                          developer.log(
+                            'Using kategori: ID=$kategoriId, Nama=$kategoriNama',
+                            name: 'TukangDetailScreen',
+                          );
+                        } else {
+                          developer.log(
+                            'WARNING: No kategori available for this tukang!',
+                            name: 'TukangDetailScreen',
+                          );
+                        }
+
+                        final userModel = UserModel(
+                          id: _tukangData!.id,
+                          nama: _tukangData!.namaLengkap,
+                          email: _tukangData!.email,
+                          noHp: _tukangData!.noTelp,
+                          fotoProfile: _tukangData!.fotoProfil,
+                          alamat: _tukangData!.alamat,
+                          idKategori: kategoriId,
+                          namaKategori: kategoriNama,
+                          rating: _tukangData!.rataRataRating,
+                          jumlahPesanan: _tukangData!.totalPekerjaanSelesai,
+                        );
+
+                        developer.log(
+                          'UserModel created, navigating to BookingScreen',
+                          name: 'TukangDetailScreen',
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    BookingScreen(tukangData: userModel),
+                          ),
+                        );
+                      } catch (e, stackTrace) {
+                        developer.log(
+                          'Error navigating to booking: $e',
+                          name: 'TukangDetailScreen',
+                          error: e,
+                          stackTrace: stackTrace,
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
                     }
                     : null,
             style: ElevatedButton.styleFrom(
