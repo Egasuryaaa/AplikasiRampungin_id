@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../content_bottom/home_screen.dart';
+import '../content_bottom/home.dart';
 
 class FormTukang extends StatefulWidget {
   const FormTukang({super.key});
@@ -96,7 +96,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
           context,
           PageRouteBuilder(
             pageBuilder:
-                (context, animation, secondaryAnimation) => const HomeScreen(),
+                (context, animation, secondaryAnimation) => const Home(),
             transitionsBuilder: (
               context,
               animation,
@@ -272,7 +272,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
       context,
       PageRouteBuilder(
         pageBuilder:
-            (context, animation, secondaryAnimation) => const HomeScreen(),
+            (context, animation, secondaryAnimation) => const Home(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
