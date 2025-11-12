@@ -65,6 +65,12 @@ class TukangDetailModel {
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
       if (value is num) return value.toInt();
+
+      // Log unexpected type
+      developer.log(
+        'WARNING: parseInt received unexpected type: ${value.runtimeType} for value: $value',
+        name: 'TukangDetailModel',
+      );
       return null;
     }
 
@@ -75,6 +81,12 @@ class TukangDetailModel {
       if (value is int) return value.toDouble();
       if (value is String) return double.tryParse(value);
       if (value is num) return value.toDouble();
+
+      // Log unexpected type
+      developer.log(
+        'WARNING: parseDouble received unexpected type: ${value.runtimeType} for value: $value',
+        name: 'TukangDetailModel',
+      );
       return null;
     }
 
@@ -106,27 +118,69 @@ class TukangDetailModel {
     // Parse kategori array
     List<CategoryInfo>? kategori;
     if (json['kategori'] != null && json['kategori'] is List) {
-      kategori =
-          (json['kategori'] as List)
-              .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
-              .toList();
+      try {
+        kategori =
+            (json['kategori'] as List)
+                .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
+                .toList();
+        developer.log(
+          'Parsed ${kategori.length} kategori items',
+          name: 'TukangDetailModel',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing kategori: $e',
+          name: 'TukangDetailModel',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        kategori = null;
+      }
     }
 
     // Parse ratings array
     List<RatingModel>? ratings;
     if (json['ratings'] != null && json['ratings'] is List) {
-      ratings =
-          (json['ratings'] as List)
-              .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
-              .toList();
+      try {
+        ratings =
+            (json['ratings'] as List)
+                .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+        developer.log(
+          'Parsed ${ratings.length} ratings items',
+          name: 'TukangDetailModel',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing ratings: $e',
+          name: 'TukangDetailModel',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        ratings = null;
+      }
     }
 
     // Parse rating stats
     RatingStats? ratingStats;
     if (json['rating_stats'] != null) {
-      ratingStats = RatingStats.fromJson(
-        json['rating_stats'] as Map<String, dynamic>,
-      );
+      try {
+        ratingStats = RatingStats.fromJson(
+          json['rating_stats'] as Map<String, dynamic>,
+        );
+        developer.log(
+          'Parsed rating stats: total=${ratingStats.total}',
+          name: 'TukangDetailModel',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Error parsing rating_stats: $e',
+          name: 'TukangDetailModel',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        ratingStats = null;
+      }
     }
 
     return TukangDetailModel(

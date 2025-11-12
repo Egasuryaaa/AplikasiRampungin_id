@@ -392,6 +392,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
               color: const Color(0xFFF3B950).withValues(alpha: 0.3),
               width: 1,
             ),
+
           ),
           child: DropdownButtonFormField<String>(
             value: (value == null || value.isEmpty) ? null : value,
@@ -402,6 +403,35 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
                 fontFamily: 'Abel',
                 fontSize: 12,
                 color: Color(0xFF999999),
+            child: DropdownButtonFormField<String>(
+              value:
+                  _selectedCategory.isEmpty
+                      ? null
+                      : _selectedCategory, // use 'value' instead of deprecated 'initialValue'
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Pilih kategori';
+                }
+                return null;
+              },
+              hint: Text(
+                hintText,
+                style: const TextStyle(
+                  fontFamily: 'Abel',
+                  fontSize: 12,
+                  color: Color(0xFF999999),
+                ),
+              ),
+              isExpanded: true,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFFF3B950),
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
               ),
             ),
             isExpanded: true,

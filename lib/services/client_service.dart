@@ -174,7 +174,16 @@ class ClientService {
           'ClientService: Creating TukangDetailModel from data',
           name: 'ClientService',
         );
-        return TukangDetailModel.fromJson(data['data'] as Map<String, dynamic>);
+
+        final tukangData = data['data'] as Map<String, dynamic>;
+
+        // Log important fields for debugging
+        developer.log(
+          'ClientService: id=${tukangData['id']}, kategori count=${tukangData['kategori'] is List ? (tukangData['kategori'] as List).length : 0}',
+          name: 'ClientService',
+        );
+
+        return TukangDetailModel.fromJson(tukangData);
       }
       developer.log(
         'ClientService: Creating TukangDetailModel from root',
