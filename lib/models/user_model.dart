@@ -10,6 +10,7 @@ class UserModel {
   final String? ktpPhoto;
   final int? idKategori;
   final String? namaKategori;
+  final List<Map<String, dynamic>>? kategoriList; // Multiple categories for tukang (raw format)
   final String? statusVerifikasi; // 'pending', 'verified', 'rejected'
   final String? statusAktif; // 'online', 'offline', 'busy'
   final double? rating;
@@ -29,6 +30,7 @@ class UserModel {
     this.ktpPhoto,
     this.idKategori,
     this.namaKategori,
+    this.kategoriList,
     this.statusVerifikasi,
     this.statusAktif,
     this.rating,
@@ -70,9 +72,12 @@ class UserModel {
               : 'pending';
     }
 
-    // Map is_active to statusAktif
+    // Map is_active to statusAktif or use status_ketersediaan
     String? statusAktif;
-    if (json['is_active'] != null) {
+    if (json['status_ketersediaan'] != null) {
+      // Use status_ketersediaan if available (from tukang list)
+      statusAktif = json['status_ketersediaan'] as String;
+    } else if (json['is_active'] != null) {
       final isActive = json['is_active'].toString().toLowerCase();
       statusAktif =
           (isActive == 't' || isActive == 'true' || isActive == '1')
@@ -106,6 +111,46 @@ class UserModel {
       }
     }
 
+    // Parse kategori array if exists (from tukang list endpoint)
+    List<Map<String, dynamic>>? kategoriList;
+    if (json['kategori'] is List) {
+      kategoriList = (json['kategori'] as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    }
+
+    // Parse rating - handle rata_rata_rating or rating field
+    double? parsedRating;
+    if (json['rata_rata_rating'] != null) {
+      if (json['rata_rata_rating'] is num) {
+        parsedRating = (json['rata_rata_rating'] as num).toDouble();
+      } else if (json['rata_rata_rating'] is String) {
+        parsedRating = double.tryParse(json['rata_rata_rating'] as String);
+      }
+    } else if (json['rating'] != null) {
+      if (json['rating'] is num) {
+        parsedRating = (json['rating'] as num).toDouble();
+      } else if (json['rating'] is String) {
+        parsedRating = double.tryParse(json['rating'] as String);
+      }
+    }
+
+    // Parse total rating/pesanan
+    int? parsedJumlahPesanan;
+    if (json['total_rating'] != null) {
+      if (json['total_rating'] is int) {
+        parsedJumlahPesanan = json['total_rating'] as int;
+      } else if (json['total_rating'] is String) {
+        parsedJumlahPesanan = int.tryParse(json['total_rating'] as String);
+      }
+    } else if (json['jumlah_pesanan'] != null) {
+      if (json['jumlah_pesanan'] is int) {
+        parsedJumlahPesanan = json['jumlah_pesanan'] as int;
+      } else if (json['jumlah_pesanan'] is String) {
+        parsedJumlahPesanan = int.tryParse(json['jumlah_pesanan'] as String);
+      }
+    }
+
     return UserModel(
       id: parsedId,
       nama: json['nama_lengkap'] as String? ?? json['nama'] as String?,
@@ -118,11 +163,12 @@ class UserModel {
       ktpPhoto: json['ktp_photo'] as String?,
       idKategori: parsedIdKategori,
       namaKategori: json['nama_kategori'] as String?,
+      kategoriList: kategoriList,
       statusVerifikasi:
           statusVerifikasi ?? json['status_verifikasi'] as String?,
       statusAktif: statusAktif ?? json['status_aktif'] as String?,
-      rating: (json['rating'] as num?)?.toDouble(),
-      jumlahPesanan: json['jumlah_pesanan'] as int?,
+      rating: parsedRating,
+      jumlahPesanan: parsedJumlahPesanan,
       saldo: parsedSaldo,
       createdAt:
           json['created_at'] != null
@@ -147,6 +193,7 @@ class UserModel {
       'ktp_photo': ktpPhoto,
       'id_kategori': idKategori,
       'nama_kategori': namaKategori,
+      'kategori': kategoriList,
       'status_verifikasi': statusVerifikasi,
       'status_aktif': statusAktif,
       'rating': rating,
@@ -168,6 +215,7 @@ class UserModel {
     String? ktpPhoto,
     int? idKategori,
     String? namaKategori,
+    List<Map<String, dynamic>>? kategoriList,
     String? statusVerifikasi,
     String? statusAktif,
     double? rating,
@@ -187,6 +235,7 @@ class UserModel {
       ktpPhoto: ktpPhoto ?? this.ktpPhoto,
       idKategori: idKategori ?? this.idKategori,
       namaKategori: namaKategori ?? this.namaKategori,
+      kategoriList: kategoriList ?? this.kategoriList,
       statusVerifikasi: statusVerifikasi ?? this.statusVerifikasi,
       statusAktif: statusAktif ?? this.statusAktif,
       rating: rating ?? this.rating,

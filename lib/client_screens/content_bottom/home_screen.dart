@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<CategoryModel> _categoryList = []; // ignore: unused_field
   StatisticsModel? _statistics; // ignore: unused_field
   UserModel? _currentUser;
-  double _userBalance = 0.0;
+  int _userPoints = 0; // Poin user
   bool _isLoadingTukang = true;
   bool _isLoadingProfile = true;
   String? _errorMessage;
@@ -64,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _currentUser = user;
+          // Ambil poin dari user (sudah di-parse di UserModel.saldo)
+          _userPoints = (user.saldo ?? 0).toInt();
           _isLoadingProfile = false;
         });
       }
@@ -126,29 +128,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _statistics = stats;
-          _userBalance = stats.saldoPoin ?? 0.0;
+          // Kita tidak perlu _userBalance lagi, karena poin diambil dari user profile
         });
       }
     } catch (e) {
       // Silently fail, balance will show 0
       if (mounted) {
         setState(() {
-          _userBalance = 0.0;
+          // Do nothing, poin sudah di-load dari user profile
         });
       }
     }
   }
 
-  // Group tukang by category
+  // Group tukang by category - Handle multiple categories per tukang
   Map<String, List<UserModel>> get _techniciansByCategory {
     final Map<String, List<UserModel>> grouped = {};
+    
     for (var tukang in _allTukangList) {
-      final category = tukang.namaKategori ?? 'Lainnya';
-      if (!grouped.containsKey(category)) {
-        grouped[category] = [];
+      // Get categories from kategoriList array
+      if (tukang.kategoriList != null && tukang.kategoriList!.isNotEmpty) {
+        for (var kategoriJson in tukang.kategoriList!) {
+          final categoryName = kategoriJson['nama'] as String? ?? 'Lainnya';
+          
+          if (!grouped.containsKey(categoryName)) {
+            grouped[categoryName] = [];
+          }
+          
+          // Add tukang to this category if not already added
+          if (!grouped[categoryName]!.any((t) => t.id == tukang.id)) {
+            grouped[categoryName]!.add(tukang);
+          }
+        }
+      } else {
+        // Fallback to single namaKategori if kategoriList is empty
+        final category = tukang.namaKategori ?? 'Lainnya';
+        if (!grouped.containsKey(category)) {
+          grouped[category] = [];
+        }
+        grouped[category]!.add(tukang);
       }
-      grouped[category]!.add(tukang);
     }
+    
     return grouped;
   }
 
@@ -690,13 +711,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 6),
                     // Status
                     Text(
-                      technician.statusAktif == 'online'
+                      technician.statusAktif == 'tersedia' || 
+                              technician.statusAktif == 'online'
                           ? '🟢 Online'
+                          : technician.statusAktif == 'sibuk'
+                          ? '🟠 Sibuk'
                           : '⚫ Offline',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFF3B950),
+                        color:
+                            technician.statusAktif == 'tersedia' ||
+                                    technician.statusAktif == 'online'
+                                ? Colors.green
+                                : technician.statusAktif == 'sibuk'
+                                ? Colors.orange
+                                : Colors.grey,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -838,7 +868,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       )
                       : Text(
-                        'Rp ${_userBalance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                        'Rp ${_userPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
