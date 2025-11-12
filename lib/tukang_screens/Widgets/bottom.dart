@@ -1,37 +1,23 @@
-// File: lib/screens/Widgets/bottom_navigation.dart
+// File: lib/screens/Widgets/bottom.dart
 import 'package:flutter/material.dart';
 
-class BottomNavigation extends StatefulWidget {
+class Bottom extends StatefulWidget {
   final Function(int)? onTap;
   final int currentIndex;
-  
-  const BottomNavigation({
-    super.key,
-    this.onTap,
-    this.currentIndex = 1, 
-  });
+
+  const Bottom({super.key, this.onTap, this.currentIndex = 0});
 
   @override
-  State<BottomNavigation> createState() => _BottomNavigationState();
+  State<Bottom> createState() => _BottomState();
 }
 
-class _BottomNavigationState extends State<BottomNavigation> {
+class _BottomState extends State<Bottom> {
   void _handleNavigation(int index) {
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/ChatScreen');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/HomeScreen');
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/PaymentScreen');
-        break;
-    }
-    
+    // Jika menggunakan MainContainer, panggil callback
     if (widget.onTap != null) {
       widget.onTap!(index);
     }
+    // Jika tidak ada callback, tidak melakukan apa-apa (biarkan MainContainer yang mengatur)
   }
 
   @override
@@ -42,10 +28,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE6B366),
-            Color(0xFFF3B950),
-          ],
+          colors: [Color(0xFFE6B366), Color(0xFFF3B950)],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(25),
@@ -53,7 +36,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha:0.15),
+            color: const Color(0xFF000000).withValues(alpha: 0.15),
             offset: const Offset(0, -4),
             blurRadius: 16,
           ),
@@ -64,22 +47,40 @@ class _BottomNavigationState extends State<BottomNavigation> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNavItem(0, Icons.chat_bubble_outline, Icons.chat_bubble, 'Chat'),
-            _buildNavItem(1, Icons.home_outlined, Icons.home, 'Home', isCenter: true),
-            _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'Payment'),
+            _buildNavItem(
+              0,
+              Icons.home_outlined,
+              Icons.home,
+              'Home',
+              isCenter: true,
+            ),
+            _buildNavItem(
+              1,
+              Icons.account_balance_wallet_outlined,
+              Icons.account_balance_wallet,
+              'Payment',
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, {bool isCenter = false}) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label, {
+    bool isCenter = false,
+  }) {
     bool isSelected = widget.currentIndex == index;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleNavigation(index),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
           height: 60,
           margin: const EdgeInsets.symmetric(horizontal: 8),
           decoration: isCenter && isSelected
@@ -88,7 +89,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha:0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -96,25 +97,29 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 )
               : isSelected && !isCenter
                   ? BoxDecoration(
-                      color: Colors.white.withValues(alpha:0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     )
                   : null,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                size: isCenter ? 28 : 24,
-                color: isCenter && isSelected
-                    ? const Color(0xFFF3B950)
-                    : isSelected
-                        ? Colors.white
-                        : Colors.white.withValues(alpha:0.7),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  key: ValueKey(isSelected),
+                  size: isCenter ? 28 : 24,
+                  color: isCenter && isSelected
+                      ? const Color(0xFFF3B950)
+                      : isSelected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.7),
+                ),
               ),
               const SizedBox(height: 2),
-              Text(
-                label,
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -122,8 +127,9 @@ class _BottomNavigationState extends State<BottomNavigation> {
                       ? const Color(0xFFF3B950)
                       : isSelected
                           ? Colors.white
-                          : Colors.white.withValues(alpha:0.7),
+                          : Colors.white.withValues(alpha: 0.7),
                 ),
+                child: Text(label),
               ),
             ],
           ),

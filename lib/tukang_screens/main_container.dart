@@ -1,7 +1,8 @@
 // File: lib/screens/main_container.dart
 import 'package:flutter/material.dart';
-import 'Widgets/bottom_navigation.dart';
-import 'content_bottom/home_screen.dart';
+import 'Widgets/bottom.dart';
+import 'content_bottom/home.dart';
+import 'content_bottom/payment.dart';
 
 class MainContainer extends StatefulWidget {
   const MainContainer({super.key});
@@ -11,7 +12,12 @@ class MainContainer extends StatefulWidget {
 }
 
 class _MainContainerState extends State<MainContainer> {
-  int _currentIndex = 1; // Default to home
+  int _currentIndex = 0; // Default to home
+
+  final List<Widget> _screens = [
+    const Home(),    // Index 0
+    const Payment(), // Index 1
+  ];
 
   void _onNavigationTap(int index) {
     setState(() {
@@ -22,8 +28,8 @@ class _MainContainerState extends State<MainContainer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: const HomeScreen(), // Default screen
-      bottomNavigationBar: BottomNavigation(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: Bottom(
         currentIndex: _currentIndex,
         onTap: _onNavigationTap,
       ),

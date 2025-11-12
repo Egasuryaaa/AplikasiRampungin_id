@@ -9,6 +9,7 @@ import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen
 import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/profile_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/notification.dart';
+import 'package:rampungin_id_userside/Auth_screens/login.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -430,6 +431,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   size: 30,
                   iconSize: 20,
+                ),
+                const SizedBox(width: 8),
+                _buildHeaderIcon(
+                  Icons.logout,
+                  () => _handleLogout(),
+                  size: 30,
+                  iconSize: 18,
                 ),
               ],
             ),
@@ -949,6 +957,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Keluar Akun'),
+            content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+
+                  try {
+                    // Call logout API
+                    await _authService.logout();
+                  } catch (e) {
+                    // API error handling - token is still removed by the service
+                  }
+
+                  // Navigate to login screen and remove all previous routes
+                  if (mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Keluar'),
+              ),
+            ],
+          ),
     );
   }
 }
