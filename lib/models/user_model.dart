@@ -10,7 +10,8 @@ class UserModel {
   final String? ktpPhoto;
   final int? idKategori;
   final String? namaKategori;
-  final List<Map<String, dynamic>>? kategoriList; // Multiple categories for tukang (raw format)
+  final List<Map<String, dynamic>>?
+  kategoriList; // Multiple categories for tukang (raw format)
   final String? statusVerifikasi; // 'pending', 'verified', 'rejected'
   final String? statusAktif; // 'online', 'offline', 'busy'
   final double? rating;
@@ -114,9 +115,10 @@ class UserModel {
     // Parse kategori array if exists (from tukang list endpoint)
     List<Map<String, dynamic>>? kategoriList;
     if (json['kategori'] is List) {
-      kategoriList = (json['kategori'] as List)
-          .map((e) => e as Map<String, dynamic>)
-          .toList();
+      kategoriList =
+          (json['kategori'] as List)
+              .map((e) => e as Map<String, dynamic>)
+              .toList();
     }
 
     // Parse rating - handle rata_rata_rating or rating field

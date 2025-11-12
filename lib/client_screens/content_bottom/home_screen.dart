@@ -144,17 +144,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Group tukang by category - Handle multiple categories per tukang
   Map<String, List<UserModel>> get _techniciansByCategory {
     final Map<String, List<UserModel>> grouped = {};
-    
+
     for (var tukang in _allTukangList) {
       // Get categories from kategoriList array
       if (tukang.kategoriList != null && tukang.kategoriList!.isNotEmpty) {
         for (var kategoriJson in tukang.kategoriList!) {
           final categoryName = kategoriJson['nama'] as String? ?? 'Lainnya';
-          
+
           if (!grouped.containsKey(categoryName)) {
             grouped[categoryName] = [];
           }
-          
+
           // Add tukang to this category if not already added
           if (!grouped[categoryName]!.any((t) => t.id == tukang.id)) {
             grouped[categoryName]!.add(tukang);
@@ -169,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         grouped[category]!.add(tukang);
       }
     }
-    
+
     return grouped;
   }
 
@@ -711,7 +711,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 6),
                     // Status
                     Text(
-                      technician.statusAktif == 'tersedia' || 
+                      technician.statusAktif == 'tersedia' ||
                               technician.statusAktif == 'online'
                           ? '🟢 Online'
                           : technician.statusAktif == 'sibuk'
