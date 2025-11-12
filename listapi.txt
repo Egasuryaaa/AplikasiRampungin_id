@@ -3,8 +3,13 @@
                     Backend: CodeIgniter 4 + PostgreSQL
                     Base URL: http://localhost/admintukang
                     Authentication: JWT Bearer Token
-                    Updated: October 29, 2025
+                    Last Updated: November 12, 2025
 ================================================================================
+
+📅 CHANGELOG:
+- 12 Nov 2025: Added "kategori" field to Browse Tukang & Search Tukang endpoints
+- 10 Nov 2025: Fixed upload foto system with proper URL handling
+- 29 Oct 2025: Initial API documentation
 
 DAFTAR ISI:
 1. AUTH ENDPOINTS (5 endpoints)
@@ -37,7 +42,7 @@ DAFTAR ISI:
      "message": "Pesan deskriptif",
      "data": {...} // Opsional, berisi data response
    }
-
+ 
 ✅ Authentication menggunakan JWT Bearer Token:
    - Header: Authorization: Bearer {your_token_here}
    - Token didapat dari endpoint /api/auth/login
@@ -444,7 +449,25 @@ Total: 14 endpoints untuk client yang sudah login
          "total_rating": 25,
          "total_pekerjaan_selesai": 30,
          "status_ketersediaan": "tersedia",
-         "radius_layanan_km": 10
+         "radius_layanan_km": 10,
+         "kategori": [
+           {
+             "id": 1,
+             "nama": "Tukang Listrik",
+             "deskripsi": "Instalasi dan perbaikan sistem kelistrikan",
+             "is_active": true,
+             "created_at": "2025-10-28 10:15:00",
+             "updated_at": "2025-10-28 10:15:00"
+           },
+           {
+             "id": 15,
+             "nama": "Tukang Elektronik",
+             "deskripsi": "Perbaikan dan instalasi perangkat elektronik",
+             "is_active": true,
+             "created_at": "2025-10-28 10:15:00",
+             "updated_at": "2025-10-28 10:15:00"
+           }
+         ]
        }
      ],
      "pagination": {
@@ -455,6 +478,12 @@ Total: 14 endpoints untuk client yang sudah login
        "total_pages": 1
      }
    }
+   
+   ⚠️ CATATAN FIELD KATEGORI (Updated 12 Nov 2025):
+   - Field "kategori" berisi array kategori keahlian tukang
+   - Setiap tukang bisa memiliki multiple kategori
+   - Gunakan untuk display badge/chip di UI
+   - Support filter by kategori_id parameter
 
 10. GET TUKANG DETAIL
     URL: http://localhost/admintukang/api/client/tukang/{tukang_id}
@@ -548,7 +577,15 @@ Total: 14 endpoints untuk client yang sudah login
           "tarif_per_jam": 75000,
           "bio": "Ahli instalasi listrik",
           "rata_rata_rating": 4.8,
-          "status_ketersediaan": "tersedia"
+          "status_ketersediaan": "tersedia",
+          "kategori": [
+            {
+              "id": 1,
+              "nama": "Tukang Listrik",
+              "deskripsi": "Instalasi dan perbaikan sistem kelistrikan",
+              "is_active": true
+            }
+          ]
         }
       ],
       "pagination": {
@@ -557,6 +594,10 @@ Total: 14 endpoints untuk client yang sudah login
         "offset": 0
       }
     }
+    
+    ⚠️ CATATAN (Updated 12 Nov 2025):
+    - Field "kategori" juga tersedia di hasil search
+    - Memudahkan filtering dan display kategori
 
 ---[ BOOKING & TRANSACTIONS ]--------------------------------------------------
 
@@ -2631,9 +2672,24 @@ Total Endpoints: 33 endpoints
 - 🔨 Tukang: 14 endpoints (profile, orders, ratings, withdrawal)
 
 🔗 Base URL: http://localhost/admintukang
-📅 Version: 1.0.0
-📆 Last Updated: October 29, 2025
-👨‍💻 Backend: CodeIgniter 4 + PostgreSQL + JWT Authentication
+📅 Version: 1.1.0
+📆 Last Updated: November 12, 2025
 
+🆕 LATEST UPDATES (v1.1.0 - Nov 12, 2025):
+- Added "kategori" field in Browse Tukang endpoint (GET /api/client/tukang)
+- Added "kategori" field in Search Tukang endpoint (GET /api/client/search-tukang)
+- Each tukang now includes array of their kategori keahlian
+- Support for multiple categories per tukang
+- Better UI support for displaying kategori badges/chips
+- Enhanced filtering capabilities by kategori_id
+
+💡 MIGRATION NOTES for Flutter Developers:
+- Update Tukang model to include List<Kategori> kategori field
+- Parse kategori array in fromJson() method
+- Display kategori as chips/badges in UI
+- Use kategori_id parameter for filtering by category
+- Example: /api/client/tukang?kategori_id=1&kota=Jakarta
+
+👨‍💻 Backend: CodeIgniter 4 + PostgreSQL + JWT Authentication
 ================================================================================
 

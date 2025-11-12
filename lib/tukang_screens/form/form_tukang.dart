@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:rampungin_id_userside/tukang_screens/content_bottom/home.dart';
+import '../content_bottom/home_screen.dart';
 
 class FormTukang extends StatefulWidget {
   const FormTukang({super.key});
@@ -95,10 +95,14 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const Home(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
+            pageBuilder:
+                (context, animation, secondaryAnimation) => const HomeScreen(),
+            transitionsBuilder: (
+              context,
+              animation,
+              secondaryAnimation,
+              child,
+            ) {
               return FadeTransition(opacity: animation, child: child);
             },
             transitionDuration: const Duration(milliseconds: 500),
@@ -119,8 +123,8 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
               color == Colors.green
                   ? Icons.check_circle
                   : color == Colors.orange
-                      ? Icons.warning
-                      : Icons.error,
+                  ? Icons.warning
+                  : Icons.error,
               color: Colors.white,
               size: 20,
             ),
@@ -152,7 +156,9 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
           _ktpImageSelected = true;
         });
         _showSnackBar('Foto KTP berhasil diambil', Colors.green);
-        
+
+        // Di sini Anda bisa menggunakan image.path untuk mengupload ke server
+        // atau menyimpan path-nya untuk keperluan lain
         debugPrint('Foto KTP path: ${image.path}');
       }
     } catch (e) {
@@ -170,9 +176,9 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFF3B950),
-              onPrimary: Colors.black,
-              onSurface: Colors.black,
+              primary: Color(0xFFF3B950), // warna header date picker
+              onPrimary: Colors.black, // warna teks di atas warna utama
+              onSurface: Colors.black, // warna teks tanggal
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: Colors.black),
@@ -204,7 +210,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
               Icon(Icons.exit_to_app, color: Colors.orange[600], size: 24),
               const SizedBox(width: 8),
               const Text(
-                'Kembali',
+                'kembali',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
@@ -246,7 +252,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
                   ),
                 ),
                 child: const Text(
-                  'Kembali',
+                  'kembali',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -265,7 +271,8 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const Home(),
+        pageBuilder:
+            (context, animation, secondaryAnimation) => const HomeScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -281,7 +288,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
     String? Function(String?)? validator,
     TextInputType? keyboardType,
     bool isDateField = false,
-    double? width,
+    double width = 286,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,56 +303,59 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          width: width ?? double.infinity,
-          constraints: const BoxConstraints(minHeight: 50),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
+        Center(
+          child: Container(
+            width: width,
+            constraints: const BoxConstraints(minHeight: 50),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+              border: Border.all(
+                color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                width: 1,
               ),
-            ],
-            border: Border.all(
-              color: const Color(0xFFF3B950).withValues(alpha: 0.3),
-              width: 1,
             ),
-          ),
-          child: TextFormField(
-            controller: controller,
-            validator: validator,
-            keyboardType: keyboardType,
-            readOnly: isDateField,
-            onTap: isDateField ? _selectDate : null,
-            style: const TextStyle(
-              fontFamily: 'Abel',
-              fontSize: 14,
-              color: Color(0xFF2C2C2C),
-            ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(
+            child: TextFormField(
+              controller: controller,
+              validator: validator,
+              keyboardType: keyboardType,
+              readOnly: isDateField,
+              onTap: isDateField ? _selectDate : null,
+              style: const TextStyle(
                 fontFamily: 'Abel',
-                fontSize: 12,
-                color: Color(0xFF999999),
+                fontSize: 14,
+                color: Color(0xFF2C2C2C),
               ),
-              border: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: const TextStyle(
+                  fontFamily: 'Abel',
+                  fontSize: 12,
+                  color: Color(0xFF999999),
+                ),
+                border: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                suffixIcon:
+                    isDateField
+                        ? const Icon(
+                          Icons.calendar_today,
+                          color: Color(0xFFF3B950),
+                          size: 20,
+                        )
+                        : null,
               ),
-              suffixIcon: isDateField
-                  ? const Icon(
-                      Icons.calendar_today,
-                      color: Color(0xFFF3B950),
-                      size: 20,
-                    )
-                  : null,
             ),
           ),
         ),
@@ -374,35 +384,26 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 50),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
+        Center(
+          child: Container(
+            width: 286,
+            constraints: const BoxConstraints(minHeight: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+              border: Border.all(
+                color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                width: 1,
               ),
-            ],
-            border: Border.all(
-              color: const Color(0xFFF3B950).withValues(alpha: 0.3),
-              width: 1,
             ),
-
-          ),
-          child: DropdownButtonFormField<String>(
-            value: (value == null || value.isEmpty) ? null : value,
-            validator: validator,
-            hint: Text(
-              hintText,
-              style: const TextStyle(
-                fontFamily: 'Abel',
-                fontSize: 12,
-                color: Color(0xFF999999),
             child: DropdownButtonFormField<String>(
               value:
                   _selectedCategory.isEmpty
@@ -433,33 +434,23 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
                 focusedErrorBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
+              dropdownColor: Colors.white,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF2C2C2C)),
+              items:
+                  items.map((String item) {
+                    return DropdownMenuItem<String>(
+                      value: item,
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF2C2C2C),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+              onChanged: onChanged,
             ),
-            isExpanded: true,
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              color: Color(0xFFF3B950),
-            ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-            dropdownColor: Colors.white,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF2C2C2C)),
-            items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: onChanged,
           ),
         ),
       ],
@@ -471,409 +462,499 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Column(
-              children: [
-                // Enhanced Header
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF3B950).withValues(alpha: 0.4),
-                        offset: const Offset(0, 4),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-                  child: Column(
-                    children: [
-                      // Header with Exit Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            onPressed: _showExitDialog,
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back,
-                                color: Colors.black87,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            'Verifikasi Tukang',
-                            style: TextStyle(
-                              fontFamily: 'Acme',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(width: 48),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Icon(
-                        Icons.verified_user,
-                        size: 48,
-                        color: Colors.black87,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'LENGKAPI DATA DIRI',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Acme',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 3,
-                        width: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
+        child: SingleChildScrollView(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).padding.top -
+                      MediaQuery.of(context).padding.bottom,
                 ),
-
-                // Form Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Info Card
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFF3B950).withValues(alpha: 0.3),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
+                child: IntrinsicHeight(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        // Enhanced Header with Exit Button
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Colors.orange[600],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Lengkapi data dengan benar untuk proses verifikasi yang lebih cepat',
-                                    style: TextStyle(
-                                      fontFamily: 'Abel',
-                                      fontSize: 12,
-                                      height: 1.4,
-                                      color: Colors.grey[700],
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(40),
+                              bottomRight: Radius.circular(40),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFFF3B950,
+                                ).withValues(alpha: 0.4),
+                                offset: const Offset(0, 4),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                          child: Column(
+                            children: [
+                              // Header with Exit Button
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                    onPressed: _showExitDialog,
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_back,
+                                        color: Colors.black87,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Form Fields
-                          _buildInputField(
-                            label: 'Nama Lengkap',
-                            controller: _nameController,
-                            hintText: 'Masukkan nama lengkap Anda',
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nama tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          _buildInputField(
-                            label: 'Alamat Lengkap',
-                            controller: _addressController,
-                            hintText: 'Masukkan alamat lengkap Anda',
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Alamat tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Birth Place and Date Row
-                          const Text(
-                            'Tempat & Tanggal Lahir',
-                            style: TextStyle(
-                              fontFamily: 'Acme',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF2C2C2C),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildInputField(
-                                  label: '',
-                                  controller: _birthPlaceController,
-                                  hintText: 'Tempat Lahir',
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Wajib diisi';
-                                    }
-                                    return null;
-                                  },
+                                  const Text(
+                                    'Verifikasi Tukang',
+                                    style: TextStyle(
+                                      fontFamily: 'Acme',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    width: 48,
+                                  ), // Untuk balance layout
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Icon(
+                                Icons.verified_user,
+                                size: 48,
+                                color: Colors.black87,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'LENGKAPI DATA DIRI',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Acme',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildInputField(
-                                  label: '',
-                                  controller: _birthDateController,
-                                  hintText: 'Tanggal Lahir',
-                                  isDateField: true,
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Wajib diisi';
-                                    }
-                                    return null;
-                                  },
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 3,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                        ),
 
-                          // Category Dropdown
-                          _buildDropdownField(
-                            label: 'Kategori Keahlian',
-                            value: _selectedCategory,
-                            items: _categories.keys.toList(),
-                            hintText: 'Pilih kategori keahlian',
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Pilih kategori keahlian';
-                              }
-                              return null;
-                            },
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedCategory = value!;
-                                _selectedSubCategory = '';
-                                _showSubCategory = _categories[value]!.isNotEmpty;
-                              });
-                            },
-                          ),
-
-                          // Animated Sub-category Dropdown
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            child: _showSubCategory
-                                ? Column(
-                                    mainAxisSize: MainAxisSize.min,
+                        // Form Content
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Enhanced description
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFF3B950,
+                                      ).withValues(alpha: 0.3),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
                                     children: [
-                                      const SizedBox(height: 16),
-                                      _buildDropdownField(
-                                        label: 'Spesialisasi',
-                                        value: _selectedSubCategory,
-                                        items: _categories[_selectedCategory] ?? [],
-                                        hintText: 'Pilih spesialisasi Anda',
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.orange[600],
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Lengkapi data dengan benar untuk proses verifikasi yang lebih cepat',
+                                          style: TextStyle(
+                                            fontFamily: 'Abel',
+                                            fontSize: 12,
+                                            height: 1.4,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Form Fields
+                                Expanded(
+                                  child: ListView(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    children: [
+                                      _buildInputField(
+                                        label: 'Nama Lengkap',
+                                        controller: _nameController,
+                                        hintText: 'Masukkan nama lengkap Anda',
                                         validator: (value) {
-                                          if (_showSubCategory &&
-                                              (value == null || value.isEmpty)) {
-                                            return 'Pilih spesialisasi';
+                                          if (value == null ||
+                                              value.trim().isEmpty) {
+                                            return 'Nama tidak boleh kosong';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      _buildInputField(
+                                        label: 'Alamat Lengkap',
+                                        controller: _addressController,
+                                        hintText:
+                                            'Masukkan alamat lengkap Anda',
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.trim().isEmpty) {
+                                            return 'Alamat tidak boleh kosong';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Birth Place and Date Row
+                                      const Text(
+                                        'Tempat & Tanggal Lahir',
+                                        style: TextStyle(
+                                          fontFamily: 'Acme',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF2C2C2C),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildInputField(
+                                              label: '',
+                                              controller: _birthPlaceController,
+                                              hintText: 'Tempat Lahir',
+                                              width: double.infinity,
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.trim().isEmpty) {
+                                                  return 'Wajib diisi';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: _buildInputField(
+                                              label: '',
+                                              controller: _birthDateController,
+                                              hintText: 'Tanggal Lahir',
+                                              width: double.infinity,
+                                              isDateField: true,
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.trim().isEmpty) {
+                                                  return 'Wajib diisi';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Category Dropdown
+                                      _buildDropdownField(
+                                        label: 'Kategori Keahlian',
+                                        value: _selectedCategory,
+                                        items: _categories.keys.toList(),
+                                        hintText: 'Pilih kategori keahlian',
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Pilih kategori keahlian';
                                           }
                                           return null;
                                         },
                                         onChanged: (value) {
                                           setState(() {
-                                            _selectedSubCategory = value!;
+                                            _selectedCategory = value!;
+                                            _selectedSubCategory = '';
+                                            _showSubCategory =
+                                                _categories[value]!.isNotEmpty;
                                           });
                                         },
                                       ),
+
+                                      // Animated Sub-category Dropdown
+                                      AnimatedSize(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        curve: Curves.easeInOut,
+                                        child:
+                                            _showSubCategory
+                                                ? Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const SizedBox(height: 16),
+                                                    _buildDropdownField(
+                                                      label: 'Spesialisasi',
+                                                      value:
+                                                          _selectedSubCategory,
+                                                      items:
+                                                          _categories[_selectedCategory] ??
+                                                          [],
+                                                      hintText:
+                                                          'Pilih spesialisasi Anda',
+                                                      validator: (value) {
+                                                        if (_showSubCategory &&
+                                                            (value == null ||
+                                                                value
+                                                                    .isEmpty)) {
+                                                          return 'Pilih spesialisasi';
+                                                        }
+                                                        return null;
+                                                      },
+                                                      onChanged: (value) {
+                                                        setState(() {
+                                                          _selectedSubCategory =
+                                                              value!;
+                                                        });
+                                                      },
+                                                    ),
+                                                  ],
+                                                )
+                                                : const SizedBox.shrink(),
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Enhanced KTP Upload
+                                      const Text(
+                                        'Foto KTP',
+                                        style: TextStyle(
+                                          fontFamily: 'Acme',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF2C2C2C),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      GestureDetector(
+                                        onTap: _pickKTPImage,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          width: double.infinity,
+                                          height: 120,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                _ktpImageSelected
+                                                    ? Colors.green.withValues(
+                                                      alpha: 0.05,
+                                                    )
+                                                    : Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color:
+                                                  _ktpImageSelected
+                                                      ? Colors.green
+                                                      : const Color(
+                                                        0xFFF3B950,
+                                                      ).withValues(alpha: 0.5),
+                                              width: 2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                offset: const Offset(0, 2),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child:
+                                              _ktpImageSelected
+                                                  ? Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .check_circle_rounded,
+                                                        color:
+                                                            Colors.green[600],
+                                                        size: 32,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Foto KTP Berhasil Diambil',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color:
+                                                              Colors.green[600],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Tap untuk mengambil ulang',
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color:
+                                                              Colors.green[600],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                  : Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .camera_alt_outlined,
+                                                        size: 32,
+                                                        color: const Color(
+                                                          0xFFF3B950,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      const Text(
+                                                        'Ambil Foto KTP',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Color(
+                                                            0xFF2C2C2C,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      const Text(
+                                                        'Tap untuk membuka kamera',
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: Color(
+                                                            0xFF999999,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 24),
+
+                                      // Enhanced Submit Button
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: ElevatedButton(
+                                          onPressed: _submitForm,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(
+                                              0xFFF3B950,
+                                            ),
+                                            foregroundColor: Colors.black87,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            elevation: 4,
+                                            shadowColor: Colors.orange
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                          child: const Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.send_rounded,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'KIRIM DATA VERIFIKASI',
+                                                style: TextStyle(
+                                                  fontFamily: 'Acme',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
                                     ],
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // KTP Upload
-                          const Text(
-                            'Foto KTP',
-                            style: TextStyle(
-                              fontFamily: 'Acme',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF2C2C2C),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _pickKTPImage,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: double.infinity,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: _ktpImageSelected
-                                    ? Colors.green.withValues(alpha: 0.05)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _ktpImageSelected
-                                      ? Colors.green
-                                      : const Color(0xFFF3B950).withValues(alpha: 0.5),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    offset: const Offset(0, 2),
-                                    blurRadius: 4,
                                   ),
-                                ],
-                              ),
-                              child: _ktpImageSelected
-                                  ? Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.check_circle_rounded,
-                                          color: Colors.green[600],
-                                          size: 32,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Foto KTP Berhasil Diambil',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green[600],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Tap untuk mengambil ulang',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.green[600],
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(
-                                          Icons.camera_alt_outlined,
-                                          size: 32,
-                                          color: Color(0xFFF3B950),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'Ambil Foto KTP',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF2C2C2C),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          'Tap untuk membuka kamera',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Color(0xFF999999),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Submit Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: _submitForm,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF3B950),
-                                foregroundColor: Colors.black87,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 4,
-                                shadowColor: Colors.orange.withValues(alpha: 0.3),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.send_rounded, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'KIRIM DATA VERIFIKASI',
-                                    style: TextStyle(
-                                      fontFamily: 'Acme',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
