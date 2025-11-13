@@ -67,6 +67,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
+    if (!mounted) return;
     _animationController.forward();
   }
 
@@ -271,8 +272,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => const Home(),
+        pageBuilder: (context, animation, secondaryAnimation) => const Home(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

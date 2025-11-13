@@ -95,8 +95,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _uploadProfilePhoto() async {
     if ((_selectedImageBytes == null && _selectedImageFilename == null) ||
-        _profile == null)
+        _profile == null) {
       return;
+    }
 
     try {
       // Show loading dialog

@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
+import 'Widgets/bottom.dart';
+import 'content_bottom/home.dart';
+import 'content_bottom/payment.dart';
 
-class TukangScreen extends StatelessWidget {
+class TukangScreen extends StatefulWidget {
   const TukangScreen({super.key});
+
+  @override
+  State<TukangScreen> createState() => _TukangScreenState();
+}
+
+class _TukangScreenState extends State<TukangScreen> {
+  int _currentIndex = 0; // Default to home
+
+  final List<Widget> _screens = [
+    const Home(), // Index 0
+    const Payment(), // Index 1
+  ];
+
+  void _onNavigationTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tukang Home'),
-        backgroundColor: const Color(0xFFF3B950),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.build, size: 64, color: Color(0xFFF3B950)),
-            SizedBox(height: 16),
-            Text(
-              'Tukang Screen',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+      body: _screens[_currentIndex],
+      bottomNavigationBar: Bottom(
+        currentIndex: _currentIndex,
+        onTap: _onNavigationTap,
       ),
     );
   }

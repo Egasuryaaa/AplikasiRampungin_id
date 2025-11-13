@@ -46,6 +46,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
       parent: _fadeController,
       curve: Curves.easeIn,
     );
+    if (!mounted) return;
     _fadeController.forward();
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
-import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/transaction_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
 import 'package:rampungin_id_userside/tukang_screens/form/form_tukang.dart';
@@ -9,8 +8,6 @@ import '../detail/detail_order.dart';
 import '../detail/profile.dart';
 import '../detail/notification_tk.dart';
 import '../../Auth_screens/login.dart';
-
-
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -26,7 +23,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   // Data from API
   List<TransactionModel> _pendingOrders = [];
   StatisticsModel? _statistics;
-  UserModel? _currentUser;
   bool _isLoadingData = true;
 
   late AnimationController _fadeController;
@@ -142,12 +138,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Future<void> _loadProfile() async {
     try {
-      final user = await _authService.getCurrentUser();
-      if (mounted) {
-        setState(() {
-          _currentUser = user;
-        });
-      }
+      await _authService.getCurrentUser();
     } catch (e) {
       // Silently fail
     }
@@ -213,12 +204,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   void _startAnimations() async {
+    if (!mounted) return;
     _pulseController.repeat(reverse: true);
 
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     _fadeController.forward();
 
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _slideController.forward();
   }
 
@@ -357,134 +351,132 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildVerificationCard() {
-  return _buildStaticCard(
-    delay: 0.3,
-    child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            offset: const Offset(0, 8),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-          BoxShadow(
-            color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-            offset: const Offset(0, 4),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return _buildStaticCard(
+      delay: 0.3,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            // Add delay to ensure layout is complete
-            Future.microtask(() {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FormTukang(),
-                  ),
-                );
-              }
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              offset: const Offset(0, 8),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              // Add delay to ensure layout is complete
+              Future.microtask(() {
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FormTukang()),
+                  );
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.verified_user,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.verified_user,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Verifikasi Tukang',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Verifikasi Tukang',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Lengkapi verifikasi untuk meningkatkan kepercayaan pelanggan',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
+                        SizedBox(height: 4),
+                        Text(
+                          'Lengkapi verifikasi untuk meningkatkan kepercayaan pelanggan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      ],
                     ),
                   ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Verifikasi',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Verifikasi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ],
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1063,8 +1055,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ],
         ),
       ),
-
-      // TAMBAHKAN BOTTOM NAVIGATION DI SINI
     );
   }
 }

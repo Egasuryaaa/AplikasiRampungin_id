@@ -9,6 +9,7 @@ import '../models/topup_model.dart';
 import '../models/category_model.dart';
 import '../models/statistics_model.dart';
 import '../models/tukang_detail_model.dart';
+import 'auth_service.dart';
 import 'dart:developer' as developer;
 
 /// Client Service - Handles all client-related endpoints
@@ -75,10 +76,20 @@ class ClientService {
 
       final data = _client.parseResponse(response);
 
+      // If update successful but data is null, fetch updated profile
+      if (data['status'] == 'success') {
+        // Fetch updated profile from auth/me endpoint
+        final authService = AuthService();
+        return await authService.getCurrentUser();
+      }
+
       if (data['data'] != null) {
         return UserModel.fromJson(data['data'] as Map<String, dynamic>);
       }
-      return UserModel.fromJson(data);
+
+      throw Exception(
+        'Update profile failed: ${data['message'] ?? 'Unknown error'}',
+      );
     } catch (e) {
       throw Exception('Failed to update profile: $e');
     }

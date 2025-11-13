@@ -53,6 +53,7 @@ class _NotificationtkState extends State<Notificationtk>
 
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _fadeController.forward();
     _slideController.forward();
   }

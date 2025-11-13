@@ -119,16 +119,24 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _startAnimations() async {
+    if (!mounted) return;
     _floatingController.repeat(reverse: true);
+
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _fadeController.forward();
+
     await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
     _slideController.forward();
+
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _scaleController.forward();
   }
 
   void _shakeForm() {
+    if (!mounted) return;
     _shakeController.reset();
     _shakeController.forward();
   }
@@ -141,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen>
     } else if (user.jenisAkun == 'tukang') {
       // Check verification status for tukang
       if (user.statusVerifikasi == 'verified') {
-        Navigator.pushReplacementNamed(context, '/main_container');
+        Navigator.pushReplacementNamed(context, '/tukang_main');
       } else if (user.statusVerifikasi == 'pending') {
         showDialog(
           context: context,

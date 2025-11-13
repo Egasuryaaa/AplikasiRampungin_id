@@ -1,4 +1,4 @@
-// File: lib/screens/Widgets/bottom.dart
+// File: lib/tukang_screens/Widgets/bottom.dart
 import 'package:flutter/material.dart';
 
 class Bottom extends StatefulWidget {
@@ -13,11 +13,10 @@ class Bottom extends StatefulWidget {
 
 class _BottomState extends State<Bottom> {
   void _handleNavigation(int index) {
-    // Jika menggunakan MainContainer, panggil callback
+    // Call callback if provided (for screen switching)
     if (widget.onTap != null) {
       widget.onTap!(index);
     }
-    // Jika tidak ada callback, tidak melakukan apa-apa (biarkan MainContainer yang mengatur)
   }
 
   @override
@@ -83,23 +82,24 @@ class _BottomState extends State<Bottom> {
           curve: Curves.easeInOut,
           height: 60,
           margin: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: isCenter && isSelected
-              ? BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                )
-              : isSelected && !isCenter
+          decoration:
+              isCenter && isSelected
                   ? BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    )
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  )
+                  : isSelected && !isCenter
+                  ? BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  )
                   : null,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -110,9 +110,10 @@ class _BottomState extends State<Bottom> {
                   isSelected ? activeIcon : icon,
                   key: ValueKey(isSelected),
                   size: isCenter ? 28 : 24,
-                  color: isCenter && isSelected
-                      ? const Color(0xFFF3B950)
-                      : isSelected
+                  color:
+                      isCenter && isSelected
+                          ? const Color(0xFFF3B950)
+                          : isSelected
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.7),
                 ),
@@ -123,9 +124,10 @@ class _BottomState extends State<Bottom> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isCenter && isSelected
-                      ? const Color(0xFFF3B950)
-                      : isSelected
+                  color:
+                      isCenter && isSelected
+                          ? const Color(0xFFF3B950)
+                          : isSelected
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.7),
                 ),

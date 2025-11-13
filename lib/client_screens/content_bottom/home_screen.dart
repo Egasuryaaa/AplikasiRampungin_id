@@ -196,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
 
+    if (!mounted) return;
     _fadeController.forward();
     _slideController.forward();
   }

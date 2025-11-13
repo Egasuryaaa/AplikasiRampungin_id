@@ -6,6 +6,7 @@ import '../models/transaction_model.dart';
 import '../models/rating_model.dart';
 import '../models/withdrawal_model.dart';
 import '../models/statistics_model.dart';
+import '../models/tukang_profile_model.dart';
 
 /// Tukang Service - Handles all tukang-related endpoints
 class TukangService {
@@ -114,6 +115,82 @@ class TukangService {
       return _client.parseResponse(response);
     } catch (e) {
       throw Exception('Failed to update availability: $e');
+    }
+  }
+
+  /// Get tukang profile (Full detail with profil_tukang and kategori)
+  Future<TukangProfileModel> getProfileFull() async {
+    try {
+      final response = await _client.get(ApiConfig.tukangProfile);
+      final data = _client.parseResponse(response);
+
+      if (data['data'] != null) {
+        return TukangProfileModel.fromJson(
+          data['data'] as Map<String, dynamic>,
+        );
+      }
+      throw Exception('No profile data found');
+    } catch (e) {
+      throw Exception('Failed to get profile: $e');
+    }
+  }
+
+  /// Update tukang profile (JSON format - sesuai API spec)
+  Future<TukangProfileModel> updateProfileFull({
+    required String namaLengkap,
+    required String email,
+    required String noTelp,
+    required String alamat,
+    required String kota,
+    required String provinsi,
+    required int pengalamanTahun,
+    required double tarifPerJam,
+    required String bio,
+    required List<String> keahlian,
+    required int radiusLayananKm,
+    required String namaBank,
+    required String nomorRekening,
+    required String namaPemilikRekening,
+    List<int>? kategoriIds,
+    String? fotoProfil, // Base64 string (optional)
+  }) async {
+    try {
+      final body = {
+        'nama_lengkap': namaLengkap,
+        'email': email,
+        'no_telp': noTelp,
+        'alamat': alamat,
+        'kota': kota,
+        'provinsi': provinsi,
+        'pengalaman_tahun': pengalamanTahun,
+        'tarif_per_jam': tarifPerJam,
+        'bio': bio,
+        'keahlian': keahlian,
+        'radius_layanan_km': radiusLayananKm,
+        'nama_bank': namaBank,
+        'nomor_rekening': nomorRekening,
+        'nama_pemilik_rekening': namaPemilikRekening,
+        if (kategoriIds != null && kategoriIds.isNotEmpty)
+          'kategori_ids': kategoriIds,
+        if (fotoProfil != null) 'foto_profil': fotoProfil,
+      };
+
+      // Use PUT method as per API spec
+      final response = await _client.put(ApiConfig.tukangProfile, body: body);
+
+      final data = _client.parseResponse(response);
+
+      // If backend returns success but null data, fetch the updated profile
+      if (data['status'] == 'success') {
+        // Fetch updated profile after successful update
+        return await getProfileFull();
+      }
+
+      throw Exception(
+        'Update profile failed: ${data['message'] ?? 'Unknown error'}',
+      );
+    } catch (e) {
+      throw Exception('Failed to update profile: $e');
     }
   }
 

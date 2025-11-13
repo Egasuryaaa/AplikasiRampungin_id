@@ -53,6 +53,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _fadeController.forward();
     _slideController.forward();
   }
