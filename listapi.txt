@@ -7,6 +7,7 @@
 ================================================================================
 
 📅 CHANGELOG:
+- 14 Nov 2025: Added GET /api/tukang/categories endpoint for tukang users
 - 12 Nov 2025: Added "kategori" field to Browse Tukang & Search Tukang endpoints
 - 10 Nov 2025: Fixed upload foto system with proper URL handling
 - 29 Oct 2025: Initial API documentation
@@ -22,8 +23,9 @@ DAFTAR ISI:
    - Top-up POIN (2)
    - Rating & Statistics (2)
    
-3. TUKANG ENDPOINTS (14 endpoints)
+3. TUKANG ENDPOINTS (15 endpoints)
    - Profile Management (3)
+   - Categories (1)
    - Order Management (7)
    - Ratings & Reviews (1)
    - Withdrawal (2)
@@ -1528,7 +1530,7 @@ Total: 14 endpoints untuk client yang sudah login
 ================================================================================
 🔨 TUKANG ENDPOINTS (Protected - JWT + Role Tukang)
 ================================================================================
-Total: 14 endpoints untuk tukang yang sudah login dan verified
+Total: 15 endpoints untuk tukang yang sudah login dan verified
 
 ⚠️ FLOW TUKANG:
 1. Register → Menunggu verifikasi admin (is_verified = false)
@@ -1614,7 +1616,60 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       "foto_profil": "base64_image_string"  // Optional
     }
 
-22. UPDATE AVAILABILITY
+---[ CATEGORIES ]---------------------------------------------------------------
+
+22. GET CATEGORIES
+    URL: http://localhost/admintukang/api/tukang/categories
+    Method: GET
+    Auth: Bearer Token (Tukang)
+    Headers:
+    {
+      "Authorization": "Bearer {token}"
+    }
+    
+    Response Success:
+    {
+      "status": "success",
+      "message": "Kategori berhasil diambil",
+      "data": [
+        {
+          "id": 1,
+          "nama_kategori": "Tukang Listrik",
+          "deskripsi": "Instalasi dan perbaikan listrik rumah dan kantor",
+          "icon": "electrical_services",
+          "is_active": true,
+          "created_at": "2024-10-10 10:00:00",
+          "updated_at": "2024-10-10 10:00:00",
+          "jumlah_tukang": 5
+        },
+        {
+          "id": 2,
+          "nama_kategori": "Tukang Ledeng",
+          "deskripsi": "Instalasi dan perbaikan pipa air dan sanitasi",
+          "icon": "plumbing",
+          "is_active": true,
+          "created_at": "2024-10-10 10:00:00",
+          "updated_at": "2024-10-10 10:00:00",
+          "jumlah_tukang": 3
+        }
+      ]
+    }
+    
+    Response Error (403 - Forbidden):
+    {
+      "status": "error",
+      "message": "Anda tidak memiliki akses ke resource ini"
+    }
+    
+    📝 Notes:
+    - Endpoint ini hanya bisa diakses oleh user dengan role Tukang
+    - Berguna untuk melihat semua kategori jasa yang tersedia
+    - Field "jumlah_tukang" menunjukkan jumlah tukang aktif di kategori tersebut
+    - Tukang bisa memilih kategori keahliannya dari list ini
+
+---[ ORDER MANAGEMENT ]---------------------------------------------------------
+
+23. UPDATE AVAILABILITY
     URL: http://localhost/admintukang/api/tukang/availability
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1635,7 +1690,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
 
 ---[ ORDER MANAGEMENT ]--------------------------------------------------------
 
-23. GET ORDERS
+24. GET ORDERS
     URL: http://localhost/admintukang/api/tukang/orders
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -1683,7 +1738,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-24. GET ORDER DETAIL
+25. GET ORDER DETAIL
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -1720,7 +1775,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-25. ACCEPT ORDER
+26. ACCEPT ORDER
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/accept
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1738,7 +1793,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       "message": "Pesanan berhasil diterima"
     }
 
-26. REJECT ORDER
+27. REJECT ORDER
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/reject
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1760,7 +1815,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       "message": "Pesanan berhasil ditolak"
     }
 
-27. START WORK
+28. START WORK
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/start
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1779,7 +1834,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       "message": "Pekerjaan berhasil dimulai"
     }
 
-28. COMPLETE WORK
+29. COMPLETE WORK
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/complete
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1803,7 +1858,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-29. CONFIRM TUNAI PAYMENT
+30. CONFIRM TUNAI PAYMENT
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/confirm-tunai
     Method: PUT atau POST
     Auth: Bearer Token (Tukang)
@@ -1824,7 +1879,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
 
 ---[ RATINGS & REVIEWS ]-------------------------------------------------------
 
-30. GET RATINGS
+31. GET RATINGS
     URL: http://localhost/admintukang/api/tukang/ratings
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -1862,7 +1917,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
 
 ---[ WITHDRAWAL ]--------------------------------------------------------------
 
-31. REQUEST WITHDRAWAL
+32. REQUEST WITHDRAWAL
     URL: http://localhost/admintukang/api/tukang/withdrawal
     Method: POST
     Auth: Bearer Token (Tukang)
@@ -1895,7 +1950,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-32. GET WITHDRAWAL HISTORY
+33. GET WITHDRAWAL HISTORY
     URL: http://localhost/admintukang/api/tukang/withdrawal
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -1937,7 +1992,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
 
 ---[ STATISTICS ]--------------------------------------------------------------
 
-33. GET TUKANG STATISTICS
+34. GET TUKANG STATISTICS
     URL: http://localhost/admintukang/api/tukang/statistics
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -2184,7 +2239,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-24. GET ORDER DETAIL
+25. GET ORDER DETAIL
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -2240,7 +2295,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-25. ACCEPT ORDER
+26. ACCEPT ORDER
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/accept
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
@@ -2252,7 +2307,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     Example:
     http://localhost/admintukang/api/tukang/orders/1/accept
 
-26. REJECT ORDER
+27. REJECT ORDER
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/reject
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
@@ -2270,7 +2325,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     Example:
     http://localhost/admintukang/api/tukang/orders/1/reject
 
-27. START WORK
+28. START WORK
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/start
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
@@ -2282,7 +2337,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     Example:
     http://localhost/admintukang/api/tukang/orders/1/start
 
-28. COMPLETE WORK
+29. COMPLETE WORK
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/complete
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
@@ -2300,7 +2355,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     Example:
     http://localhost/admintukang/api/tukang/orders/1/complete
 
-29. CONFIRM TUNAI PAYMENT
+30. CONFIRM TUNAI PAYMENT
     URL: http://localhost/admintukang/api/tukang/orders/{transaksi_id}/confirm-tunai
     Method: PUT / POST
     Auth: Bearer Token (Tukang)
@@ -2314,7 +2369,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     Example:
     http://localhost/admintukang/api/tukang/orders/1/confirm-tunai
 
-30. GET RATINGS
+31. GET RATINGS
     URL: http://localhost/admintukang/api/tukang/ratings
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -2376,7 +2431,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-31. REQUEST WITHDRAWAL
+32. REQUEST WITHDRAWAL
     URL: http://localhost/admintukang/api/tukang/withdrawal
     Method: POST
     Auth: Bearer Token (Tukang)
@@ -2399,7 +2454,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
     - Biaya admin: 2% (max Rp 5,000)
     - Jumlah bersih = jumlah - biaya_admin
 
-32. GET WITHDRAWAL HISTORY
+33. GET WITHDRAWAL HISTORY
     URL: http://localhost/admintukang/api/tukang/withdrawal
     Method: GET
     Auth: Bearer Token (Tukang)
@@ -2460,7 +2515,7 @@ Total: 14 endpoints untuk tukang yang sudah login dan verified
       }
     }
 
-33. GET TUKANG STATISTICS
+34. GET TUKANG STATISTICS
     URL: http://localhost/admintukang/api/tukang/statistics
     Method: GET
     Auth: Bearer Token (Tukang)

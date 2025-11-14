@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:convert' show json;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,15 +75,17 @@ class ApiClient {
     final headers = await _buildHeaders(requiresAuth);
 
     _logger.d('POST $url');
-    _logger.d('Headers: $headers');
-    _logger.d('Body: ${jsonEncode(body)}');
+    _logger.d('POST $url');
+    if (body != null) {
+      _logger.d('Body keys: ${body.keys.join(", ")}');
+    }
 
     try {
       final response = await http
           .post(
             url,
             headers: headers,
-            body: body != null ? jsonEncode(body) : null,
+            body: body != null ? json.encode(body) : null,
           )
           .timeout(ApiConfig.connectionTimeout);
 
@@ -107,14 +109,16 @@ class ApiClient {
     final headers = await _buildHeaders(requiresAuth);
 
     _logger.d('PUT $url');
-    _logger.d('Body: ${jsonEncode(body)}');
+    if (body != null) {
+      _logger.d('Body keys: ${body.keys.join(", ")}');
+    }
 
     try {
       final response = await http
           .put(
             url,
             headers: headers,
-            body: body != null ? jsonEncode(body) : null,
+            body: body != null ? json.encode(body) : null,
           )
           .timeout(ApiConfig.connectionTimeout);
 
@@ -122,6 +126,45 @@ class ApiClient {
       return response;
     } catch (e) {
       _logger.e('PUT request failed: $e');
+      rethrow;
+    }
+  }
+
+  /// PUT Request with Form Data (for CodeIgniter compatibility)
+  Future<http.Response> putFormData(
+    String endpoint, {
+    Map<String, String>? fields,
+    bool requiresAuth = true,
+  }) async {
+    final url = Uri.parse(ApiConfig.getFullUrl(endpoint));
+    final token = requiresAuth ? await getToken() : null;
+
+    _logger.d('PUT FORM DATA $url');
+    _logger.d('Fields: $fields');
+
+    try {
+      final request = http.MultipartRequest('POST', url);
+
+      // Add _method field for PUT method spoofing (CodeIgniter requirement)
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+      request.fields['_method'] = 'PUT';
+
+      // Add auth header
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      final streamedResponse = await request.send().timeout(
+        ApiConfig.connectionTimeout,
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      _logResponse(response);
+      return response;
+    } catch (e) {
+      _logger.e('PUT FORM DATA request failed: $e');
       rethrow;
     }
   }
@@ -219,7 +262,10 @@ class ApiClient {
 
   /// Build request headers with optional JWT token
   Future<Map<String, String>> _buildHeaders(bool requiresAuth) async {
-    final headers = Map<String, String>.from(ApiConfig.headers);
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     if (requiresAuth) {
       final token = await getToken();
@@ -247,7 +293,7 @@ class ApiClient {
   /// Parse JSON response
   Map<String, dynamic> parseResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      return json.decode(response.body) as Map<String, dynamic>;
     } else {
       throw ApiException(
         statusCode: response.statusCode,

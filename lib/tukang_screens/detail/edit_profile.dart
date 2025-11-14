@@ -5,7 +5,6 @@ import 'package:rampungin_id_userside/models/tukang_profile_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:developer' as developer;
@@ -35,6 +34,7 @@ class _EditProfileState extends State<EditProfile> {
   List<int> _selectedCategoryIds = [];
 
   // Photo
+  XFile? _selectedImageXFile; // Keep XFile for filename
   File? _selectedImage;
   String? _currentPhotoUrl;
   Uint8List? _selectedImageBytes;
@@ -136,6 +136,7 @@ class _EditProfileState extends State<EditProfile> {
       if (image != null) {
         final bytes = await image.readAsBytes();
         setState(() {
+          _selectedImageXFile = image; // Save XFile
           _selectedImage = File(image.path);
           _selectedImageBytes = Uint8List.fromList(bytes);
         });
@@ -205,11 +206,37 @@ class _EditProfileState extends State<EditProfile> {
               .where((e) => e.isNotEmpty)
               .toList();
 
-      // Convert image to base64 if selected
-      String? fotoProfilBase64;
-      if (_selectedImage != null) {
-        final bytes = await _selectedImage!.readAsBytes();
-        fotoProfilBase64 = base64Encode(bytes);
+      // Get image bytes and filename if selected
+      List<int>? fotoProfilBytes;
+      String? fotoProfilFilename;
+      if (_selectedImage != null && _selectedImageXFile != null) {
+        try {
+          final bytes = await _selectedImage!.readAsBytes();
+
+          // Limit file size to 2MB to avoid issues with large payloads
+          if (bytes.length > 2 * 1024 * 1024) {
+            throw Exception('Ukuran foto terlalu besar. Maksimal 2MB');
+          }
+
+          fotoProfilBytes = bytes;
+          fotoProfilFilename = _selectedImageXFile!.name;
+          developer.log(
+            'Image prepared for upload, size: ${bytes.length} bytes, filename: $fotoProfilFilename',
+            name: 'EditProfile',
+          );
+        } catch (e) {
+          developer.log('Error preparing image: $e', name: 'EditProfile');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal memproses foto: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          setState(() => _isSaving = false);
+          return;
+        }
       }
 
       await _tukangService.updateProfileFull(
@@ -229,7 +256,8 @@ class _EditProfileState extends State<EditProfile> {
         namaPemilikRekening: _namaPemilikController.text,
         kategoriIds:
             _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
-        fotoProfil: fotoProfilBase64,
+        fotoProfilBytes: fotoProfilBytes,
+        fotoProfilFilename: fotoProfilFilename,
       );
 
       setState(() => _isSaving = false);
