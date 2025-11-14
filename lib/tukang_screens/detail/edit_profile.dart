@@ -209,19 +209,19 @@ class _EditProfileState extends State<EditProfile> {
       // Get image bytes and filename if selected
       List<int>? fotoProfilBytes;
       String? fotoProfilFilename;
-      if (_selectedImage != null && _selectedImageXFile != null) {
-        try {
-          final bytes = await _selectedImage!.readAsBytes();
 
+      // Use the bytes we already have from _pickImage()
+      if (_selectedImageBytes != null && _selectedImageXFile != null) {
+        try {
           // Limit file size to 2MB to avoid issues with large payloads
-          if (bytes.length > 2 * 1024 * 1024) {
+          if (_selectedImageBytes!.length > 2 * 1024 * 1024) {
             throw Exception('Ukuran foto terlalu besar. Maksimal 2MB');
           }
 
-          fotoProfilBytes = bytes;
+          fotoProfilBytes = _selectedImageBytes!;
           fotoProfilFilename = _selectedImageXFile!.name;
           developer.log(
-            'Image prepared for upload, size: ${bytes.length} bytes, filename: $fotoProfilFilename',
+            'Image prepared for upload, size: ${_selectedImageBytes!.length} bytes, filename: $fotoProfilFilename',
             name: 'EditProfile',
           );
         } catch (e) {
