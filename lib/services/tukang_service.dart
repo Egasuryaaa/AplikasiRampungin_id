@@ -7,10 +7,26 @@ import '../models/rating_model.dart';
 import '../models/withdrawal_model.dart';
 import '../models/statistics_model.dart';
 import '../models/tukang_profile_model.dart';
+import '../models/category_model.dart';
 
 /// Tukang Service - Handles all tukang-related endpoints
 class TukangService {
   final ApiClient _client = ApiClient();
+
+  // ==================== CATEGORIES ====================
+
+  /// Get all categories for tukang
+  Future<List<CategoryModel>> getCategories() async {
+    try {
+      final response = await _client.get(ApiConfig.tukangCategories);
+      final data = _client.parseResponse(response);
+
+      final List<dynamic> categoryList = data['data'] ?? [];
+      return categoryList.map((json) => CategoryModel.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to get categories: $e');
+    }
+  }
 
   // ==================== PROFILE ====================
 

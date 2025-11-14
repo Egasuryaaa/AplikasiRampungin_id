@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:rampungin_id_userside/models/tukang_profile_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
-import 'package:rampungin_id_userside/services/client_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -20,7 +19,6 @@ class EditProfile extends StatefulWidget {
 
 class _EditProfileState extends State<EditProfile> {
   final TukangService _tukangService = TukangService();
-  final ClientService _clientService = ClientService();
   final ImagePicker _imagePicker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
 
@@ -114,7 +112,7 @@ class _EditProfileState extends State<EditProfile> {
     try {
       setState(() => _isLoadingCategories = true);
 
-      final categories = await _clientService.getCategories();
+      final categories = await _tukangService.getCategories();
 
       setState(() {
         _allCategories = categories;

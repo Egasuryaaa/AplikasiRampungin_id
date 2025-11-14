@@ -52,6 +52,9 @@ class ApiConfig {
   static const String tukangProfile = '/api/tukang/profile';
   static const String tukangAvailability = '/api/tukang/availability';
 
+  // Categories
+  static const String tukangCategories = '/api/tukang/categories';
+
   // Orders (Tukang side)
   static const String tukangOrders = '/api/tukang/orders';
   static String tukangOrderDetail(int id) => '/api/tukang/orders/$id';
