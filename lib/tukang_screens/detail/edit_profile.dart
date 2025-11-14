@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:rampungin_id_userside/models/tukang_profile_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
@@ -7,6 +8,7 @@ import 'package:rampungin_id_userside/services/client_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:developer' as developer;
 
 class EditProfile extends StatefulWidget {
@@ -37,6 +39,7 @@ class _EditProfileState extends State<EditProfile> {
   // Photo
   File? _selectedImage;
   String? _currentPhotoUrl;
+  Uint8List? _selectedImageBytes;
 
   // Text controllers
   final TextEditingController _namaController = TextEditingController();
@@ -133,8 +136,10 @@ class _EditProfileState extends State<EditProfile> {
       );
 
       if (image != null) {
+        final bytes = await image.readAsBytes();
         setState(() {
           _selectedImage = File(image.path);
+          _selectedImageBytes = Uint8List.fromList(bytes);
         });
       }
     } catch (e) {
@@ -693,8 +698,8 @@ class _EditProfileState extends State<EditProfile> {
               ),
               child: ClipOval(
                 child:
-                    _selectedImage != null
-                        ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                    _selectedImageBytes != null
+                        ? Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
                         : _currentPhotoUrl != null
                         ? Image.network(
                           'http://localhost/admintukang/${_currentPhotoUrl!}',
