@@ -11,6 +11,8 @@ import 'client_screens/detail/notification.dart';
 import 'tukang_screens/detail/notification_tk.dart';
 import 'tukang_screens/tukang_main.dart';
 import 'client_screens/detail/detail_order.dart';
+import 'tukang_screens/detail/edit_profile.dart';
+import 'tukang_screens/detail/ubahpassword.dart';
 import 'client_screens/detail/profile_screen.dart';
 import 'tukang_screens/detail/profile.dart';
 import 'client_screens/detail/setting.dart';
@@ -40,6 +42,8 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const Profile(),
         '/profile_screen': (context) => ProfileScreen(),
         '/notification': (context) => const NotificationScreen(),
+        '/edit_profile': (context) => const EditProfile(),
+        '/ubahpassword': (context) => const UbahPassword(),
         '/notification_tk': (context) => const Notificationtk(),
         '/client_screen': (context) => const ClientScreen(),
         '/setting': (context) => Setting(),

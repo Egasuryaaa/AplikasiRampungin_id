@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:rampungin_id_userside/Auth_screens/login.dart';
+import 'edit_profile.dart';
+import 'ubahpassword.dart';
 
 class Setting extends StatelessWidget {
   Setting({super.key});
@@ -155,25 +157,14 @@ class Setting extends StatelessWidget {
                                 icon: Icons.person_outline,
                                 title: 'Edit Profil',
                                 subtitle: 'Ubah informasi profil Anda',
-                                onTap: () {
-                                  logger.i('Edit Profil tapped');
-                                },
+                                onTap: () => _navigateToEditProfile(context),
                               ),
+
                               _buildSettingItem(
                                 icon: Icons.lock_outline,
                                 title: 'Ubah Password',
                                 subtitle: 'Ganti kata sandi akun',
-                                onTap: () {
-                                  logger.i('Ubah Password tapped');
-                                },
-                              ),
-                              _buildSettingItem(
-                                icon: Icons.email_outlined,
-                                title: 'Email Notifikasi',
-                                subtitle: 'Kelola notifikasi email',
-                                onTap: () {
-                                  logger.i('Email Notifikasi tapped');
-                                },
+                                onTap: () => _navigateToChangePassword(context),
                               ),
 
                               const SizedBox(height: 24),
@@ -326,6 +317,20 @@ class Setting extends StatelessWidget {
     );
   }
 
+  void _navigateToEditProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditProfile()),
+    );
+  }
+
+  void _navigateToChangePassword(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => UbahPassword()),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -344,12 +349,11 @@ class Setting extends StatelessWidget {
                   // Handle logout logic
                   logger.i('User logged out');
                   // Navigate to login screen
-                  Navigator.pushAndRemoveUntil(
-                    context,
+                  Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                       builder: (context) => const LoginScreen(),
                     ),
-                    (route) => false,
+                    (Route<dynamic> route) => false,
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
