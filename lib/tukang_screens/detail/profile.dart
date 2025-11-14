@@ -154,35 +154,42 @@ class _ProfileState extends State<Profile> {
                                     ],
                                   ),
                                   child: ClipOval(
-                                    child: _profileData?.fotoProfil != null
-                                        ? Image.network(
-                                            'http://localhost/admintukang/${_profileData!.fotoProfil}',
-                                            width: 140,
-                                            height: 140,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return const CircleAvatar(
-                                                radius: 66,
-                                                backgroundColor:
-                                                    Color(0xFFF3B950),
-                                                child: Icon(
-                                                  Icons.person,
-                                                  size: 80,
-                                                  color: Colors.white,
-                                                ),
-                                              );
-                                            },
-                                          )
-                                        : const CircleAvatar(
-                                            radius: 66,
-                                            backgroundColor: Color(0xFFF3B950),
-                                            child: Icon(
-                                              Icons.person,
-                                              size: 80,
-                                              color: Colors.white,
+                                    child:
+                                        _profileData?.fotoProfil != null
+                                            ? Image.network(
+                                              'http://localhost/admintukang/${_profileData!.fotoProfil}',
+                                              width: 140,
+                                              height: 140,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) {
+                                                return const CircleAvatar(
+                                                  radius: 66,
+                                                  backgroundColor: Color(
+                                                    0xFFF3B950,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.person,
+                                                    size: 80,
+                                                    color: Colors.white,
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                            : const CircleAvatar(
+                                              radius: 66,
+                                              backgroundColor: Color(
+                                                0xFFF3B950,
+                                              ),
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 80,
+                                                color: Colors.white,
+                                              ),
                                             ),
-                                          ),
                                   ),
                                 ),
                                 // Edit icon
