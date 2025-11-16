@@ -24,6 +24,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   List<TransactionModel> _pendingOrders = [];
   StatisticsModel? _statistics;
   bool _isLoadingData = true;
+  
+  // Availability status (3 categories)
+  String _availabilityStatus = 'tersedia'; // 'tersedia', 'sibuk', 'offline'
+  bool _isUpdatingAvailability = false;
+  
+  // Order filter
+  String _selectedFilter = 'pending'; // pending, diterima, dalam_proses, selesai
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -138,15 +145,79 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Future<void> _loadProfile() async {
     try {
-      await _authService.getCurrentUser();
+      final profile = await _tukangService.getProfileFull();
+      if (mounted && profile.profilTukang != null) {
+        setState(() {
+          _availabilityStatus = profile.profilTukang!.statusKetersediaan ?? 'tersedia';
+        });
+      }
     } catch (e) {
       // Silently fail
+    }
+  }
+  
+  Future<void> _updateAvailability(String newStatus) async {
+    setState(() {
+      _isUpdatingAvailability = true;
+    });
+    
+    try {
+      await _tukangService.updateAvailability(newStatus);
+      
+      if (mounted) {
+        setState(() {
+          _availabilityStatus = newStatus;
+          _isUpdatingAvailability = false;
+        });
+        
+        String message;
+        Color bgColor;
+        
+        switch (newStatus) {
+          case 'tersedia':
+            message = '✅ Status diubah menjadi Tersedia';
+            bgColor = Colors.green;
+            break;
+          case 'sibuk':
+            message = '⏱️ Status diubah menjadi Sibuk';
+            bgColor = Colors.orange;
+            break;
+          case 'offline':
+            message = '⏸️ Status diubah menjadi Offline';
+            bgColor = Colors.grey;
+            break;
+          default:
+            message = '✅ Status berhasil diubah';
+            bgColor = Colors.blue;
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: bgColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUpdatingAvailability = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal mengubah status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _loadOrders() async {
     try {
-      final orders = await _tukangService.getOrders(status: 'pending');
+      final orders = await _tukangService.getOrders(status: _selectedFilter);
       if (mounted) {
         setState(() {
           _pendingOrders = orders;
@@ -155,6 +226,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     } catch (e) {
       // Silently fail
     }
+  }
+  
+  void _refreshOrders() {
+    setState(() {
+      _isLoadingData = true;
+    });
+    _loadOrders().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+    });
   }
 
   Future<void> _loadStatistics() async {
@@ -223,6 +307,169 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     _pulseController.dispose();
     super.dispose();
   }
+  
+  // Order action handlers
+  Future<void> _acceptOrder(int orderId) async {
+    try {
+      await _tukangService.acceptOrder(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Pesanan berhasil diterima'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _refreshOrders();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal menerima pesanan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _rejectOrder(int orderId) async {
+    // Show dialog untuk input alasan
+    final TextEditingController reasonController = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tolak Pesanan'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            labelText: 'Alasan Penolakan',
+            hintText: 'Masukkan alasan penolakan...',
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Alasan tidak boleh kosong'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Tolak'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result == true && reasonController.text.trim().isNotEmpty) {
+      try {
+        await _tukangService.rejectOrder(orderId, reasonController.text.trim());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Pesanan berhasil ditolak'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          _refreshOrders();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Gagal menolak pesanan: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+  
+  Future<void> _startOrder(int orderId) async {
+    try {
+      await _tukangService.startOrder(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Pekerjaan dimulai'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+        _refreshOrders();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal memulai pekerjaan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _completeOrder(int orderId) async {
+    try {
+      await _tukangService.completeOrder(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Pekerjaan selesai'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _refreshOrders();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal menyelesaikan pekerjaan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _confirmTunaiPayment(int orderId) async {
+    try {
+      await _tukangService.confirmTunaiPayment(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Pembayaran tunai dikonfirmasi'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _refreshOrders();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal konfirmasi pembayaran: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Widget _buildStaticCard({required Widget child, required double delay}) {
     return SlideTransition(
@@ -230,19 +477,178 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       child: FadeTransition(opacity: _fadeAnimation, child: child),
     );
   }
-
-  Widget _buildJobOrderItem(TransactionModel order) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFF4E4BC),
-            const Color(0xFFF4E4BC).withValues(alpha: 0.8),
+  
+  // Availability helper methods
+  Color _getAvailabilityColor() {
+    switch (_availabilityStatus) {
+      case 'tersedia':
+        return Colors.green;
+      case 'sibuk':
+        return Colors.orange;
+      case 'offline':
+        return Colors.grey;
+      default:
+        return Colors.blue;
+    }
+  }
+  
+  IconData _getAvailabilityIcon() {
+    switch (_availabilityStatus) {
+      case 'tersedia':
+        return Icons.check_circle;
+      case 'sibuk':
+        return Icons.access_time;
+      case 'offline':
+        return Icons.pause_circle;
+      default:
+        return Icons.help_outline;
+    }
+  }
+  
+  String _getAvailabilityText() {
+    switch (_availabilityStatus) {
+      case 'tersedia':
+        return 'Tersedia';
+      case 'sibuk':
+        return 'Sibuk';
+      case 'offline':
+        return 'Offline';
+      default:
+        return 'Unknown';
+    }
+  }
+  
+  void _showAvailabilityMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Ubah Status Ketersediaan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildAvailabilityOption('tersedia', 'Tersedia', Icons.check_circle, Colors.green),
+            _buildAvailabilityOption('sibuk', 'Sibuk', Icons.access_time, Colors.orange),
+            _buildAvailabilityOption('offline', 'Offline', Icons.pause_circle, Colors.grey),
           ],
         ),
+      ),
+    );
+  }
+  
+  Widget _buildAvailabilityOption(String value, String label, IconData icon, Color color) {
+    final isSelected = _availabilityStatus == value;
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check, color: color)
+          : null,
+      onTap: () {
+        Navigator.pop(context);
+        if (_availabilityStatus != value) {
+          _updateAvailability(value);
+        }
+      },
+    );
+  }
+  
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _selectedFilter == value;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedFilter = value;
+          _isLoadingData = true;
+        });
+        _loadOrders().then((_) {
+          if (mounted) {
+            setState(() {
+              _isLoadingData = false;
+            });
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
+                )
+              : null,
+          color: isSelected ? null : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobOrderItem(TransactionModel order) {
+    // Determine status color and text
+    Color statusColor;
+    String statusText;
+    
+    switch (order.statusPesanan?.toLowerCase()) {
+      case 'pending':
+        statusColor = Colors.orange;
+        statusText = 'Menunggu';
+        break;
+      case 'diterima':
+        statusColor = Colors.blue;
+        statusText = 'Diterima';
+        break;
+      case 'dalam_proses':
+        statusColor = Colors.purple;
+        statusText = 'Dikerjakan';
+        break;
+      case 'selesai':
+        statusColor = Colors.green;
+        statusText = 'Selesai';
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = order.statusPesanan ?? 'Unknown';
+    }
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -252,102 +658,214 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(25),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const DetailOrder()),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 35,
-                  height: 35,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B4513), Color(0xFF7A3E0F)],
+      child: Column(
+        children: [
+          // Order Info
+          InkWell(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DetailOrder()),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B4513), Color(0xFF7A3E0F)],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
                     ),
-                    borderRadius: BorderRadius.circular(17.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B4513).withValues(alpha: 0.3),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.deskripsiPekerjaan ?? 'JOB ORDER',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF8B4513),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.judulLayanan ?? 'Pesanan',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333333),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        order.namaClient ?? 'Client',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
+                        const SizedBox(height: 4),
+                        Text(
+                          order.namaClient ?? 'Client',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Rp ${order.hargaAkhir?.toStringAsFixed(0) ?? '0'}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF3B950),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
                       ),
-                    ],
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
+                ],
+              ),
+            ),
+          ),
+          
+          // Action Buttons
+          _buildOrderActionButtons(order),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildOrderActionButtons(TransactionModel order) {
+    final status = order.statusPesanan?.toLowerCase() ?? '';
+    
+    if (status == 'pending') {
+      // Terima & Tolak
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _rejectOrder(order.id!),
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text('Tolak'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.orange.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Text(
-                    'Request Order',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Color(0xFF8B4513),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _acceptOrder(order.id!),
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Terima'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (status == 'diterima') {
+      // Mulai Pekerjaan
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _startOrder(order.id!),
+            icon: const Icon(Icons.play_arrow, size: 20),
+            label: const Text('Mulai Pekerjaan'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } else if (status == 'dalam_proses') {
+      // Selesaikan Pekerjaan
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _completeOrder(order.id!),
+            icon: const Icon(Icons.check_circle, size: 20),
+            label: const Text('Selesaikan Pekerjaan'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (status == 'selesai' && 
+               order.metodePembayaran?.toLowerCase() == 'tunai') {
+      // Konfirmasi Bayar Tunai (hanya jika belum dikonfirmasi)
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _confirmTunaiPayment(order.id!),
+            icon: const Icon(Icons.payments, size: 20),
+            label: const Text('Konfirmasi Bayar Tunai'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3B950),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return const SizedBox.shrink();
   }
 
   Widget _buildVerificationCard() {
@@ -529,12 +1047,57 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               children: [
                                 const SizedBox(height: 20),
 
-                                // Enhanced top bar with logout button
+                                // Enhanced top bar with logout and availability toggle
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Logout Button
+                                    // Availability Status Selector (3 categories)
+                                    InkWell(
+                                      onTap: _isUpdatingAvailability ? null : _showAvailabilityMenu,
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getAvailabilityColor().withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: _getAvailabilityColor(),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _getAvailabilityIcon(),
+                                              color: _getAvailabilityColor(),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              _getAvailabilityText(),
+                                              style: TextStyle(
+                                                color: _getAvailabilityColor().withValues(alpha: 0.8),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              Icons.arrow_drop_down,
+                                              color: _getAvailabilityColor(),
+                                              size: 18,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    // Logout Button (moved to right)
                                     GestureDetector(
                                       onTap: _showLogoutDialog,
                                       child: Container(
@@ -926,32 +1489,56 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 20,
+                                  horizontal: 20,
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                child: Column(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFF8B4513,
-                                        ).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(
-                                        Icons.work_outline,
-                                        color: Color(0xFF8B4513),
-                                        size: 20,
-                                      ),
+                                    // Title Row
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(
+                                              0xFF8B4513,
+                                            ).withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(
+                                            Icons.work_outline,
+                                            color: Color(0xFF8B4513),
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Text(
+                                          'ORDER MASUK',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF8B4513),
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'ORDER MASUK',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF8B4513),
-                                        letterSpacing: 1,
+                                    
+                                    const SizedBox(height: 16),
+                                    
+                                    // Filter Tabs
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: [
+                                          _buildFilterChip('Baru', 'pending'),
+                                          const SizedBox(width: 8),
+                                          _buildFilterChip('Diterima', 'diterima'),
+                                          const SizedBox(width: 8),
+                                          _buildFilterChip('Dikerjakan', 'dalam_proses'),
+                                          const SizedBox(width: 8),
+                                          _buildFilterChip('Selesai', 'selesai'),
+                                        ],
                                       ),
                                     ),
                                   ],
