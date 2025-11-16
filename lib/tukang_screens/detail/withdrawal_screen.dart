@@ -80,28 +80,47 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
   Future<void> _submitWithdrawal() async {
     if (_jumlahController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah withdrawal harus diisi')),
+        const SnackBar(content: Text('Jumlah penarikan harus diisi')),
       );
       return;
     }
 
     final jumlah = double.tryParse(_jumlahController.text);
     if (jumlah == null || jumlah <= 0) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah withdrawal tidak valid')),
+        const SnackBar(content: Text('Jumlah penarikan tidak valid')),
+      );
+      return;
+    }
+
+    // Validasi minimum Rp 50.000
+    if (jumlah < 50000) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jumlah minimum penarikan adalah Rp 50.000'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     if (jumlah > _currentBalance) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Saldo tidak mencukupi')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Poin tidak mencukupi'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     if (_nomorRekeningController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nomor rekening harus diisi')),
       );
@@ -109,6 +128,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     }
 
     if (_namaBankController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Nama bank harus diisi')));
@@ -116,8 +136,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     }
 
     if (_atasNamaController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Atas nama rekening harus diisi')),
+        const SnackBar(content: Text('Nama pemilik rekening harus diisi')),
       );
       return;
     }
@@ -177,12 +198,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     switch (status?.toLowerCase()) {
       case 'pending':
         return Colors.orange;
-      case 'disetujui':
-      case 'approved':
+      case 'diproses':
+        return Colors.blue;
       case 'selesai':
         return Colors.green;
       case 'ditolak':
-      case 'rejected':
         return Colors.red;
       default:
         return Colors.grey;
@@ -193,13 +213,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     switch (status?.toLowerCase()) {
       case 'pending':
         return 'Menunggu Proses';
-      case 'disetujui':
-      case 'approved':
-        return 'Disetujui';
+      case 'diproses':
+        return 'Sedang Diproses';
       case 'selesai':
         return 'Selesai';
       case 'ditolak':
-      case 'rejected':
         return 'Ditolak';
       default:
         return status ?? 'Unknown';
@@ -234,17 +252,35 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Saldo Tersedia',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                Row(
+                  children: [
+                    Icon(Icons.stars_rounded, color: Colors.white, size: 24),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Poin Anda',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
-                  'Rp ${_currentBalance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                  '${_currentBalance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} Poin',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '≈ Rp ${_currentBalance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 14,
                   ),
                 ),
               ],
@@ -261,16 +297,29 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.blue[200]!),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, color: Colors.blue[700]),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Permintaan withdrawal akan diproses dalam 1-3 hari kerja.',
-                    style: TextStyle(color: Colors.blue[900], fontSize: 13),
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Informasi Penarikan',
+                        style: TextStyle(
+                          color: Colors.blue[900],
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+                _buildInfoPoint('• Minimum penarikan: Rp 50.000'),
+                _buildInfoPoint('• Fee: 2% (maksimal Rp 5.000)'),
+                _buildInfoPoint('• Proses 1-3 hari kerja'),
               ],
             ),
           ),
@@ -279,16 +328,21 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           // Form
           const Text(
-            'Jumlah Withdrawal',
+            'Jumlah Penarikan',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _jumlahController,
             keyboardType: TextInputType.number,
+            onChanged: (value) {
+              setState(() {}); // Refresh untuk update fee calculation
+            },
             decoration: InputDecoration(
               prefixText: 'Rp ',
-              hintText: 'Masukkan jumlah',
+              hintText: 'Min. Rp 50.000',
+              helperText: 'Minimum penarikan Rp 50.000',
+              helperStyle: TextStyle(color: Colors.grey[600]),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -296,6 +350,40 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
               fillColor: Colors.white,
             ),
           ),
+
+          // Fee Calculation Display
+          if (_jumlahController.text.isNotEmpty &&
+              double.tryParse(_jumlahController.text) != null &&
+              double.parse(_jumlahController.text) >= 50000)
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                children: [
+                  _buildFeeRow(
+                    'Jumlah Penarikan',
+                    'Rp ${_formatNumber(double.parse(_jumlahController.text).toInt())}',
+                  ),
+                  const SizedBox(height: 4),
+                  _buildFeeRow(
+                    'Biaya Admin (2%)',
+                    '- Rp ${_formatNumber(_calculateFee(double.parse(_jumlahController.text)))}',
+                    isNegative: true,
+                  ),
+                  const Divider(height: 16),
+                  _buildFeeRow(
+                    'Jumlah Diterima',
+                    'Rp ${_formatNumber((double.parse(_jumlahController.text) - _calculateFee(double.parse(_jumlahController.text))).toInt())}',
+                    isBold: true,
+                  ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 16),
 
@@ -321,7 +409,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                     ),
                   ),
                   child: const Text(
-                    'Semua Saldo',
+                    'Semua Poin',
                     style: TextStyle(color: Color(0xFFF3B950)),
                   ),
                 ),
@@ -484,11 +572,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(withdrawal.statusPenarikan),
+                          color: _getStatusColor(withdrawal.status),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _getStatusText(withdrawal.statusPenarikan),
+                          _getStatusText(withdrawal.status),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -500,19 +588,30 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rp ${withdrawal.nominal?.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                    'Rp ${withdrawal.jumlah?.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\\d{1,3})(?=(\\d{3})+(?!\\d))'), (Match m) => '${m[1]}.')}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
                     ),
                   ),
+                  if (withdrawal.biayaAdmin != null &&
+                      withdrawal.jumlahBersih != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Biaya Admin: Rp ${_formatNumber(withdrawal.biayaAdmin!.toInt())} \u2022 Diterima: Rp ${_formatNumber(withdrawal.jumlahBersih!.toInt())}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
                   const Divider(height: 24),
                   _buildInfoRow('Bank', withdrawal.namaBank ?? 'N/A'),
                   const SizedBox(height: 4),
                   _buildInfoRow('Rekening', withdrawal.nomorRekening ?? 'N/A'),
                   const SizedBox(height: 4),
-                  _buildInfoRow('Atas Nama', withdrawal.atasNama ?? 'N/A'),
+                  _buildInfoRow(
+                    'Atas Nama',
+                    withdrawal.namaPemilikRekening ?? 'N/A',
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     withdrawal.createdAt?.toString().substring(0, 16) ?? 'N/A',
@@ -571,6 +670,62 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInfoPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: TextStyle(color: Colors.blue[900], fontSize: 13, height: 1.4),
+      ),
+    );
+  }
+
+  Widget _buildFeeRow(
+    String label,
+    String value, {
+    bool isNegative = false,
+    bool isBold = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            color: Colors.grey[700],
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+            color:
+                isNegative
+                    ? Colors.red
+                    : isBold
+                    ? Colors.green[700]
+                    : Colors.grey[800],
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _calculateFee(double amount) {
+    final fee = (amount * 0.02).round();
+    return fee > 5000 ? 5000 : fee;
+  }
+
+  String _formatNumber(int number) {
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
     );
   }
 

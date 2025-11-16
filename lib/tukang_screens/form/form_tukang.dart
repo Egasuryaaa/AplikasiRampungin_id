@@ -84,11 +84,13 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
       if (!_ktpImageSelected) {
+        if (!mounted) return;
         _showSnackBar('Mohon upload foto KTP terlebih dahulu', Colors.orange);
         return;
       }
 
       // Show success animation
+      if (!mounted) return;
       _showSnackBar('Data berhasil disubmit!', Colors.green);
 
       Future.delayed(const Duration(seconds: 1), () {
@@ -111,11 +113,13 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
         );
       });
     } else {
+      if (!mounted) return;
       _showSnackBar('Mohon lengkapi semua field yang diperlukan', Colors.red);
     }
   }
 
   void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -153,6 +157,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
       );
 
       if (image != null) {
+        if (!mounted) return;
         setState(() {
           _ktpImageSelected = true;
         });
@@ -163,6 +168,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
         debugPrint('Foto KTP path: ${image.path}');
       }
     } catch (e) {
+      if (!mounted) return;
       _showSnackBar('Gagal mengambil foto: $e', Colors.red);
     }
   }
@@ -191,6 +197,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
     );
 
     if (picked != null) {
+      if (!mounted) return;
       setState(() {
         _birthDateController.text =
             "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
@@ -269,6 +276,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
   }
 
   void _exitToHome() {
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(

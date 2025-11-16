@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Widgets/bottom.dart';
 import 'content_bottom/home.dart';
-import 'content_bottom/payment.dart';
+import 'detail/withdrawal_screen.dart';
 
 class TukangScreen extends StatefulWidget {
   const TukangScreen({super.key});
@@ -15,7 +15,7 @@ class _TukangScreenState extends State<TukangScreen> {
 
   final List<Widget> _screens = [
     const Home(), // Index 0
-    const Payment(), // Index 1
+    const WithdrawalScreen(), // Index 1
   ];
 
   void _onNavigationTap(int index) {

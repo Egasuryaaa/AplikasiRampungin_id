@@ -1,50 +1,85 @@
 /// Withdrawal Model (Tukang earnings withdrawal)
 class WithdrawalModel {
   final int? id;
-  final int? idTukang;
+  final int? tukangId;
   final String? namaTukang;
-  final double? nominal;
+  final double? jumlah;
+  final double? biayaAdmin;
+  final double? jumlahBersih;
   final String? nomorRekening;
   final String? namaBank;
-  final String? atasNama;
-  final String?
-  statusPenarikan; // 'pending', 'processed', 'completed', 'rejected'
+  final String? namaPemilikRekening;
+  final String? status; // 'pending', 'diproses', 'selesai', 'ditolak'
   final String? alasanPenolakan;
+  final int? diprosesOleh;
+  final String? namaAdmin;
+  final String? buktiTransfer;
+  final DateTime? waktuDiproses;
   final DateTime? createdAt;
-  final DateTime? processedAt;
+  final DateTime? updatedAt;
 
   WithdrawalModel({
     this.id,
-    this.idTukang,
+    this.tukangId,
     this.namaTukang,
-    this.nominal,
+    this.jumlah,
+    this.biayaAdmin,
+    this.jumlahBersih,
     this.nomorRekening,
     this.namaBank,
-    this.atasNama,
-    this.statusPenarikan,
+    this.namaPemilikRekening,
+    this.status,
     this.alasanPenolakan,
+    this.diprosesOleh,
+    this.namaAdmin,
+    this.buktiTransfer,
+    this.waktuDiproses,
     this.createdAt,
-    this.processedAt,
+    this.updatedAt,
   });
 
   factory WithdrawalModel.fromJson(Map<String, dynamic> json) {
     return WithdrawalModel(
-      id: json['id'] as int?,
-      idTukang: json['id_tukang'] as int?,
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      tukangId:
+          json['tukang_id'] != null
+              ? int.tryParse(json['tukang_id'].toString())
+              : null,
       namaTukang: json['nama_tukang'] as String?,
-      nominal: (json['nominal'] as num?)?.toDouble(),
+      jumlah:
+          json['jumlah'] != null
+              ? double.tryParse(json['jumlah'].toString())
+              : null,
+      biayaAdmin:
+          json['biaya_admin'] != null
+              ? double.tryParse(json['biaya_admin'].toString())
+              : null,
+      jumlahBersih:
+          json['jumlah_bersih'] != null
+              ? double.tryParse(json['jumlah_bersih'].toString())
+              : null,
       nomorRekening: json['nomor_rekening'] as String?,
       namaBank: json['nama_bank'] as String?,
-      atasNama: json['atas_nama'] as String?,
-      statusPenarikan: json['status_penarikan'] as String?,
+      namaPemilikRekening: json['nama_pemilik_rekening'] as String?,
+      status: json['status'] as String?,
       alasanPenolakan: json['alasan_penolakan'] as String?,
+      diprosesOleh:
+          json['diproses_oleh'] != null
+              ? int.tryParse(json['diproses_oleh'].toString())
+              : null,
+      namaAdmin: json['nama_admin'] as String?,
+      buktiTransfer: json['bukti_transfer'] as String?,
+      waktuDiproses:
+          json['waktu_diproses'] != null
+              ? DateTime.tryParse(json['waktu_diproses'] as String)
+              : null,
       createdAt:
           json['created_at'] != null
-              ? DateTime.parse(json['created_at'] as String)
+              ? DateTime.tryParse(json['created_at'] as String)
               : null,
-      processedAt:
-          json['processed_at'] != null
-              ? DateTime.parse(json['processed_at'] as String)
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.tryParse(json['updated_at'] as String)
               : null,
     );
   }
@@ -52,16 +87,22 @@ class WithdrawalModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'id_tukang': idTukang,
+      'tukang_id': tukangId,
       'nama_tukang': namaTukang,
-      'nominal': nominal,
+      'jumlah': jumlah,
+      'biaya_admin': biayaAdmin,
+      'jumlah_bersih': jumlahBersih,
       'nomor_rekening': nomorRekening,
       'nama_bank': namaBank,
-      'atas_nama': atasNama,
-      'status_penarikan': statusPenarikan,
+      'nama_pemilik_rekening': namaPemilikRekening,
+      'status': status,
       'alasan_penolakan': alasanPenolakan,
+      'diproses_oleh': diprosesOleh,
+      'nama_admin': namaAdmin,
+      'bukti_transfer': buktiTransfer,
+      'waktu_diproses': waktuDiproses?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
-      'processed_at': processedAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 }

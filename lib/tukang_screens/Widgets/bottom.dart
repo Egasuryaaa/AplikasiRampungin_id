@@ -57,7 +57,7 @@ class _BottomState extends State<Bottom> {
               1,
               Icons.account_balance_wallet_outlined,
               Icons.account_balance_wallet,
-              'Payment',
+              'Withdrawal',
             ),
           ],
         ),
