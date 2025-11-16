@@ -17,7 +17,6 @@ class _TopUpScreenState extends State<TopUpScreen>
   final TextEditingController _jumlahController = TextEditingController();
   late TabController _tabController;
 
-
   String getFullImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http')) return path;
@@ -161,7 +160,6 @@ class _TopUpScreenState extends State<TopUpScreen>
       }
     }
   }
-
 
   Color _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
@@ -325,44 +323,43 @@ class _TopUpScreenState extends State<TopUpScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[300]!),
               ),
-              child:
-                  _selectedImage == null
-                      ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cloud_upload,
-                            size: 60,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap untuk upload bukti pembayaran',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      )
-                      : ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: FutureBuilder<Uint8List>(
-                          future: _selectedImage!.readAsBytes(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              return Image.memory(
-                                snapshot.data!,
-                                fit: BoxFit.cover,
-                              );
-                            } else if (snapshot.hasError) {
-                              return const Center(
-                                child: Icon(Icons.error, color: Colors.red),
-                              );
-                            }
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          },
+              child: _selectedImage == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_upload,
+                          size: 60,
+                          color: Colors.grey[400],
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap untuk upload bukti pembayaran',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: FutureBuilder<Uint8List>(
+                        future: _selectedImage!.readAsBytes(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                            );
+                          } else if (snapshot.hasError) {
+                            return const Center(
+                              child: Icon(Icons.error, color: Colors.red),
+                            );
+                          }
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        },
                       ),
+                    ),
             ),
           ),
 
@@ -396,17 +393,16 @@ class _TopUpScreenState extends State<TopUpScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child:
-                  _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                        'Kirim Permintaan Top-Up',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Kirim Permintaan Top-Up',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
+                    ),
             ),
           ),
 
@@ -529,8 +525,6 @@ class _TopUpScreenState extends State<TopUpScreen>
       ),
     );
   }
-
-
 
   void _showTopupDetailDialog(TopUpModel topup) {
     showDialog(
@@ -742,19 +736,31 @@ class _TopUpScreenState extends State<TopUpScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF3B950),
         title: const Text('Top-Up POIN'),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to Home (bottom navigation index 0)
+            Navigator.of(context).pushReplacementNamed('/HomeScreen');
+          },
+        ),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          tabs: const [Tab(text: 'Request Top-Up'), Tab(text: 'Riwayat')],
+          tabs: const [
+            Tab(text: 'Request Top-Up'),
+            Tab(text: 'Riwayat'),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [_buildRequestTab(), _buildHistoryTab()],
+        children: [
+          _buildRequestTab(),
+          _buildHistoryTab(),
+        ],
       ),
     );
   }
