@@ -208,20 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     super.dispose();
   }
-
-  void _handleNavigation(int index) {
-    if (index == _currentIndex) return;
-
-    _fadeController.reverse().then((_) {
-      switch (index) {
-        case 0:
-          break;
-        case 1:
-          Navigator.of(context).pushReplacementNamed('/TopUpScreen');
-          break;
-      }
-    });
-  }
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -259,129 +246,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
-      bottomNavigationBar: _buildAnimatedBottomNav(),
+      
     );
   }
-
-  Widget _buildAnimatedBottomNav() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE6B366), Color(0xFFF3B950)],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(25),
-          topRight: Radius.circular(25),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: 0.15),
-            offset: const Offset(0, -4),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(
-              0,
-              Icons.home_outlined,
-              Icons.home,
-              'Home',
-              isCenter: true,
-            ),
-            _buildNavItem(
-              1,
-              Icons.account_balance_wallet_outlined,
-              Icons.account_balance_wallet,
-              'Payment',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-    int index,
-    IconData icon,
-    IconData activeIcon,
-    String label, {
-    bool isCenter = false,
-  }) {
-    bool isSelected = _currentIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _handleNavigation(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          height: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          decoration:
-              isCenter && isSelected
-                  ? BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  )
-                  : isSelected && !isCenter
-                  ? BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  )
-                  : null,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  key: ValueKey(isSelected),
-                  size: isCenter ? 28 : 24,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
-                ),
-                child: Text(label),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _buildHeader() {
     return Container(

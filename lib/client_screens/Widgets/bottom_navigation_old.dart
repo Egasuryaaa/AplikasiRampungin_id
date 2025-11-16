@@ -1,4 +1,4 @@
-// File: lib/client_screens/Widgets/bottom_navigation.dart
+// File: lib/screens/Widgets/bottom_navigation.dart
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/client_screens/content_bottom/home_screen.dart';
 import 'package:rampungin_id_userside/client_screens/content_bottom/transaction_list_screen.dart';
@@ -7,13 +7,8 @@ import 'package:rampungin_id_userside/client_screens/content_bottom/profile_scre
 
 class BottomNavigation extends StatefulWidget {
   final int currentIndex;
-  final Function(int)? onTap; // Keep old field for backward compatibility
 
-  const BottomNavigation({
-    super.key, 
-    this.currentIndex = 0,
-    this.onTap, // Add this back
-  });
+  const BottomNavigation({super.key, this.currentIndex = 0});
 
   @override
   State<BottomNavigation> createState() => _BottomNavigationState();
