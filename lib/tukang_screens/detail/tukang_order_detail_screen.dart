@@ -4,8 +4,13 @@ import 'package:rampungin_id_userside/models/transaction_model.dart';
 
 class TukangOrderDetailScreen extends StatefulWidget {
   final int orderId;
+  final VoidCallback? onOrderUpdated; // Callback untuk refresh home screen
 
-  const TukangOrderDetailScreen({super.key, required this.orderId});
+  const TukangOrderDetailScreen({
+    super.key,
+    required this.orderId,
+    this.onOrderUpdated,
+  });
 
   @override
   State<TukangOrderDetailScreen> createState() =>
@@ -97,6 +102,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
           );
 
           _loadOrderDetail();
+          widget.onOrderUpdated?.call(); // Notify parent to refresh
         }
       } catch (e) {
         if (mounted) {
@@ -181,6 +187,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
             ),
           );
 
+          widget.onOrderUpdated?.call(); // Notify parent to refresh
           Navigator.pop(context); // Close detail screen
         }
       } catch (e) {
@@ -244,6 +251,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
           );
 
           _loadOrderDetail();
+          widget.onOrderUpdated?.call(); // Notify parent to refresh
         }
       } catch (e) {
         if (mounted) {
@@ -304,6 +312,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
           );
 
           _loadOrderDetail();
+          widget.onOrderUpdated?.call(); // Notify parent to refresh
         }
       } catch (e) {
         if (mounted) {
@@ -366,6 +375,7 @@ class _TukangOrderDetailScreenState extends State<TukangOrderDetailScreen> {
           );
 
           _loadOrderDetail();
+          widget.onOrderUpdated?.call(); // Notify parent to refresh
         }
       } catch (e) {
         if (mounted) {

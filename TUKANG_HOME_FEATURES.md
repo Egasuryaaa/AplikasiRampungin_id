@@ -1,7 +1,9 @@
 # Dokumentasi Fitur Home Screen Tukang
 
 ## Overview
+
 Home screen tukang memiliki 2 fitur utama untuk manajemen pesanan dan ketersediaan:
+
 1. **Availability Toggle** - Mengubah status ketersediaan tukang
 2. **Order Management** - Mengelola pesanan dengan action buttons berdasarkan status
 
@@ -10,11 +12,13 @@ Home screen tukang memiliki 2 fitur utama untuk manajemen pesanan dan ketersedia
 ## 1. Availability Status Selector (3 Categories)
 
 ### Lokasi UI
+
 **File**: `lib/tukang_screens/content_bottom/home.dart`
 
 Dropdown selector berada di header gradient (top section), sebelah kiri logout button.
 
 ### State Management
+
 ```dart
 // State variables
 String _availabilityStatus = 'tersedia'; // 'tersedia', 'sibuk', 'offline'
@@ -22,11 +26,13 @@ bool _isUpdatingAvailability = false;
 ```
 
 ### 3 Kategori Status
+
 1. **Tersedia** (hijau) - Siap menerima pesanan baru
 2. **Sibuk** (oranye) - Sedang ada pekerjaan, tidak bisa terima order
 3. **Offline** (abu-abu) - Tidak aktif/istirahat
 
 ### Load Initial Status
+
 ```dart
 Future<void> _loadProfile() async {
   try {
@@ -45,22 +51,23 @@ Future<void> _loadProfile() async {
 **Called in**: `initState()` → `_loadInitialData()`
 
 ### Update Availability
+
 ```dart
 Future<void> _updateAvailability(String newStatus) async {
   setState(() { _isUpdatingAvailability = true; });
-  
+
   try {
     await _tukangService.updateAvailability(newStatus);
-    
+
     if (mounted) {
       setState(() {
         _availabilityStatus = newStatus;
         _isUpdatingAvailability = false;
       });
-      
+
       String message;
       Color bgColor;
-      
+
       switch (newStatus) {
         case 'tersedia':
           message = '✅ Status diubah menjadi Tersedia';
@@ -78,7 +85,7 @@ Future<void> _updateAvailability(String newStatus) async {
           message = '✅ Status berhasil diubah';
           bgColor = Colors.blue;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: bgColor),
       );
@@ -97,6 +104,7 @@ Future<void> _updateAvailability(String newStatus) async {
 ```
 
 ### UI Component (Dropdown Selector)
+
 ```dart
 InkWell(
   onTap: _isUpdatingAvailability ? null : _showAvailabilityMenu,
@@ -118,6 +126,7 @@ InkWell(
 ```
 
 ### Helper Methods
+
 ```dart
 Color _getAvailabilityColor() {
   switch (_availabilityStatus) {
@@ -148,6 +157,7 @@ String _getAvailabilityText() {
 ```
 
 ### Bottom Sheet Menu
+
 ```dart
 void _showAvailabilityMenu() {
   showModalBottomSheet(
@@ -182,11 +192,13 @@ Widget _buildAvailabilityOption(String value, String label, IconData icon, Color
 ```
 
 ### Backend API
+
 **Endpoint**: `PUT /api/tukang/availability`
 
 **Service Method**: `TukangService.updateAvailability(String statusKetersediaan)`
 
 **Request Body**:
+
 ```json
 {
   "status_ketersediaan": "tersedia" // "tersedia", "sibuk", atau "offline"
@@ -194,6 +206,7 @@ Widget _buildAvailabilityOption(String value, String label, IconData icon, Color
 ```
 
 **Response**:
+
 ```json
 {
   "status": "success",
@@ -211,6 +224,7 @@ Widget _buildAvailabilityOption(String value, String label, IconData icon, Color
 ## 2. Order Management with Filter & Actions
 
 ### State Management
+
 ```dart
 // State variables
 String _selectedFilter = 'pending'; // Filter saat ini
@@ -219,13 +233,16 @@ bool _isLoadingData = true; // Loading state
 ```
 
 ### Filter Status
+
 4 filter yang tersedia:
+
 - **pending** → "Baru"
 - **diterima** → "Diterima"
 - **dalam_proses** → "Dikerjakan"
 - **selesai** → "Selesai"
 
 ### Load Orders with Filter
+
 ```dart
 Future<void> _loadOrders() async {
   try {
@@ -242,6 +259,7 @@ Future<void> _loadOrders() async {
 ```
 
 ### Refresh Orders
+
 ```dart
 void _refreshOrders() {
   setState(() { _isLoadingData = true; });
@@ -256,6 +274,7 @@ void _refreshOrders() {
 **Called after**: Accept, Reject, Start, Complete, Confirm Tunai actions
 
 ### Filter Chip UI
+
 ```dart
 Widget _buildFilterChip(String label, String value) {
   final isSelected = _selectedFilter == value;
@@ -273,7 +292,7 @@ Widget _buildFilterChip(String label, String value) {
     },
     child: Container(
       decoration: BoxDecoration(
-        gradient: isSelected 
+        gradient: isSelected
           ? LinearGradient(colors: [Color(0xFFF3B950), Color(0xFFE8A63C)])
           : null,
         color: isSelected ? null : Colors.grey.shade200,
@@ -286,6 +305,7 @@ Widget _buildFilterChip(String label, String value) {
 ```
 
 ### Order List UI
+
 ```dart
 // Dalam build() method
 _isLoadingData
@@ -306,16 +326,17 @@ _isLoadingData
 
 ### Mapping Status → Actions
 
-| Status | Buttons | Actions |
-|--------|---------|---------|
-| `pending` | Terima (green) + Tolak (red) | `_acceptOrder()` / `_rejectOrder()` |
-| `diterima` | Mulai Pekerjaan (blue) | `_startOrder()` |
-| `dalam_proses` | Selesaikan Pekerjaan (green) | `_completeOrder()` |
-| `selesai` + `tunai` | Konfirmasi Bayar Tunai (gold) | `_confirmTunaiPayment()` |
+| Status              | Buttons                       | Actions                             |
+| ------------------- | ----------------------------- | ----------------------------------- |
+| `pending`           | Terima (green) + Tolak (red)  | `_acceptOrder()` / `_rejectOrder()` |
+| `diterima`          | Mulai Pekerjaan (blue)        | `_startOrder()`                     |
+| `dalam_proses`      | Selesaikan Pekerjaan (green)  | `_completeOrder()`                  |
+| `selesai` + `tunai` | Konfirmasi Bayar Tunai (gold) | `_confirmTunaiPayment()`            |
 
 ### Action Implementation
 
 #### 1. Accept Order
+
 ```dart
 Future<void> _acceptOrder(int orderId) async {
   try {
@@ -335,10 +356,11 @@ Future<void> _acceptOrder(int orderId) async {
 **Backend**: `PUT /api/tukang/orders/{id}/accept`
 
 #### 2. Reject Order (with reason dialog)
+
 ```dart
 Future<void> _rejectOrder(int orderId) async {
   final TextEditingController reasonController = TextEditingController();
-  
+
   // Show dialog
   final result = await showDialog<bool>(
     context: context,
@@ -372,7 +394,7 @@ Future<void> _rejectOrder(int orderId) async {
       ],
     ),
   );
-  
+
   // Call API if confirmed
   if (result == true && reasonController.text.trim().isNotEmpty) {
     try {
@@ -393,6 +415,7 @@ Future<void> _rejectOrder(int orderId) async {
 **Backend**: `PUT /api/tukang/orders/{id}/reject`
 
 **Request Body**:
+
 ```json
 {
   "alasan_penolakan": "Jadwal tidak tersedia"
@@ -400,6 +423,7 @@ Future<void> _rejectOrder(int orderId) async {
 ```
 
 #### 3. Start Order
+
 ```dart
 Future<void> _startOrder(int orderId) async {
   try {
@@ -419,6 +443,7 @@ Future<void> _startOrder(int orderId) async {
 **Backend**: `PUT /api/tukang/orders/{id}/start`
 
 #### 4. Complete Order
+
 ```dart
 Future<void> _completeOrder(int orderId) async {
   try {
@@ -440,6 +465,7 @@ Future<void> _completeOrder(int orderId) async {
 **Optional Parameter**: `catatan_tukang` (String)
 
 #### 5. Confirm Tunai Payment
+
 ```dart
 Future<void> _confirmTunaiPayment(int orderId) async {
   try {
@@ -461,10 +487,11 @@ Future<void> _confirmTunaiPayment(int orderId) async {
 **Condition**: Hanya tampil jika `status == 'selesai'` DAN `metodePembayaran == 'tunai'`
 
 ### Action Button Builder
+
 ```dart
 Widget _buildOrderActionButtons(TransactionModel order) {
   final status = order.statusPesanan?.toLowerCase() ?? '';
-  
+
   if (status == 'pending') {
     return Row(
       children: [
@@ -507,7 +534,7 @@ Widget _buildOrderActionButtons(TransactionModel order) {
         style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
       ),
     );
-  } else if (status == 'selesai' && 
+  } else if (status == 'selesai' &&
              order.metodePembayaran?.toLowerCase() == 'tunai') {
     return SizedBox(
       width: double.infinity,
@@ -519,18 +546,19 @@ Widget _buildOrderActionButtons(TransactionModel order) {
       ),
     );
   }
-  
+
   return SizedBox.shrink();
 }
 ```
 
 ### Order Item Card UI
+
 ```dart
 Widget _buildJobOrderItem(TransactionModel order) {
   // Status badge dengan warna dinamis
   Color statusColor;
   String statusText;
-  
+
   switch (order.statusPesanan?.toLowerCase()) {
     case 'pending':
       statusColor = Colors.orange;
@@ -552,7 +580,7 @@ Widget _buildJobOrderItem(TransactionModel order) {
       statusColor = Colors.grey;
       statusText = order.statusPesanan ?? 'Unknown';
   }
-  
+
   return Container(
     child: Column(
       children: [
@@ -580,9 +608,9 @@ Widget _buildJobOrderItem(TransactionModel order) {
                   ),
                   child: Icon(Icons.person, color: Colors.white),
                 ),
-                
+
                 SizedBox(width: 16),
-                
+
                 // Order Details
                 Expanded(
                   child: Column(
@@ -600,7 +628,7 @@ Widget _buildJobOrderItem(TransactionModel order) {
                     ],
                   ),
                 ),
-                
+
                 // Status Badge
                 Container(
                   decoration: BoxDecoration(
@@ -614,7 +642,7 @@ Widget _buildJobOrderItem(TransactionModel order) {
             ),
           ),
         ),
-        
+
         // Action Buttons
         _buildOrderActionButtons(order),
       ],
@@ -630,6 +658,7 @@ Widget _buildJobOrderItem(TransactionModel order) {
 All methods already implemented in `lib/services/tukang_service.dart`:
 
 ### 1. Update Availability
+
 ```dart
 Future<Map<String, dynamic>> updateAvailability(String statusKetersediaan) async {
   return await _apiClient.put(
@@ -640,16 +669,17 @@ Future<Map<String, dynamic>> updateAvailability(String statusKetersediaan) async
 ```
 
 ### 2. Get Orders with Filter
+
 ```dart
 Future<List<TransactionModel>> getOrders({String? status, ...}) async {
   final queryParams = <String, dynamic>{};
   if (status != null) queryParams['status'] = status;
-  
+
   final response = await _apiClient.get(
     '/tukang/orders',
     queryParameters: queryParams,
   );
-  
+
   final orders = (response['data'] as List)
       .map((json) => TransactionModel.fromJson(json))
       .toList();
@@ -658,6 +688,7 @@ Future<List<TransactionModel>> getOrders({String? status, ...}) async {
 ```
 
 ### 3. Accept Order
+
 ```dart
 Future<Map<String, dynamic>> acceptOrder(int orderId) async {
   return await _apiClient.put('/tukang/orders/$orderId/accept');
@@ -665,6 +696,7 @@ Future<Map<String, dynamic>> acceptOrder(int orderId) async {
 ```
 
 ### 4. Reject Order
+
 ```dart
 Future<Map<String, dynamic>> rejectOrder(int orderId, String alasanPenolakan) async {
   return await _apiClient.put(
@@ -675,6 +707,7 @@ Future<Map<String, dynamic>> rejectOrder(int orderId, String alasanPenolakan) as
 ```
 
 ### 5. Start Order
+
 ```dart
 Future<Map<String, dynamic>> startOrder(int orderId) async {
   return await _apiClient.put('/tukang/orders/$orderId/start');
@@ -682,6 +715,7 @@ Future<Map<String, dynamic>> startOrder(int orderId) async {
 ```
 
 ### 6. Complete Order
+
 ```dart
 Future<Map<String, dynamic>> completeOrder(int orderId, {String? catatanTukang}) async {
   final body = catatanTukang != null ? {'catatan_tukang': catatanTukang} : null;
@@ -690,6 +724,7 @@ Future<Map<String, dynamic>> completeOrder(int orderId, {String? catatanTukang})
 ```
 
 ### 7. Confirm Tunai Payment
+
 ```dart
 Future<Map<String, dynamic>> confirmTunaiPayment(int orderId) async {
   return await _apiClient.put('/tukang/orders/$orderId/confirm-tunai');
@@ -703,6 +738,7 @@ Future<Map<String, dynamic>> confirmTunaiPayment(int orderId) async {
 **File**: `lib/models/transaction_model.dart`
 
 ### Key Fields untuk Order Management
+
 ```dart
 class TransactionModel {
   final int? id;
@@ -719,7 +755,9 @@ class TransactionModel {
 ```
 
 ### fromJson Mapping
+
 Backend field → Flutter field:
+
 - `status` → `statusPesanan`
 - `total_biaya` → `hargaAkhir`
 - `metode_pembayaran` → `metodePembayaran`
@@ -729,6 +767,7 @@ Backend field → Flutter field:
 ## Testing Checklist
 
 ### Availability Status Selector
+
 - [ ] Initial status loads correctly from API (tersedia/sibuk/offline)
 - [ ] Dropdown button shows current status with correct color and icon
 - [ ] Bottom sheet menu shows all 3 options
@@ -741,6 +780,7 @@ Backend field → Flutter field:
 - [ ] Selected option shows checkmark in menu
 
 ### Order Filter
+
 - [ ] All 4 filter chips render correctly
 - [ ] Selected filter has gold gradient
 - [ ] Tapping filter fetches filtered orders
@@ -748,6 +788,7 @@ Backend field → Flutter field:
 - [ ] Empty state shows when no orders
 
 ### Order Actions - Pending
+
 - [ ] Two buttons (Terima/Tolak) show for pending orders
 - [ ] Accept button updates status to 'diterima'
 - [ ] Reject button shows dialog
@@ -756,23 +797,27 @@ Backend field → Flutter field:
 - [ ] Order list refreshes after action
 
 ### Order Actions - Diterima
+
 - [ ] Single "Mulai Pekerjaan" button shows
 - [ ] Button updates status to 'dalam_proses'
 - [ ] Success snackbar shows
 - [ ] Order moves to "Dikerjakan" filter
 
 ### Order Actions - Dalam Proses
+
 - [ ] Single "Selesaikan Pekerjaan" button shows
 - [ ] Button updates status to 'selesai'
 - [ ] Order moves to "Selesai" filter
 
 ### Order Actions - Selesai (Tunai)
+
 - [ ] "Konfirmasi Bayar Tunai" button only shows for tunai orders
 - [ ] Button calls confirm-tunai endpoint
 - [ ] Button disappears after confirmation
 - [ ] Non-tunai orders don't show button
 
 ### UI/UX
+
 - [ ] Smooth animations on state changes
 - [ ] No jank when switching filters
 - [ ] Error states are user-friendly
@@ -784,12 +829,14 @@ Backend field → Flutter field:
 ## Known Issues & Future Enhancements
 
 ### Current Limitations
+
 1. **No Refresh Indicator**: User must manually switch filters to refresh
 2. **No Filter Badge Count**: Can't see how many orders per status
 3. **No Pagination**: All orders load at once (may be slow for many orders)
 4. **No Order Detail Integration**: Action buttons should pass order data to detail screen
 
 ### Recommended Enhancements
+
 1. Add pull-to-refresh on order list
 2. Show count badges on filter chips (e.g., "Baru (5)")
 3. Implement pagination/infinite scroll for large order lists
@@ -802,12 +849,54 @@ Backend field → Flutter field:
 ---
 
 ## Related Documentation
+
 - **Backend API**: See `listapi.txt` (Endpoints 23-30)
 - **Photo Upload**: See `BACKEND_UPLOAD_HANDLER.md`
 - **Service Layer**: See `lib/services/tukang_service.dart`
 - **Models**: See `lib/models/transaction_model.dart`
+- **Order Detail Screen**: See `lib/tukang_screens/detail/tukang_order_detail_screen.dart`
 
 ---
 
-*Last Updated: 2024-01-15*
-*Feature Implementation: Tukang Home Screen Order Management & Availability Toggle*
+## Order Detail Screen Implementation
+
+### File: `lib/tukang_screens/detail/tukang_order_detail_screen.dart`
+
+Detail screen yang digunakan untuk menampilkan informasi lengkap pesanan dan melakukan action (terima/tolak/mulai/selesai/konfirmasi).
+
+### Navigation
+
+```dart
+// Dari home.dart
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => TukangOrderDetailScreen(
+      orderId: order.id!,
+      onOrderUpdated: _refreshOrders, // Callback untuk refresh
+    ),
+  ),
+);
+```
+
+### Features
+
+- Load order detail dengan `getOrderDetail(orderId)`
+- Tampilkan informasi client, job details, payment info
+- Action buttons dinamis berdasarkan status
+- Auto-refresh saat action berhasil
+- Callback ke parent screen untuk refresh list
+
+### API Endpoints Used
+
+- GET `/api/tukang/orders/{id}` - Load detail
+- PUT `/api/tukang/orders/{id}/accept` - Accept order
+- PUT `/api/tukang/orders/{id}/reject` - Reject order
+- PUT `/api/tukang/orders/{id}/start` - Start work
+- PUT `/api/tukang/orders/{id}/complete` - Complete work
+- PUT `/api/tukang/orders/{id}/confirm-tunai` - Confirm cash payment
+
+---
+
+_Last Updated: 2024-01-15_
+_Feature Implementation: Tukang Home Screen Order Management & Availability Toggle_

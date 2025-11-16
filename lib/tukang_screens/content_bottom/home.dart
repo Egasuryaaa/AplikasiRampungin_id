@@ -4,7 +4,7 @@ import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/models/transaction_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
 import 'package:rampungin_id_userside/tukang_screens/form/form_tukang.dart';
-import '../detail/detail_order.dart';
+import '../detail/tukang_order_detail_screen.dart';
 import '../detail/profile.dart';
 import '../detail/notification_tk.dart';
 import '../../Auth_screens/login.dart';
@@ -24,13 +24,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   List<TransactionModel> _pendingOrders = [];
   StatisticsModel? _statistics;
   bool _isLoadingData = true;
-  
+
   // Availability status (3 categories)
   String _availabilityStatus = 'tersedia'; // 'tersedia', 'sibuk', 'offline'
   bool _isUpdatingAvailability = false;
-  
+
   // Order filter
-  String _selectedFilter = 'pending'; // pending, diterima, dalam_proses, selesai
+  String _selectedFilter =
+      'pending'; // pending, diterima, dalam_proses, selesai
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -148,31 +149,32 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       final profile = await _tukangService.getProfileFull();
       if (mounted && profile.profilTukang != null) {
         setState(() {
-          _availabilityStatus = profile.profilTukang!.statusKetersediaan ?? 'tersedia';
+          _availabilityStatus =
+              profile.profilTukang!.statusKetersediaan ?? 'tersedia';
         });
       }
     } catch (e) {
       // Silently fail
     }
   }
-  
+
   Future<void> _updateAvailability(String newStatus) async {
     setState(() {
       _isUpdatingAvailability = true;
     });
-    
+
     try {
       await _tukangService.updateAvailability(newStatus);
-      
+
       if (mounted) {
         setState(() {
           _availabilityStatus = newStatus;
           _isUpdatingAvailability = false;
         });
-        
+
         String message;
         Color bgColor;
-        
+
         switch (newStatus) {
           case 'tersedia':
             message = '✅ Status diubah menjadi Tersedia';
@@ -190,7 +192,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             message = '✅ Status berhasil diubah';
             bgColor = Colors.blue;
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -204,7 +206,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         setState(() {
           _isUpdatingAvailability = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Gagal mengubah status: $e'),
@@ -227,7 +229,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       // Silently fail
     }
   }
-  
+
   void _refreshOrders() {
     setState(() {
       _isLoadingData = true;
@@ -307,7 +309,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     _pulseController.dispose();
     super.dispose();
   }
-  
+
   // Order action handlers
   Future<void> _acceptOrder(int orderId) async {
     try {
@@ -332,48 +334,49 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
     }
   }
-  
+
   Future<void> _rejectOrder(int orderId) async {
     // Show dialog untuk input alasan
     final TextEditingController reasonController = TextEditingController();
-    
+
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tolak Pesanan'),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(
-            labelText: 'Alasan Penolakan',
-            hintText: 'Masukkan alasan penolakan...',
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Tolak Pesanan'),
+            content: TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Alasan Penolakan',
+                hintText: 'Masukkan alasan penolakan...',
+              ),
+              maxLines: 3,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (reasonController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Alasan tidak boleh kosong'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, true);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Tolak'),
+              ),
+            ],
           ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Alasan tidak boleh kosong'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Tolak'),
-          ),
-        ],
-      ),
     );
-    
+
     if (result == true && reasonController.text.trim().isNotEmpty) {
       try {
         await _tukangService.rejectOrder(orderId, reasonController.text.trim());
@@ -398,7 +401,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
     }
   }
-  
+
   Future<void> _startOrder(int orderId) async {
     try {
       await _tukangService.startOrder(orderId);
@@ -422,7 +425,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
     }
   }
-  
+
   Future<void> _completeOrder(int orderId) async {
     try {
       await _tukangService.completeOrder(orderId);
@@ -446,7 +449,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
     }
   }
-  
+
   Future<void> _confirmTunaiPayment(int orderId) async {
     try {
       await _tukangService.confirmTunaiPayment(orderId);
@@ -477,7 +480,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       child: FadeTransition(opacity: _fadeAnimation, child: child),
     );
   }
-  
+
   // Availability helper methods
   Color _getAvailabilityColor() {
     switch (_availabilityStatus) {
@@ -491,7 +494,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         return Colors.blue;
     }
   }
-  
+
   IconData _getAvailabilityIcon() {
     switch (_availabilityStatus) {
       case 'tersedia':
@@ -504,7 +507,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         return Icons.help_outline;
     }
   }
-  
+
   String _getAvailabilityText() {
     switch (_availabilityStatus) {
       case 'tersedia':
@@ -517,36 +520,54 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         return 'Unknown';
     }
   }
-  
+
   void _showAvailabilityMenu() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Ubah Status Ketersediaan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Ubah Status Ketersediaan',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                _buildAvailabilityOption(
+                  'tersedia',
+                  'Tersedia',
+                  Icons.check_circle,
+                  Colors.green,
+                ),
+                _buildAvailabilityOption(
+                  'sibuk',
+                  'Sibuk',
+                  Icons.access_time,
+                  Colors.orange,
+                ),
+                _buildAvailabilityOption(
+                  'offline',
+                  'Offline',
+                  Icons.pause_circle,
+                  Colors.grey,
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            _buildAvailabilityOption('tersedia', 'Tersedia', Icons.check_circle, Colors.green),
-            _buildAvailabilityOption('sibuk', 'Sibuk', Icons.access_time, Colors.orange),
-            _buildAvailabilityOption('offline', 'Offline', Icons.pause_circle, Colors.grey),
-          ],
-        ),
-      ),
+          ),
     );
   }
-  
-  Widget _buildAvailabilityOption(String value, String label, IconData icon, Color color) {
+
+  Widget _buildAvailabilityOption(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     final isSelected = _availabilityStatus == value;
     return ListTile(
       leading: Icon(icon, color: color),
@@ -556,9 +577,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: color)
-          : null,
+      trailing: isSelected ? Icon(Icons.check, color: color) : null,
       onTap: () {
         Navigator.pop(context);
         if (_availabilityStatus != value) {
@@ -567,7 +586,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       },
     );
   }
-  
+
   Widget _buildFilterChip(String label, String value) {
     final isSelected = _selectedFilter == value;
     return InkWell(
@@ -588,22 +607,24 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
-                )
-              : null,
+          gradient:
+              isSelected
+                  ? const LinearGradient(
+                    colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
+                  )
+                  : null,
           color: isSelected ? null : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFF3B950).withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Text(
           label,
@@ -621,7 +642,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     // Determine status color and text
     Color statusColor;
     String statusText;
-    
+
     switch (order.statusPesanan?.toLowerCase()) {
       case 'pending':
         statusColor = Colors.orange;
@@ -643,7 +664,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         statusColor = Colors.grey;
         statusText = order.statusPesanan ?? 'Unknown';
     }
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -663,11 +684,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           // Order Info
           InkWell(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DetailOrder()),
+                MaterialPageRoute(
+                  builder:
+                      (context) => TukangOrderDetailScreen(
+                        orderId: order.id!,
+                        onOrderUpdated:
+                            _refreshOrders, // Refresh saat order diupdate
+                      ),
+                ),
               );
+              // Refresh juga saat kembali dari detail screen
+              _refreshOrders();
             },
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -748,17 +778,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
+
           // Action Buttons
           _buildOrderActionButtons(order),
         ],
       ),
     );
   }
-  
+
   Widget _buildOrderActionButtons(TransactionModel order) {
     final status = order.statusPesanan?.toLowerCase() ?? '';
-    
+
     if (status == 'pending') {
       // Terima & Tolak
       return Container(
@@ -841,8 +871,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
       );
-    } else if (status == 'selesai' && 
-               order.metodePembayaran?.toLowerCase() == 'tunai') {
+    } else if (status == 'selesai' &&
+        order.metodePembayaran?.toLowerCase() == 'tunai') {
       // Konfirmasi Bayar Tunai (hanya jika belum dikonfirmasi)
       return Container(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -864,7 +894,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         ),
       );
     }
-    
+
     return const SizedBox.shrink();
   }
 
@@ -1054,7 +1084,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   children: [
                                     // Availability Status Selector (3 categories)
                                     InkWell(
-                                      onTap: _isUpdatingAvailability ? null : _showAvailabilityMenu,
+                                      onTap:
+                                          _isUpdatingAvailability
+                                              ? null
+                                              : _showAvailabilityMenu,
                                       borderRadius: BorderRadius.circular(20),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
@@ -1062,8 +1095,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                           vertical: 8,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: _getAvailabilityColor().withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: _getAvailabilityColor()
+                                              .withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                           border: Border.all(
                                             color: _getAvailabilityColor(),
                                             width: 1.5,
@@ -1081,7 +1117,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             Text(
                                               _getAvailabilityText(),
                                               style: TextStyle(
-                                                color: _getAvailabilityColor().withValues(alpha: 0.8),
+                                                color: _getAvailabilityColor()
+                                                    .withValues(alpha: 0.8),
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -1096,7 +1133,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                         ),
                                       ),
                                     ),
-                                    
+
                                     // Logout Button (moved to right)
                                     GestureDetector(
                                       onTap: _showLogoutDialog,
@@ -1495,7 +1532,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   children: [
                                     // Title Row
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(8),
@@ -1503,7 +1541,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             color: const Color(
                                               0xFF8B4513,
                                             ).withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
                                           child: const Icon(
                                             Icons.work_outline,
@@ -1523,9 +1563,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                         ),
                                       ],
                                     ),
-                                    
+
                                     const SizedBox(height: 16),
-                                    
+
                                     // Filter Tabs
                                     SingleChildScrollView(
                                       scrollDirection: Axis.horizontal,
@@ -1533,11 +1573,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                         children: [
                                           _buildFilterChip('Baru', 'pending'),
                                           const SizedBox(width: 8),
-                                          _buildFilterChip('Diterima', 'diterima'),
+                                          _buildFilterChip(
+                                            'Diterima',
+                                            'diterima',
+                                          ),
                                           const SizedBox(width: 8),
-                                          _buildFilterChip('Dikerjakan', 'dalam_proses'),
+                                          _buildFilterChip(
+                                            'Dikerjakan',
+                                            'dalam_proses',
+                                          ),
                                           const SizedBox(width: 8),
-                                          _buildFilterChip('Selesai', 'selesai'),
+                                          _buildFilterChip(
+                                            'Selesai',
+                                            'selesai',
+                                          ),
                                         ],
                                       ),
                                     ),
