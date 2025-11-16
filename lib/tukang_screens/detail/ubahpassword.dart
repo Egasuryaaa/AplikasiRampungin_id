@@ -3,7 +3,7 @@ import '../../services/auth_service.dart';
 
 class UbahPassword extends StatefulWidget {
   const UbahPassword({super.key});
- 
+
   @override
   State<UbahPassword> createState() => _UbahPasswordState();
 }
@@ -64,9 +64,10 @@ class _UbahPasswordState extends State<UbahPassword> {
                     controller: _oldPasswordController,
                     label: "Password Lama",
                     obscure: _obscureOld,
-                    toggle: () => setState(() {
-                      _obscureOld = !_obscureOld;
-                    }),
+                    toggle:
+                        () => setState(() {
+                          _obscureOld = !_obscureOld;
+                        }),
                   ),
                   const SizedBox(height: 20),
 
@@ -74,9 +75,10 @@ class _UbahPasswordState extends State<UbahPassword> {
                     controller: _newPasswordController,
                     label: "Password Baru",
                     obscure: _obscureNew,
-                    toggle: () => setState(() {
-                      _obscureNew = !_obscureNew;
-                    }),
+                    toggle:
+                        () => setState(() {
+                          _obscureNew = !_obscureNew;
+                        }),
                   ),
                   const SizedBox(height: 20),
 
@@ -84,9 +86,10 @@ class _UbahPasswordState extends State<UbahPassword> {
                     controller: _confirmPasswordController,
                     label: "Konfirmasi Password Baru",
                     obscure: _obscureConfirm,
-                    toggle: () => setState(() {
-                      _obscureConfirm = !_obscureConfirm;
-                    }),
+                    toggle:
+                        () => setState(() {
+                          _obscureConfirm = !_obscureConfirm;
+                        }),
                   ),
 
                   const SizedBox(height: 30),
@@ -174,53 +177,54 @@ class _UbahPasswordState extends State<UbahPassword> {
     );
   }
 
-void _handleSave() async {
-  final oldPass = _oldPasswordController.text.trim();
-  final newPass = _newPasswordController.text.trim();
-  final confirmPass = _confirmPasswordController.text.trim();
+  void _handleSave() async {
+    final oldPass = _oldPasswordController.text.trim();
+    final newPass = _newPasswordController.text.trim();
+    final confirmPass = _confirmPasswordController.text.trim();
 
-  if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
-    _showError("Semua field wajib diisi!");
-    return;
+    if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+      _showError("Semua field wajib diisi!");
+      return;
+    }
+
+    if (newPass != confirmPass) {
+      _showError("Password baru dan konfirmasi tidak sama!");
+      return;
+    }
+
+    try {
+      // panggil API
+      final _ = await AuthService().changePassword(
+        oldPassword: oldPass,
+        newPassword: newPass,
+      );
+
+      if (!mounted) return;
+      _showSuccess("Password berhasil diperbarui!");
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      _showError("Gagal memperbarui password. Pastikan password lama benar.");
+    }
   }
 
-  if (newPass != confirmPass) {
-    _showError("Password baru dan konfirmasi tidak sama!");
-    return;
-  }
-
-  try {
-    // panggil API
-    final _ = await AuthService().changePassword(
-      oldPassword: oldPass,
-      newPassword: newPass,
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color.fromARGB(255, 32, 180, 5), // hijau
+        behavior: SnackBarBehavior.floating,
+      ),
     );
-
-    _showSuccess("Password berhasil diperbarui!");
-    Navigator.pop(context);
-  } catch (e) {
-    _showError("Gagal memperbarui password. Pastikan password lama benar.");
   }
-}
 
-void _showSuccess(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: const Color.fromARGB(255, 32, 180, 5), // hijau
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
-
-void _showError(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: const Color.fromARGB(255, 255, 5, 5), // merah
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
-
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color.fromARGB(255, 255, 5, 5), // merah
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }

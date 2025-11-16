@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rampungin_id_userside/models/tukang_profile_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:developer' as developer;
 
 class EditProfile extends StatefulWidget {
@@ -26,16 +23,12 @@ class _EditProfileState extends State<EditProfile> {
   bool _isSaving = false;
   bool _isLoadingCategories = false;
 
-  // Profile data
-  TukangProfileModel? _profileData;
-
   // Categories
   List<CategoryModel> _allCategories = [];
   List<int> _selectedCategoryIds = [];
 
   // Photo
   XFile? _selectedImageXFile; // Keep XFile for filename
-  File? _selectedImage;
   String? _currentPhotoUrl;
   Uint8List? _selectedImageBytes;
 
@@ -89,7 +82,6 @@ class _EditProfileState extends State<EditProfile> {
       final profile = await _tukangService.getProfileFull();
 
       setState(() {
-        _profileData = profile;
         _populateFields(profile);
         _isLoading = false;
       });
@@ -137,7 +129,6 @@ class _EditProfileState extends State<EditProfile> {
         final bytes = await image.readAsBytes();
         setState(() {
           _selectedImageXFile = image; // Save XFile
-          _selectedImage = File(image.path);
           _selectedImageBytes = Uint8List.fromList(bytes);
         });
       }

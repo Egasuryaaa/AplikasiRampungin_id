@@ -433,13 +433,27 @@ class TukangService {
 
   // ==================== RATINGS ====================
 
-  /// Get all ratings received by tukang
+  /// Get all ratings received by tukang with statistics
+  Future<Map<String, dynamic>> getRatingsWithStats() async {
+    try {
+      final response = await _client.get(ApiConfig.tukangRatings);
+      final data = _client.parseResponse(response);
+
+      // Return full data including ratings and statistik
+      return data['data'] ?? data;
+    } catch (e) {
+      throw Exception('Failed to get ratings: $e');
+    }
+  }
+
+  /// Get all ratings received by tukang (list only)
   Future<List<RatingModel>> getRatings() async {
     try {
       final response = await _client.get(ApiConfig.tukangRatings);
       final data = _client.parseResponse(response);
 
-      final List<dynamic> ratingList = data['data'] ?? data['ratings'] ?? [];
+      final List<dynamic> ratingList =
+          data['data']?['ratings'] ?? data['ratings'] ?? data['data'] ?? [];
       return ratingList.map((json) => RatingModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to get ratings: $e');
