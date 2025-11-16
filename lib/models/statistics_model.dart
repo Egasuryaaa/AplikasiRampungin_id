@@ -35,10 +35,22 @@ class StatisticsModel {
 
   factory StatisticsModel.fromJson(Map<String, dynamic> json) {
     return StatisticsModel(
-      saldoPoin: (json['saldo_poin'] as num?)?.toDouble(),
-      totalPekerjaanSelesai: json['total_pekerjaan_selesai'] as int?,
-      rataRataRating: (json['rata_rata_rating'] as num?)?.toDouble(),
-      totalRating: json['total_rating'] as int?,
+      saldoPoin:
+          json['saldo_poin'] != null
+              ? double.tryParse(json['saldo_poin'].toString())
+              : null,
+      totalPekerjaanSelesai:
+          json['total_pekerjaan_selesai'] != null
+              ? int.tryParse(json['total_pekerjaan_selesai'].toString())
+              : null,
+      rataRataRating:
+          json['rata_rata_rating'] != null
+              ? double.tryParse(json['rata_rata_rating'].toString())
+              : null,
+      totalRating:
+          json['total_rating'] != null
+              ? int.tryParse(json['total_rating'].toString())
+              : null,
       transaksi:
           json['transaksi'] != null
               ? TransactionStats.fromJson(
@@ -49,7 +61,10 @@ class StatisticsModel {
           json['topup'] != null
               ? TopupStats.fromJson(json['topup'] as Map<String, dynamic>)
               : null,
-      ratingDiberikan: json['rating_diberikan'] as int?,
+      ratingDiberikan:
+          json['rating_diberikan'] != null
+              ? int.tryParse(json['rating_diberikan'].toString())
+              : null,
       penarikan:
           json['penarikan'] != null
               ? WithdrawalStats.fromJson(
@@ -62,8 +77,14 @@ class StatisticsModel {
                 json['rating_breakdown'] as Map<String, dynamic>,
               )
               : null,
-      pendapatanBulanIni: (json['pendapatan_bulan_ini'] as num?)?.toDouble(),
-      pekerjaanBulanIni: json['pekerjaan_bulan_ini'] as int?,
+      pendapatanBulanIni:
+          json['pendapatan_bulan_ini'] != null
+              ? double.tryParse(json['pendapatan_bulan_ini'].toString())
+              : null,
+      pekerjaanBulanIni:
+          json['pekerjaan_bulan_ini'] != null
+              ? int.tryParse(json['pekerjaan_bulan_ini'].toString())
+              : null,
     );
   }
 
@@ -110,15 +131,40 @@ class TransactionStats {
 
   factory TransactionStats.fromJson(Map<String, dynamic> json) {
     return TransactionStats(
-      total: json['total'] as int?,
-      pending: json['pending'] as int?,
-      diterima: json['diterima'] as int?,
-      dalamProses: json['dalam_proses'] as int?,
-      selesai: json['selesai'] as int?,
-      dibatalkan: json['dibatalkan'] as int?,
-      ditolak: json['ditolak'] as int?,
-      totalPendapatan: (json['total_pendapatan'] as num?)?.toDouble(),
-      totalPengeluaran: (json['total_pengeluaran'] as num?)?.toDouble(),
+      total:
+          json['total'] != null ? int.tryParse(json['total'].toString()) : null,
+      pending:
+          json['pending'] != null
+              ? int.tryParse(json['pending'].toString())
+              : null,
+      diterima:
+          json['diterima'] != null
+              ? int.tryParse(json['diterima'].toString())
+              : null,
+      dalamProses:
+          json['dalam_proses'] != null
+              ? int.tryParse(json['dalam_proses'].toString())
+              : null,
+      selesai:
+          json['selesai'] != null
+              ? int.tryParse(json['selesai'].toString())
+              : null,
+      dibatalkan:
+          json['dibatalkan'] != null
+              ? int.tryParse(json['dibatalkan'].toString())
+              : null,
+      ditolak:
+          json['ditolak'] != null
+              ? int.tryParse(json['ditolak'].toString())
+              : null,
+      totalPendapatan:
+          json['total_pendapatan'] != null
+              ? double.tryParse(json['total_pendapatan'].toString())
+              : null,
+      totalPengeluaran:
+          json['total_pengeluaran'] != null
+              ? double.tryParse(json['total_pengeluaran'].toString())
+              : null,
     );
   }
 
@@ -157,12 +203,28 @@ class TopupStats {
 
   factory TopupStats.fromJson(Map<String, dynamic> json) {
     return TopupStats(
-      total: json['total'] as int?,
-      pending: json['pending'] as int?,
-      berhasil: json['berhasil'] as int?,
-      ditolak: json['ditolak'] as int?,
-      kadaluarsa: json['kadaluarsa'] as int?,
-      totalTopupBerhasil: (json['total_topup_berhasil'] as num?)?.toDouble(),
+      total:
+          json['total'] != null ? int.tryParse(json['total'].toString()) : null,
+      pending:
+          json['pending'] != null
+              ? int.tryParse(json['pending'].toString())
+              : null,
+      berhasil:
+          json['berhasil'] != null
+              ? int.tryParse(json['berhasil'].toString())
+              : null,
+      ditolak:
+          json['ditolak'] != null
+              ? int.tryParse(json['ditolak'].toString())
+              : null,
+      kadaluarsa:
+          json['kadaluarsa'] != null
+              ? int.tryParse(json['kadaluarsa'].toString())
+              : null,
+      totalTopupBerhasil:
+          json['total_topup_berhasil'] != null
+              ? double.tryParse(json['total_topup_berhasil'].toString())
+              : null,
     );
   }
 
@@ -200,13 +262,32 @@ class WithdrawalStats {
 
   factory WithdrawalStats.fromJson(Map<String, dynamic> json) {
     return WithdrawalStats(
-      total: json['total'] as int?,
-      pending: json['pending'] as int?,
-      diproses: json['diproses'] as int?,
-      selesai: json['selesai'] as int?,
-      ditolak: json['ditolak'] as int?,
-      totalPenarikan: (json['total_penarikan'] as num?)?.toDouble(),
-      totalBiayaAdmin: (json['total_biaya_admin'] as num?)?.toDouble(),
+      total:
+          json['total'] != null ? int.tryParse(json['total'].toString()) : null,
+      pending:
+          json['pending'] != null
+              ? int.tryParse(json['pending'].toString())
+              : null,
+      diproses:
+          json['diproses'] != null
+              ? int.tryParse(json['diproses'].toString())
+              : null,
+      selesai:
+          json['selesai'] != null
+              ? int.tryParse(json['selesai'].toString())
+              : null,
+      ditolak:
+          json['ditolak'] != null
+              ? int.tryParse(json['ditolak'].toString())
+              : null,
+      totalPenarikan:
+          json['total_penarikan'] != null
+              ? double.tryParse(json['total_penarikan'].toString())
+              : null,
+      totalBiayaAdmin:
+          json['total_biaya_admin'] != null
+              ? double.tryParse(json['total_biaya_admin'].toString())
+              : null,
     );
   }
 
@@ -241,11 +322,26 @@ class RatingBreakdown {
 
   factory RatingBreakdown.fromJson(Map<String, dynamic> json) {
     return RatingBreakdown(
-      bintang5: json['bintang_5'] as int?,
-      bintang4: json['bintang_4'] as int?,
-      bintang3: json['bintang_3'] as int?,
-      bintang2: json['bintang_2'] as int?,
-      bintang1: json['bintang_1'] as int?,
+      bintang5:
+          json['bintang_5'] != null
+              ? int.tryParse(json['bintang_5'].toString())
+              : null,
+      bintang4:
+          json['bintang_4'] != null
+              ? int.tryParse(json['bintang_4'].toString())
+              : null,
+      bintang3:
+          json['bintang_3'] != null
+              ? int.tryParse(json['bintang_3'].toString())
+              : null,
+      bintang2:
+          json['bintang_2'] != null
+              ? int.tryParse(json['bintang_2'].toString())
+              : null,
+      bintang1:
+          json['bintang_1'] != null
+              ? int.tryParse(json['bintang_1'].toString())
+              : null,
     );
   }
 

@@ -49,9 +49,18 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         setState(() {
           _currentBalance = stats.saldoPoin ?? 0;
         });
+        print('DEBUG: Saldo Poin loaded: $_currentBalance');
       }
     } catch (e) {
-      // Handle error silently
+      print('ERROR loading balance: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat saldo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -68,12 +77,20 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
           _withdrawalHistory = history;
           _isLoadingHistory = false;
         });
+        print('DEBUG: Loaded ${history.length} withdrawal records');
       }
     } catch (e) {
+      print('ERROR loading withdrawal history: $e');
       if (mounted) {
         setState(() {
           _isLoadingHistory = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat riwayat: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
