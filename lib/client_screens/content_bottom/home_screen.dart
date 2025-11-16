@@ -5,9 +5,8 @@ import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
-import 'package:rampungin_id_userside/client_screens/detail/profile_screen.dart';
+// import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
+ import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/notification.dart';
 import 'package:rampungin_id_userside/Auth_screens/login.dart';
 
@@ -29,8 +28,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // API Data
-  List<UserModel> _allTukangList = [];
+   // API Data
   List<CategoryModel> _categoryList = []; // ignore: unused_field
   StatisticsModel? _statistics; // ignore: unused_field
   UserModel? _currentUser;
@@ -96,17 +94,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Load all tukang from API
   Future<void> _loadTukangList() async {
     try {
-      // Browse tukang with status "tersedia" and order by rating
-      final tukangList = await _clientService.browseTukang(
-        status: 'tersedia',
-        orderBy: 'rata_rata_rating',
-        orderDir: 'DESC',
-        limit: 50,
-      );
+
 
       if (mounted) {
         setState(() {
-          _allTukangList = tukangList;
+          // _allTukangList = tukangList;
           _isLoadingTukang = false;
         });
       }
@@ -140,38 +132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
   }
-
-  // Group tukang by category - Handle multiple categories per tukang
-  Map<String, List<UserModel>> get _techniciansByCategory {
-    final Map<String, List<UserModel>> grouped = {};
-
-    for (var tukang in _allTukangList) {
-      // Get categories from kategoriList array
-      if (tukang.kategoriList != null && tukang.kategoriList!.isNotEmpty) {
-        for (var kategoriJson in tukang.kategoriList!) {
-          final categoryName = kategoriJson['nama'] as String? ?? 'Lainnya';
-
-          if (!grouped.containsKey(categoryName)) {
-            grouped[categoryName] = [];
-          }
-
-          // Add tukang to this category if not already added
-          if (!grouped[categoryName]!.any((t) => t.id == tukang.id)) {
-            grouped[categoryName]!.add(tukang);
-          }
-        }
-      } else {
-        // Fallback to single namaKategori if kategoriList is empty
-        final category = tukang.namaKategori ?? 'Lainnya';
-        if (!grouped.containsKey(category)) {
-          grouped[category] = [];
-        }
-        grouped[category]!.add(tukang);
-      }
-    }
-
-    return grouped;
-  }
+ 
 
   void _initializeAnimations() {
     _fadeController = AnimationController(
@@ -302,15 +263,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _buildHeaderIcon(
-                  Icons.person_outline,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ProfileScreen()),
-                  ),
-                  size: 45,
-                ),
-                const SizedBox(width: 8),
+                
                 _buildHeaderIcon(
                   Icons.notifications_none,
                   () => Navigator.push(
@@ -431,235 +384,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 22),
           _buildAnimatedCard(_buildBalanceCard(), delay: 0),
           const SizedBox(height: 20),
-          _buildAnimatedCard(_buildSearchBar(), delay: 100),
+          _buildAnimatedCard(_buildActionButtons(), delay: 100),
 
           const SizedBox(height: 31),
-          // Kategori Tukang dengan Cards
-          ..._buildCategoryTechnicians(),
-          const SizedBox(height: 20),
+          
         ],
       ),
     );
   }
-
-  List<Widget> _buildCategoryTechnicians() {
-    List<Widget> widgets = [];
-    int delay = 200;
-
-    _techniciansByCategory.forEach((category, technicians) {
-      widgets.add(
-        _buildAnimatedCard(
-          _buildCategorySection(category, technicians),
-          delay: delay,
-        ),
-      );
-      delay += 100;
-    });
-
-    return widgets;
-  }
-
-  Widget _buildCategorySection(String category, List<UserModel> technicians) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                category,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-              TextButton(
-                onPressed: () => _navigateToCategory(category),
-                child: const Text(
-                  'Lihat Semua',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFFF3B950),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 240,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: technicians.length,
-            itemBuilder: (context, index) {
-              return _buildTechnicianCard(technicians[index]);
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildTechnicianCard(UserModel technician) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _navigateToDetailOrder(technician),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Foto Tukang
-              Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3B950).withValues(alpha: 0.2),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.person,
-                    size: 60,
-                    color: const Color(0xFFF3B950),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nama
-                    Text(
-                      technician.nama ?? 'Nama Tukang',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // Rating
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${technician.rating?.toStringAsFixed(1) ?? '0.0'} (${technician.jumlahPesanan ?? 0} pesanan)',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Status
-                    Text(
-                      technician.statusAktif == 'tersedia' ||
-                              technician.statusAktif == 'online'
-                          ? '🟢 Online'
-                          : technician.statusAktif == 'sibuk'
-                          ? '🟠 Sibuk'
-                          : '⚫ Offline',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            technician.statusAktif == 'tersedia' ||
-                                    technician.statusAktif == 'online'
-                                ? Colors.green
-                                : technician.statusAktif == 'sibuk'
-                                ? Colors.orange
-                                : Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Button Pesan
-                    SizedBox(
-                      width: double.infinity,
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () => _navigateToDetailOrder(technician),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF3B950),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                        child: const Text(
-                          'Pesan Sekarang',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToCategory(String categoryName) {
-    // Find category by name to get its ID
-    final category = _techniciansByCategory.keys.firstWhere(
-      (cat) => cat == categoryName,
-      orElse: () => categoryName,
-    );
-
-    // Navigate to BrowseTukangScreen filtered by this category
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BrowseTukangScreen(kategoriNama: category),
-      ),
-    );
-  }
-
-  void _navigateToDetailOrder(UserModel technicianData) {
-    // Navigate to Tukang Detail Screen instead of direct booking
-    if (technicianData.id != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => TukangDetailScreen(tukangId: technicianData.id!),
-        ),
-      );
-    }
-  }
+ 
 
   Widget _buildAnimatedCard(Widget child, {int delay = 0}) {
     return TweenAnimationBuilder<double>(
@@ -723,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   _isLoadingProfile
                       ? const SizedBox(
-                        width: 100,
+                        width: 90,
                         height: 24,
                         child: Center(
                           child: SizedBox(
@@ -787,54 +520,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
-  Widget _buildSearchBar() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 318),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-        child: Row(
-          children: [
-            const Icon(Icons.search, color: Colors.grey, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  // Navigate to BrowseTukangScreen with search capability
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BrowseTukangScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: const Text(
-                    'Cari tukang disini...',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
+ 
+ Widget _buildActionButtons() {
+    return Row(
+      children: [
+        // Pesan Tukang Button
+        Expanded(
+          child: Container(
+            height: 110, // Increased from 90 to 110
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF3B950), Color(0xFFFFBB41)],
               ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            Material(
+            child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(20),
                 onTap: () {
-                  // Navigate to BrowseTukangScreen with filters open
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -842,20 +555,112 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   );
                 },
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3B950),
-                    borderRadius: BorderRadius.circular(15),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.construction,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Pesan Tukang',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.tune, color: Colors.white, size: 18),
                 ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
+        
+        const SizedBox(width: 16),
+        
+        // Top Up Button
+        Expanded(
+          child: Container(
+            height: 110, // Increased from 90 to 110
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/TopUpScreen');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Top Up',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
