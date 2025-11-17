@@ -5,7 +5,7 @@ import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/services/profile_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
-import 'package:rampungin_id_userside/models/statistics_model.dart';
+
 import 'package:rampungin_id_userside/models/profile_model.dart';
 import 'package:rampungin_id_userside/core/api_client.dart';
 import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
@@ -31,10 +31,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _pulseAnimation;
+
 
   List<CategoryModel> _categoryList = [];
-  StatisticsModel? _statistics;
   ProfileModel? _profile;
   UserModel? _currentUser;
   int _userPoints = 0;
@@ -56,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _loadProfileData(),
       _loadCategories(),
       _loadTukangList(),
-      _loadStatistics(),
+     
     ]);
   }
  
@@ -136,20 +135,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadStatistics() async {
-    try {
-      final stats = await _clientService.getStatistics();
-      if (mounted) {
-        setState(() {
-          _statistics = stats;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {});
-      }
-    }
-  }
 
   void _initializeAnimations() {
     _fadeController = AnimationController(
@@ -179,10 +164,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+   
 
     if (!mounted) return;
     _fadeController.forward();
@@ -369,31 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
         ),
-        // Decorative circles
-        Positioned(
-          right: -20,
-          top: 20,
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
-          ),
-        ),
-        Positioned(
-          left: -30,
-          bottom: 10,
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-        ),
+        
       ],
     );
   }
@@ -983,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,

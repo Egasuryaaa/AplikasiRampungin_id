@@ -19,7 +19,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final ProfileService _profileService = ProfileService();
 
   late TextEditingController _namaController;
-  late TextEditingController _emailController;
   late TextEditingController _noTelpController;
   late TextEditingController _alamatController;
   late TextEditingController _kotaController;
@@ -32,7 +31,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     _namaController = TextEditingController(text: widget.profile.namaLengkap);
-    _emailController = TextEditingController(text: widget.profile.email);
     _noTelpController = TextEditingController(text: widget.profile.noTelp);
     _alamatController = TextEditingController(text: widget.profile.alamat);
     _kotaController = TextEditingController(text: widget.profile.kota);
@@ -43,7 +41,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _namaController.dispose();
-    _emailController.dispose();
     _noTelpController.dispose();
     _alamatController.dispose();
     _kotaController.dispose();
@@ -68,7 +65,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await _profileService.updateProfileJson(
         token: authToken,
         namaLengkap: _namaController.text,
-        email: _emailController.text,
+        email: widget.profile.email ,
         noTelp: _noTelpController.text,
         alamat: _alamatController.text,
         kota: _kotaController.text,
@@ -186,21 +183,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        controller: _emailController,
+                      
+                      // Email - Read Only Display
+                      _buildReadOnlyField(
                         label: 'Email',
+                        value: widget.profile.email,
                         icon: Icons.email,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Email tidak boleh kosong';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Email tidak valid';
-                          }
-                          return null;
-                        },
                       ),
+                      
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _noTelpController,
@@ -364,6 +354,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               horizontal: 16,
               vertical: 14,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget untuk field yang tidak bisa diedit (read-only)
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF666666),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey[400]!,
+              width: 1.5,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.grey[600]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: Colors.grey[500],
+              ),
+            ],
           ),
         ),
       ],

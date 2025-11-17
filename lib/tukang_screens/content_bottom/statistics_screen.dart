@@ -15,6 +15,15 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   final TukangService _tukangService = TukangService();
   late TabController _tabController;
 
+  
+int _toInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
   @override
   void initState() {
     super.initState();
@@ -400,14 +409,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '${statistik['total_rating'] ?? 0} Ulasan',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                        
 
                         // Star Distribution
                         _buildStarBar(
@@ -643,49 +645,54 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     );
   }
 
-  Widget _buildStarBar(int stars, int count, int total) {
-    final percentage = total > 0 ? (count / total) : 0.0;
+  // COMPLETE FIX - Replace the entire _buildStarBar method with this:
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 20,
-            child: Text(
-              '$stars',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+Widget _buildStarBar(int stars, dynamic count, dynamic total) {
+  // Convert dynamic values to integers safely
+  final countInt = _toInt(count);
+  final totalInt = _toInt(total);
+  final percentage = totalInt > 0 ? (countInt / totalInt) : 0.0;
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 20,
+          child: Text(
+            '$stars',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+        const Icon(Icons.star, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage,
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 8,
             ),
           ),
-          const Icon(Icons.star, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: percentage,
-                backgroundColor: Colors.white.withValues(alpha: 0.3),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                minHeight: 8,
-              ),
-            ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 30,
+          child: Text(
+            '$countInt',
+            textAlign: TextAlign.end,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 30,
-            child: Text(
-              '$count',
-              textAlign: TextAlign.end,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildRatingItem(Map<String, dynamic> rating) {
-    final ratingValue = rating['rating'] ?? 0;
+    final ratingValue = _toInt(rating['rating']);
     final ulasan = rating['ulasan'] ?? '';
     final namaClient = rating['nama_client'] ?? 'Anonymous';
     final fotoClient = rating['foto_client'];
