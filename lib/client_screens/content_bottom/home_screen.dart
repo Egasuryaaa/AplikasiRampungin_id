@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:rampungin_id_userside/client_screens/content_bottom/topup_screen.dart';
 import 'package:rampungin_id_userside/services/client_service.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
+import 'package:rampungin_id_userside/services/profile_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/models/statistics_model.dart';
+import 'package:rampungin_id_userside/models/profile_model.dart';
+import 'package:rampungin_id_userside/core/api_client.dart';
 import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
-// import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
- import 'package:rampungin_id_userside/client_screens/detail/transaction_list_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/notification.dart';
 import 'package:rampungin_id_userside/Auth_screens/login.dart';
 
@@ -21,21 +23,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final int _currentIndex = 0;
   final ClientService _clientService = ClientService();
   final AuthService _authService = AuthService();
+  final ProfileService _profileService = ProfileService();
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
+  late AnimationController _pulseController;
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
 
-   // API Data
-  List<CategoryModel> _categoryList = []; // ignore: unused_field
-  StatisticsModel? _statistics; // ignore: unused_field
+  List<CategoryModel> _categoryList = [];
+  StatisticsModel? _statistics;
+  ProfileModel? _profile;
   UserModel? _currentUser;
-  int _userPoints = 0; // Poin user
+  int _userPoints = 0;
   bool _isLoadingTukang = true;
   bool _isLoadingProfile = true;
   String? _errorMessage;
+  String _token = '';
 
   @override
   void initState() {
@@ -43,26 +49,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeAnimations();
     _loadAllData();
   }
-
-  // Load all data from API
+ 
   Future<void> _loadAllData() async {
     await Future.wait([
       _loadUserProfile(),
+      _loadProfileData(),
       _loadCategories(),
       _loadTukangList(),
       _loadStatistics(),
     ]);
   }
-
-  // Load current user profile
+ 
   Future<void> _loadUserProfile() async {
     try {
       final user = await _authService.getCurrentUser();
-
       if (mounted) {
         setState(() {
           _currentUser = user;
-          // Ambil poin dari user (sudah di-parse di UserModel.saldo)
           _userPoints = (user.saldo ?? 0).toInt();
           _isLoadingProfile = false;
         });
@@ -76,29 +79,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  // Load categories
+  Future<void> _loadProfileData() async {
+    try {
+      // Get token from ApiClient
+      final token = await ApiClient().getToken();
+      _token = token ?? '';
+
+      if (_token.isEmpty) {
+        throw Exception('Token tidak ditemukan');
+      }
+
+      // Fetch profile
+      final response = await _profileService.getProfile(_token);
+
+      if (response['status'] == 'success') {
+        if (mounted) {
+          setState(() {
+            _profile = ProfileModel.fromJson(response['data']);
+            // Update points from profile if available
+            if (_profile != null && _profile!.poin > 0) {
+              _userPoints = _profile!.poin;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Silently fail, profile is optional
+    }
+  }
+
   Future<void> _loadCategories() async {
     try {
       final categories = await _clientService.getCategories();
-
       if (mounted) {
         setState(() {
           _categoryList = categories;
         });
       }
-    } catch (e) {
-      // Silently fail, categories are optional
-    }
+    } catch (e) {}
   }
-
-  // Load all tukang from API
+ 
   Future<void> _loadTukangList() async {
     try {
-
-
       if (mounted) {
         setState(() {
-          // _allTukangList = tukangList;
           _isLoadingTukang = false;
         });
       }
@@ -112,38 +136,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  // Load statistics (for balance)
   Future<void> _loadStatistics() async {
     try {
       final stats = await _clientService.getStatistics();
-
       if (mounted) {
         setState(() {
           _statistics = stats;
-          // Kita tidak perlu _userBalance lagi, karena poin diambil dari user profile
         });
       }
     } catch (e) {
-      // Silently fail, balance will show 0
       if (mounted) {
-        setState(() {
-          // Do nothing, poin sudah di-load dari user profile
-        });
+        setState(() {});
       }
     }
   }
- 
 
   void _initializeAnimations() {
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
@@ -151,11 +173,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
 
     if (!mounted) return;
     _fadeController.forward();
@@ -166,11 +193,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
-
+    _pulseController.dispose();
     super.dispose();
   }
  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
                 _buildHeader(),
@@ -191,149 +218,260 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const TransactionListScreen(),
-            ),
-          );
-        },
-        backgroundColor: const Color(0xFFF3B950),
-        icon: const Icon(Icons.receipt_long, color: Colors.white),
-        label: const Text(
-          'Riwayat',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      
     );
   }
- 
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFBB41),
-        borderRadius: BorderRadius.only(bottomRight: Radius.circular(200)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x40000000),
-            offset: Offset(0, 4),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(25, 12, 25, 60),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 7,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 21),
-                Hero(
-                  tag: 'app_logo',
-                  child: Image.asset(
-                    'assets/img/LogoRampung.png',
-                    width: 120,
-                    height: 40,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 23),
-                Text(
-                  'Selamat Datang ${_currentUser?.nama ?? "Client"}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                    fontFamily: 'KdamThmorPro',
-                  ),
-                ),
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFFFBB41),
+                const Color(0xFFF3B950),
+                const Color(0xFFFFBB41).withValues(alpha: 0.8),
               ],
             ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(50),
+              bottomRight: Radius.circular(50),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                offset: const Offset(0, 8),
+                blurRadius: 25,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                
-                _buildHeaderIcon(
-                  Icons.notifications_none,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationScreen(),
+          padding: const EdgeInsets.fromLTRB(25, 15, 25, 35),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Hero(
+                    tag: 'app_logo',
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Image.asset(
+                        'assets/img/LogoRampung.png',
+                        width: 110,
+                        height: 35,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
-                  size: 30,
-                  iconSize: 20,
-                ),
-                const SizedBox(width: 8),
-                _buildHeaderIcon(
-                  Icons.logout,
-                  () => _handleLogout(),
-                  size: 30,
-                  iconSize: 18,
-                ),
-              ],
+                  Row(
+                    children: [
+                      _buildHeaderIcon(
+                        Icons.notifications_none_rounded,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationScreen(),
+                          ),
+                        ),
+                        hasNotification: true,
+                      ),
+                      const SizedBox(width: 10),
+                      _buildHeaderIcon(
+                        Icons.logout_rounded,
+                        () => _handleLogout(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+              Row(
+                children: [
+                  // Profile Picture from ProfileModel
+                  Container(
+                    width: 55,
+                    height: 55,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: _profile?.fotoProfil != null && _profile!.fotoProfil!.isNotEmpty
+                          ? Image.network(
+                              _profile!.getFullImageUrl('http://localhost/admintukang'),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person,
+                                  color: Color(0xFFF3B950),
+                                  size: 30,
+                                );
+                              },
+                            )
+                          : const Icon(
+                              Icons.person,
+                              color: Color(0xFFF3B950),
+                              size: 30,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Selamat Datang',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white70,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _profile?.namaLengkap ?? _currentUser?.nama ?? "Client",
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'KdamThmorPro',
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Decorative circles
+        Positioned(
+          right: -20,
+          top: 20,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.1),
             ),
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          left: -30,
+          bottom: 10,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildHeaderIcon(
     IconData icon,
     VoidCallback onTap, {
-    double size = 30,
-    double iconSize = 24,
+    bool hasNotification = false,
   }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size / 2),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 45,
+          height: 45,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(size / 2),
-          onTap: onTap,
-          child: Icon(icon, color: const Color(0xFFF3B950), size: iconSize),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(25),
+              onTap: onTap,
+              child: Icon(icon, color: const Color(0xFFF3B950), size: 24),
+            ),
+          ),
         ),
-      ),
+        if (hasNotification)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   Widget _buildMainContent() {
-    // Show loading indicator while fetching data
     if (_isLoadingTukang) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(50),
-          child: CircularProgressIndicator(color: Color(0xFFF3B950)),
+          padding: const EdgeInsets.all(50),
+          child: Column(
+            children: [
+              const CircularProgressIndicator(
+                color: Color(0xFFF3B950),
+                strokeWidth: 3,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                'Memuat data...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    // Show error message if loading failed
     if (_errorMessage != null) {
       return Center(
         child: Padding(
@@ -341,11 +479,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 60, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.error_outline, size: 60, color: Colors.red),
+              ),
+              const SizedBox(height: 20),
+              const Text(
                 'Gagal memuat data',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -357,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: const TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   setState(() {
                     _isLoadingTukang = true;
@@ -365,10 +510,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   });
                   _loadTukangList();
                 },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF3B950),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
-                child: const Text('Coba Lagi'),
               ),
             ],
           ),
@@ -381,27 +532,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 22),
+          const SizedBox(height: 25),
           _buildAnimatedCard(_buildBalanceCard(), delay: 0),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           _buildAnimatedCard(_buildActionButtons(), delay: 100),
-
-          const SizedBox(height: 31),
-          
+          const SizedBox(height: 25),
         ],
       ),
     );
   }
- 
 
   Widget _buildAnimatedCard(Widget child, {int delay = 0}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 500 + delay),
+      duration: Duration(milliseconds: 600 + delay),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
+          offset: Offset(0, 30 * (1 - value)),
           child: Opacity(opacity: value, child: child),
         );
       },
@@ -413,75 +561,160 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.white,
+            const Color(0xFFFDF6E8).withValues(alpha: 0.3),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFFF3B950).withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(20, 15, 20, 15),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.all(20),
+      child: Column(
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3B950),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 13),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  const Text(
-                    'Saldo Anda',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey,
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF3B950), Color(0xFFFFBB41)],
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: Colors.white,
+                      size: 26,
                     ),
                   ),
-                  _isLoadingProfile
-                      ? const SizedBox(
-                        width: 90,
-                        height: 24,
-                        child: Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFFF3B950),
-                            ),
-                          ),
-                        ),
-                      )
-                      : Text(
-                        'Rp ${_userPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                  const SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Saldo Anda',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                          letterSpacing: 0.5,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      _isLoadingProfile
+                          ? const SizedBox(
+                              width: 100,
+                              height: 28,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Color(0xFFF3B950),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              'Rp ${_userPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                    ],
+                  ),
                 ],
+              ),
+              _buildTopUpButton(),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.grey.withValues(alpha: 0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildBalanceInfo(Icons.person_outline, 'Username', _profile?.username ?? '-'),
+              Container(width: 1, height: 30, color: Colors.grey[300]),
+              _buildBalanceInfo(Icons.email_outlined, 'Email', _profile?.email ?? '-'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceInfo(IconData icon, String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFFF3B950)),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          _buildTopUpButton(),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ],
       ),
     );
@@ -491,222 +724,284 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(15),
         onTap: () {
           Navigator.of(context).pushNamed('/TopUpScreen');
         },
-        child: Column(
-          children: [
-            Container(
-              width: 35,
-              height: 35,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3B950),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.add, color: Colors.white, size: 20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Top up',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: Colors.black,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+              SizedBox(width: 6),
+              Text(
+                'Top Up',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
- 
- Widget _buildActionButtons() {
+
+  Widget _buildActionButtons() {
     return Row(
       children: [
-        // Pesan Tukang Button
         Expanded(
-          child: Container(
-            height: 110, // Increased from 90 to 110
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF3B950), Color(0xFFFFBB41)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          child: _buildActionButton(
+            icon: Icons.construction_rounded,
+            title: 'Pesan Tukang',
+            subtitle: 'Cari pekerja ahli',
+            colors: [Color(0xFFF3B950), Color(0xFFFFBB41)],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BrowseTukangScreen(),
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BrowseTukangScreen(),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.construction,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Pesan Tukang',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ),
-        
         const SizedBox(width: 16),
-        
-        // Top Up Button
         Expanded(
-          child: Container(
-            height: 110, // Increased from 90 to 110
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          child: _buildActionButton(
+            icon: Icons.add,
+            title: 'Top up',
+            subtitle: 'Top up saldo anda',
+            colors: [Color(0xFF2196F3), Color(0xFF42A5F5)],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TopUpScreen(),
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.of(context).pushNamed('/TopUpScreen');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Top Up',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],
     );
   }
 
+  Widget _buildActionButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> colors,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      height: 135,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: colors[0].withValues(alpha: 0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(25),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 25),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleLogout() async {
-    // Show confirmation dialog
-    showDialog(
+    return showDialog(
       context: context,
-      builder:
-          (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Keluar Akun'),
-            content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Batal'),
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red,
+                  size: 24,
+                ),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
+              const SizedBox(width: 12),
+              const Text(
+                'Keluar Akun',
+                style: TextStyle(fontSize: 18),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Apakah Anda yakin ingin keluar dari akun?',
+            style: TextStyle(fontSize: 15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text(
+                'Batal',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Close dialog first
+                Navigator.of(dialogContext).pop();
+                
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext loadingContext) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFF3B950),
+                      ),
+                    );
+                  },
+                );
 
-                  try {
-                    // Call logout API
-                    await _authService.logout();
-                  } catch (e) {
-                    // API error handling - token is still removed by the service
-                  }
-
-                  // Navigate to login screen and remove all previous routes
+                try {
+                  // Perform logout
+                  await _authService.logout();
+                  
+                  // Close loading indicator
                   if (mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
+                    Navigator.of(context).pop();
+                  }
+                  
+                  // Navigate to login screen
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (context) => const LoginScreen(),
                       ),
                       (route) => false,
                     );
                   }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
+                } catch (e) {
+                  // Close loading indicator
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                  
+                  // Navigate to login screen anyway (token might be cleared)
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-                child: const Text('Keluar'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
               ),
-            ],
-          ),
+              child: const Text(
+                'Keluar',
+                style: TextStyle(fontSize: 15),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        );
+      },
     );
   }
 }

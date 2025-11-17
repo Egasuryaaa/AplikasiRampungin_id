@@ -1,3 +1,4 @@
+// File: lib/tukang_screens/content_bottom/withdrawal_screen.dart
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
 import 'package:rampungin_id_userside/models/withdrawal_model.dart';
@@ -49,10 +50,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         setState(() {
           _currentBalance = stats.saldoPoin ?? 0;
         });
-        print('DEBUG: Saldo Poin loaded: $_currentBalance');
       }
     } catch (e) {
-      print('ERROR loading balance: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -77,10 +76,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
           _withdrawalHistory = history;
           _isLoadingHistory = false;
         });
-        print('DEBUG: Loaded ${history.length} withdrawal records');
       }
     } catch (e) {
-      print('ERROR loading withdrawal history: $e');
       if (mounted) {
         setState(() {
           _isLoadingHistory = false;
@@ -113,7 +110,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       return;
     }
 
-    // Validasi minimum Rp 50.000
     if (jumlah < 50000) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,9 +142,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
     if (_namaBankController.text.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Nama bank harus diisi')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama bank harus diisi')),
+      );
       return;
     }
 
@@ -188,11 +184,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
           ),
         );
 
-        // Reload data
         _loadWithdrawalHistory();
         _loadBalance();
-
-        // Switch to history tab
         _tabController.animateTo(1);
       }
     } catch (e) {
@@ -247,7 +240,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Balance Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -306,7 +298,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           const SizedBox(height: 24),
 
-          // Info Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -343,7 +334,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           const SizedBox(height: 24),
 
-          // Form
           const Text(
             'Jumlah Penarikan',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -353,7 +343,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
             controller: _jumlahController,
             keyboardType: TextInputType.number,
             onChanged: (value) {
-              setState(() {}); // Refresh untuk update fee calculation
+              setState(() {});
             },
             decoration: InputDecoration(
               prefixText: 'Rp ',
@@ -368,7 +358,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
             ),
           ),
 
-          // Fee Calculation Display
           if (_jumlahController.text.isNotEmpty &&
               double.tryParse(_jumlahController.text) != null &&
               double.parse(_jumlahController.text) >= 50000)
@@ -404,7 +393,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           const SizedBox(height: 16),
 
-          // Quick Amount Buttons
           Wrap(
             spacing: 8,
             children: [
@@ -487,7 +475,6 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
           const SizedBox(height: 24),
 
-          // Submit Button
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -750,19 +737,82 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF3B950),
-        title: const Text('Withdrawal'),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          tabs: const [Tab(text: 'Request Withdrawal'), Tab(text: 'Riwayat')],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    offset: const Offset(0, 4),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Withdrawal',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: const Color(0xFFF3B950),
+                      unselectedLabelColor: Colors.white,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Request Withdrawal'),
+                        Tab(text: 'Riwayat'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildRequestTab(), _buildHistoryTab()],
+              ),
+            ),
+          ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildRequestTab(), _buildHistoryTab()],
       ),
     );
   }

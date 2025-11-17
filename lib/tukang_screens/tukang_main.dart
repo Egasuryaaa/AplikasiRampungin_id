@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'Widgets/bottom.dart';
 import 'content_bottom/home.dart';
-import 'detail/withdrawal_screen.dart';
+import 'content_bottom/withdrawal_screen.dart';
+import 'content_bottom/statistics_screen.dart';
+import 'content_bottom/profile.dart';
 
 class TukangMain extends StatefulWidget {
   const TukangMain({super.key});
@@ -16,7 +18,9 @@ class _TukangMainState extends State<TukangMain> {
 
   final List<Widget> _screens = [
     const Home(), // Index 0
-    const WithdrawalScreen(), // Index 1
+    const StatisticsScreen(), // Index 1
+    const WithdrawalScreen(), // Index 2
+    const Profile(), // Index 3
   ];
 
   void _onNavigationTap(int index) {

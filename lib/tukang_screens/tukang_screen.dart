@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Widgets/bottom.dart';
 import 'content_bottom/home.dart';
-import 'detail/withdrawal_screen.dart';
+import 'content_bottom/withdrawal_screen.dart';
 
 class TukangScreen extends StatefulWidget {
   const TukangScreen({super.key});

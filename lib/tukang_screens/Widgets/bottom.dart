@@ -51,13 +51,24 @@ class _BottomState extends State<Bottom> {
               Icons.home_outlined,
               Icons.home,
               'Home',
-              isCenter: true,
             ),
             _buildNavItem(
               1,
+              Icons.bar_chart_outlined,
+              Icons.bar_chart,
+              'Statistik',
+            ),
+            _buildNavItem(
+              2,
               Icons.account_balance_wallet_outlined,
               Icons.account_balance_wallet,
-              'Withdrawal',
+              'Penarikan',
+            ),
+            _buildNavItem(
+              3,
+              Icons.person_outline,
+              Icons.person,
+              'Profil',
             ),
           ],
         ),
@@ -69,9 +80,8 @@ class _BottomState extends State<Bottom> {
     int index,
     IconData icon,
     IconData activeIcon,
-    String label, {
-    bool isCenter = false,
-  }) {
+    String label,
+  ) {
     bool isSelected = widget.currentIndex == index;
 
     return Expanded(
@@ -81,26 +91,13 @@ class _BottomState extends State<Bottom> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           height: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          decoration:
-              isCenter && isSelected
-                  ? BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  )
-                  : isSelected && !isCenter
-                  ? BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  )
-                  : null,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: isSelected
+              ? BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                )
+              : null,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -109,27 +106,21 @@ class _BottomState extends State<Bottom> {
                 child: Icon(
                   isSelected ? activeIcon : icon,
                   key: ValueKey(isSelected),
-                  size: isCenter ? 28 : 24,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
+                  size: isSelected ? 26 : 22,
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: isSelected ? 10 : 9,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.7),
                 ),
                 child: Text(label),
               ),

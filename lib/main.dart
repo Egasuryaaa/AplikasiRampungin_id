@@ -11,7 +11,7 @@ import 'tukang_screens/tukang_main.dart';
 import 'client_screens/detail/detail_order.dart';
 import 'tukang_screens/detail/edit_profile.dart';
 import 'tukang_screens/detail/ubahpassword.dart';
-import 'tukang_screens/detail/profile.dart';
+import 'tukang_screens/content_bottom/profile.dart';
 import 'client_screens/detail/setting.dart';
 
 void main() {
