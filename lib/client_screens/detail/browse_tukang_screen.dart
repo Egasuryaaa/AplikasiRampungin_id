@@ -4,6 +4,7 @@ import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
 import 'package:rampungin_id_userside/client_screens/detail/booking_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
+import 'package:rampungin_id_userside/core/api_config.dart';
 
 class BrowseTukangScreen extends StatefulWidget {
   final int? kategoriId;
@@ -22,6 +23,9 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
   List<UserModel> _tukangList = [];
   List<CategoryModel> _categories = [];
   bool _isLoading = false;
+  
+  // Base URL untuk foto profil
+ final url = ApiConfig.baseUrl;
 
   // Filters
   int? _selectedKategoriId;
@@ -102,43 +106,54 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => _FilterDialog(
-            selectedKategoriId: _selectedKategoriId,
-            selectedKota: _selectedKota,
-            selectedStatus: _selectedStatus,
-            minRating: _minRating,
-            maxTarif: _maxTarif,
-            orderBy: _orderBy,
-            orderDir: _orderDir,
-            categories: _categories,
-            onApply: (filters) {
-              setState(() {
-                _selectedKategoriId = filters['kategoriId'];
-                _selectedKota = filters['kota'];
-                _selectedStatus = filters['status'];
-                _minRating = filters['minRating'];
-                _maxTarif = filters['maxTarif'];
-                _orderBy = filters['orderBy'];
-                _orderDir = filters['orderDir'];
-              });
-              _loadTukang();
-            },
-            onReset: () {
-              setState(() {
-                _selectedKategoriId = null;
-                _selectedKota = null;
-                _selectedStatus = 'tersedia';
-                _minRating = null;
-                _maxTarif = null;
-                _orderBy = 'rata_rata_rating';
-                _orderDir = 'DESC';
-              });
-              _loadTukang();
-            },
-          ),
+      builder: (context) => _FilterDialog(
+        selectedKategoriId: _selectedKategoriId,
+        selectedKota: _selectedKota,
+        selectedStatus: _selectedStatus,
+        minRating: _minRating,
+        maxTarif: _maxTarif,
+        orderBy: _orderBy,
+        orderDir: _orderDir,
+        categories: _categories,
+        onApply: (filters) {
+          setState(() {
+            _selectedKategoriId = filters['kategoriId'];
+            _selectedKota = filters['kota'];
+            _selectedStatus = filters['status'];
+            _minRating = filters['minRating'];
+            _maxTarif = filters['maxTarif'];
+            _orderBy = filters['orderBy'];
+            _orderDir = filters['orderDir'];
+          });
+          _loadTukang();
+        },
+        onReset: () {
+          setState(() {
+            _selectedKategoriId = null;
+            _selectedKota = null;
+            _selectedStatus = 'tersedia';
+            _minRating = null;
+            _maxTarif = null;
+            _orderBy = 'rata_rata_rating';
+            _orderDir = 'DESC';
+          });
+          _loadTukang();
+        },
+      ),
     );
   }
+
+  // Helper method to get photo URL
+ String? _getPhotoUrl(String? fotoPath) {
+  if (fotoPath == null || fotoPath.isEmpty) return null;
+
+  if (fotoPath.startsWith('http://') || fotoPath.startsWith('https://')) {
+    return fotoPath;
+  }
+
+  final cleanPath = fotoPath.startsWith('/') ? fotoPath.substring(1) : fotoPath;
+  return '$url/$cleanPath';
+}
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +190,6 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
               onSubmitted: (value) {
-                // Search functionality can be added here
                 _loadTukang();
               },
             ),
@@ -236,21 +250,20 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
 
           // Tukang List
           Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _tukangList.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _tukangList.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
-                      onRefresh: _loadTukang,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _tukangList.length,
-                        itemBuilder: (context, index) {
-                          return _buildTukangCard(_tukangList[index]);
-                        },
+                        onRefresh: _loadTukang,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _tukangList.length,
+                          itemBuilder: (context, index) {
+                            return _buildTukangCard(_tukangList[index]);
+                          },
+                        ),
                       ),
-                    ),
           ),
         ],
       ),
@@ -264,7 +277,7 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
         label: Text(label),
         deleteIcon: const Icon(Icons.close, size: 18),
         onDeleted: onDelete,
-        backgroundColor: const Color(0xFFF3B950).withValues(alpha: 0.2),
+        backgroundColor: const Color(0xFFF3B950).withOpacity(0.2),
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
       ),
     );
@@ -300,9 +313,12 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
   }
 
   Widget _buildTukangCard(UserModel tukang) {
+    final photoUrl = _getPhotoUrl(tukang.fotoProfil);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -318,18 +334,45 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
+              // Avatar with Photo
               Container(
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3B950).withValues(alpha: 0.2),
+                  color: const Color(0xFFF3B950).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Color(0xFFF3B950),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: photoUrl != null
+                      ? Image.network(
+                          photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultAvatar();
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                                color: const Color(0xFFF3B950),
+                              ),
+                            );
+                          },
+                        )
+                      : _buildDefaultAvatar(),
                 ),
               ),
               const SizedBox(width: 16),
@@ -345,6 +388,8 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -383,10 +428,9 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                tukang.statusAktif == 'online'
-                                    ? Colors.green[100]
-                                    : Colors.grey[300],
+                            color: tukang.statusAktif == 'online'
+                                ? Colors.green[100]
+                                : Colors.grey[300],
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -396,10 +440,9 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  tukang.statusAktif == 'online'
-                                      ? Colors.green[800]
-                                      : Colors.grey[800],
+                              color: tukang.statusAktif == 'online'
+                                  ? Colors.green[800]
+                                  : Colors.grey[800],
                             ),
                           ),
                         ),
@@ -408,9 +451,8 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        BookingScreen(tukangData: tukang),
+                                builder: (context) =>
+                                    BookingScreen(tukangData: tukang),
                               ),
                             );
                           },
@@ -440,6 +482,19 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: const Color(0xFFF3B950).withOpacity(0.2),
+      child: const Center(
+        child: Icon(
+          Icons.person,
+          size: 40,
+          color: Color(0xFFF3B950),
         ),
       ),
     );
@@ -791,10 +846,9 @@ class _FilterDialogState extends State<_FilterDialog> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color:
-                                              _orderDir == 'DESC'
-                                                  ? const Color(0xFFF3B950)
-                                                  : Colors.transparent,
+                                          color: _orderDir == 'DESC'
+                                              ? const Color(0xFFF3B950)
+                                              : Colors.transparent,
                                         ),
                                       ),
                                     ),
@@ -842,10 +896,9 @@ class _FilterDialogState extends State<_FilterDialog> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color:
-                                              _orderDir == 'ASC'
-                                                  ? const Color(0xFFF3B950)
-                                                  : Colors.transparent,
+                                          color: _orderDir == 'ASC'
+                                              ? const Color(0xFFF3B950)
+                                              : Colors.transparent,
                                         ),
                                       ),
                                     ),

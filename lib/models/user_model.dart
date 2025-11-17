@@ -8,6 +8,7 @@ class UserModel {
   final String? jenisAkun; // 'client' or 'tukang'
   final String? fotoProfile;
   final String? ktpPhoto;
+  final String? fotoProfil;
   final int? idKategori;
   final String? namaKategori;
   final List<Map<String, dynamic>>?
@@ -39,6 +40,7 @@ class UserModel {
     this.saldo,
     this.createdAt,
     this.updatedAt,
+    this.fotoProfil,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -165,6 +167,7 @@ class UserModel {
       ktpPhoto: json['ktp_photo'] as String?,
       idKategori: parsedIdKategori,
       namaKategori: json['nama_kategori'] as String?,
+      fotoProfil: json['foto_profil'], 
       kategoriList: kategoriList,
       statusVerifikasi:
           statusVerifikasi ?? json['status_verifikasi'] as String?,

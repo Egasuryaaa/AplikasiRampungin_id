@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import 'package:rampungin_id_userside/tukang_screens/detail/edit_profile.dart';
 import 'package:rampungin_id_userside/models/tukang_profile_model.dart';
 import 'package:rampungin_id_userside/services/tukang_service.dart';
+import 'package:rampungin_id_userside/tukang_screens/detail/setting.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -65,6 +66,21 @@ class _ProfileState extends State<Profile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF3B950),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Color.fromARGB(255, 255, 255, 255)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Setting()),
+              );
+            },
+          ),
+        ],
+      ),
       body:
           _isLoading
               ? const Center(
@@ -151,9 +167,7 @@ class _ProfileState extends State<Profile> {
                                         )
                                         : const CircleAvatar(
                                           radius: 66,
-                                          backgroundColor: Color(
-                                            0xFFF3B950,
-                                          ),
+                                          backgroundColor: Color(0xFFF3B950),
                                           child: Icon(
                                             Icons.person,
                                             size: 80,
@@ -213,9 +227,7 @@ class _ProfileState extends State<Profile> {
                         offset: const Offset(0, -10),
                         child: Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                          ),
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFDF6E8),
                             borderRadius: BorderRadius.circular(30),
