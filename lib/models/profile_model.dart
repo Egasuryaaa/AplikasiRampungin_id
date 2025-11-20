@@ -111,12 +111,24 @@ class ProfileModel {
     };
   }
 
-  String getFullImageUrl(String baseUrl) {
-    if (fotoProfil == null || fotoProfil!.isEmpty) {
-      return '';
-    }
-    return '$baseUrl/$fotoProfil';
+String getFullImageUrl(String baseUrl) {
+  if (fotoProfil == null || fotoProfil!.isEmpty) {
+    return '';
   }
+  
+  String imageUrl = fotoProfil!;
+  
+  // If already a full URL, return as is
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+  
+  // Remove leading slashes
+  imageUrl = imageUrl.replaceFirst(RegExp(r'^/+'), '');
+  
+  // Construct full URL with provided baseUrl
+  return '$baseUrl/$imageUrl';
+}
 }
 
 class RoleModel {

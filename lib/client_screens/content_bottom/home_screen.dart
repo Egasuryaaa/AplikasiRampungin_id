@@ -5,9 +5,8 @@ import 'package:rampungin_id_userside/services/auth_service.dart';
 import 'package:rampungin_id_userside/services/profile_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
-
+import 'package:rampungin_id_userside/core/api_config.dart';
 import 'package:rampungin_id_userside/models/profile_model.dart';
-import 'package:rampungin_id_userside/core/api_client.dart';
 import 'package:rampungin_id_userside/client_screens/detail/browse_tukang_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/notification.dart';
 import 'package:rampungin_id_userside/Auth_screens/login.dart';
@@ -20,7 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final int _currentIndex = 0;
   final ClientService _clientService = ClientService();
   final AuthService _authService = AuthService();
   final ProfileService _profileService = ProfileService();
@@ -32,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-
   List<CategoryModel> _categoryList = [];
   ProfileModel? _profile;
   UserModel? _currentUser;
@@ -40,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoadingTukang = true;
   bool _isLoadingProfile = true;
   String? _errorMessage;
-  String _token = '';
 
   @override
   void initState() {
@@ -48,17 +44,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeAnimations();
     _loadAllData();
   }
- 
+
   Future<void> _loadAllData() async {
     await Future.wait([
       _loadUserProfile(),
       _loadProfileData(),
       _loadCategories(),
       _loadTukangList(),
-     
     ]);
   }
- 
+
   Future<void> _loadUserProfile() async {
     try {
       final user = await _authService.getCurrentUser();
@@ -80,16 +75,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadProfileData() async {
     try {
-      // Get token from ApiClient
-      final token = await ApiClient().getToken();
-      _token = token ?? '';
-
-      if (_token.isEmpty) {
-        throw Exception('Token tidak ditemukan');
-      }
-
-      // Fetch profile
-      final response = await _profileService.getProfile(_token);
+      // Token parameter is ignored - ApiClient handles it automatically
+      final response = await _profileService.getProfile('');
 
       if (response['status'] == 'success') {
         if (mounted) {
@@ -117,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     } catch (e) {}
   }
- 
+
   Future<void> _loadTukangList() async {
     try {
       if (mounted) {
@@ -134,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
   }
-
 
   void _initializeAnimations() {
     _fadeController = AnimationController(
@@ -164,8 +150,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
 
-   
-
     if (!mounted) return;
     _fadeController.forward();
     _slideController.forward();
@@ -178,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _pulseController.dispose();
     super.dispose();
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -292,25 +276,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    child: ClipOval(
-                      child: _profile?.fotoProfil != null && _profile!.fotoProfil!.isNotEmpty
-                          ? Image.network(
-                              _profile!.getFullImageUrl('http://localhost/admintukang'),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.person,
-                                  color: Color(0xFFF3B950),
-                                  size: 30,
-                                );
-                              },
-                            )
-                          : const Icon(
-                              Icons.person,
-                              color: Color(0xFFF3B950),
-                              size: 30,
-                            ),
-                    ),
+                    child: ClipOval(child: _buildProfileImage()),
                   ),
                   const SizedBox(width: 15),
                   Expanded(
@@ -328,7 +294,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _profile?.namaLengkap ?? _currentUser?.nama ?? "Client",
+                          _profile?.namaLengkap ??
+                              _currentUser?.nama ??
+                              "Client",
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -351,7 +319,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
         ),
-        
       ],
     );
   }
@@ -405,6 +372,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildProfileImage() {
+    if (_profile?.fotoProfil == null || _profile!.fotoProfil!.isEmpty) {
+      return const Icon(Icons.person, color: Color(0xFFF3B950), size: 30);
+    }
+
+    // Construct the image URL properly
+    String imageUrl = _profile!.fotoProfil!;
+
+    // If not already a full URL, construct it
+    if (!imageUrl.startsWith('http')) {
+      // Remove any leading slashes
+      imageUrl = imageUrl.replaceFirst(RegExp(r'^/+'), '');
+
+      // PENTING: Pastikan ada prefix 'uploads/' jika belum ada
+      if (!imageUrl.startsWith('uploads/')) {
+        imageUrl = 'uploads/$imageUrl';
+      }
+
+      // Construct full URL
+      imageUrl = '${ApiConfig.baseUrl}/$imageUrl';
+    }
+
+    print('🖼️ Home loading image: $imageUrl');
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ Error loading image: $error');
+        return const Icon(Icons.person, color: Color(0xFFF3B950), size: 30);
+      },
+    );
+  }
+
   Widget _buildMainContent() {
     if (_isLoadingTukang) {
       return Center(
@@ -419,10 +420,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(height: 15),
               Text(
                 'Memuat data...',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
             ],
           ),
@@ -443,15 +441,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                child: const Icon(
+                  Icons.error_outline,
+                  size: 60,
+                  color: Colors.red,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Gagal memuat data',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
@@ -473,7 +472,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF3B950),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -584,28 +586,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 4),
                       _isLoadingProfile
                           ? const SizedBox(
-                              width: 100,
-                              height: 28,
-                              child: Center(
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Color(0xFFF3B950),
-                                  ),
+                            width: 100,
+                            height: 28,
+                            child: Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Color(0xFFF3B950),
                                 ),
                               ),
-                            )
-                          : Text(
-                              'Rp ${_userPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                                letterSpacing: 0.5,
-                              ),
                             ),
+                          )
+                          : Text(
+                            'Rp ${_userPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                     ],
                   ),
                 ],
@@ -630,9 +632,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildBalanceInfo(Icons.person_outline, 'Username', _profile?.username ?? '-'),
+              _buildBalanceInfo(
+                Icons.person_outline,
+                'Username',
+                _profile?.username ?? '-',
+              ),
               Container(width: 1, height: 30, color: Colors.grey[300]),
-              _buildBalanceInfo(Icons.email_outlined, 'Email', _profile?.email ?? '-'),
+              _buildBalanceInfo(
+                Icons.email_outlined,
+                'Email',
+                _profile?.email ?? '-',
+              ),
             ],
           ),
         ],
@@ -751,9 +761,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const TopUpScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const TopUpScreen()),
               );
             },
           ),
@@ -863,10 +871,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Keluar Akun',
-                style: TextStyle(fontSize: 18),
-              ),
+              const Text('Keluar Akun', style: TextStyle(fontSize: 18)),
             ],
           ),
           content: const Text(
@@ -880,17 +885,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               child: const Text(
                 'Batal',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 15,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 15),
               ),
             ),
             ElevatedButton(
               onPressed: () async {
                 // Close dialog first
                 Navigator.of(dialogContext).pop();
-                
+
                 // Show loading indicator
                 showDialog(
                   context: context,
@@ -907,12 +909,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 try {
                   // Perform logout
                   await _authService.logout();
-                  
+
                   // Close loading indicator
                   if (mounted) {
                     Navigator.of(context).pop();
                   }
-                  
+
                   // Navigate to login screen
                   if (mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
@@ -927,7 +929,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   if (mounted) {
                     Navigator.of(context).pop();
                   }
-                  
+
                   // Navigate to login screen anyway (token might be cleared)
                   if (mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
@@ -941,7 +943,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                
+
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -951,10 +953,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 elevation: 2,
               ),
-              child: const Text(
-                'Keluar',
-                style: TextStyle(fontSize: 15),
-              ),
+              child: const Text('Keluar', style: TextStyle(fontSize: 15)),
             ),
           ],
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

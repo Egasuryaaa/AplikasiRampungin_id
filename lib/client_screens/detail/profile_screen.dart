@@ -290,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       _profile!.fotoProfil!.isNotEmpty)
                                   ? NetworkImage(
                                     _profile!.getFullImageUrl(
-                                      'http://localhost/admintukang',
+                                      'https://api.iwakrejosari.com',
                                     ),
                                   )
                                   : null,

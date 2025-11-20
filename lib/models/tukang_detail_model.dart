@@ -66,7 +66,6 @@ class TukangDetailModel {
       if (value is String) return int.tryParse(value);
       if (value is num) return value.toInt();
 
-      // Log unexpected type
       developer.log(
         'WARNING: parseInt received unexpected type: ${value.runtimeType} for value: $value',
         name: 'TukangDetailModel',
@@ -82,7 +81,6 @@ class TukangDetailModel {
       if (value is String) return double.tryParse(value);
       if (value is num) return value.toDouble();
 
-      // Log unexpected type
       developer.log(
         'WARNING: parseDouble received unexpected type: ${value.runtimeType} for value: $value',
         name: 'TukangDetailModel',
@@ -90,15 +88,24 @@ class TukangDetailModel {
       return null;
     }
 
+    // Log incoming JSON untuk debugging
+    developer.log(
+      'TukangDetailModel.fromJson - All keys: ${json.keys.join(', ')}',
+      name: 'TukangDetailModel',
+    );
+
+    developer.log(
+      'Tarif fields check - tarif_per_jam: ${json['tarif_per_jam']}, tarif: ${json['tarif']}, hourly_rate: ${json['hourly_rate']}',
+      name: 'TukangDetailModel',
+    );
+
     // Parse keahlian array
     List<String>? keahlian;
     if (json['keahlian'] != null) {
       if (json['keahlian'] is List) {
         keahlian = (json['keahlian'] as List).map((e) => e.toString()).toList();
       } else if (json['keahlian'] is String) {
-        // Backend mengirim keahlian sebagai JSON string
         try {
-          // Parse JSON string menjadi List
           final decoded = jsonDecode(json['keahlian'] as String);
           if (decoded is List) {
             keahlian = decoded.map((e) => e.toString()).toList();
@@ -183,6 +190,33 @@ class TukangDetailModel {
       }
     }
 
+    // Parse tarif dengan priority
+    double? tarifPerJam;
+    if (json['tarif_per_jam'] != null) {
+      tarifPerJam = parseDouble(json['tarif_per_jam']);
+      developer.log(
+        'Parsed tarif_per_jam: $tarifPerJam',
+        name: 'TukangDetailModel',
+      );
+    } else if (json['tarif'] != null) {
+      tarifPerJam = parseDouble(json['tarif']);
+      developer.log(
+        'Parsed tarif (fallback): $tarifPerJam',
+        name: 'TukangDetailModel',
+      );
+    } else if (json['hourly_rate'] != null) {
+      tarifPerJam = parseDouble(json['hourly_rate']);
+      developer.log(
+        'Parsed hourly_rate (fallback): $tarifPerJam',
+        name: 'TukangDetailModel',
+      );
+    } else {
+      developer.log(
+        'WARNING: Tarif field not found in API response!',
+        name: 'TukangDetailModel',
+      );
+    }
+
     return TukangDetailModel(
       id: parseInt(json['id']),
       userId: parseInt(json['user_id']),
@@ -194,7 +228,7 @@ class TukangDetailModel {
       kota: json['kota'] as String?,
       provinsi: json['provinsi'] as String?,
       pengalamanTahun: parseInt(json['pengalaman_tahun']),
-      tarifPerJam: parseDouble(json['tarif_per_jam']),
+      tarifPerJam: tarifPerJam,
       bio: json['bio'] as String?,
       keahlian: keahlian,
       radiusLayananKm: parseInt(json['radius_layanan_km']),
@@ -251,7 +285,6 @@ class CategoryInfo {
   CategoryInfo({this.id, this.nama});
 
   factory CategoryInfo.fromJson(Map<String, dynamic> json) {
-    // Safe parsing for id
     int? id;
     if (json['id'] != null) {
       if (json['id'] is int) {
@@ -290,7 +323,6 @@ class RatingStats {
   });
 
   factory RatingStats.fromJson(Map<String, dynamic> json) {
-    // Safe parsing helper
     int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;

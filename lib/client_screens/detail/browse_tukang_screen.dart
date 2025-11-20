@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/client_service.dart';
 import 'package:rampungin_id_userside/models/user_model.dart';
 import 'package:rampungin_id_userside/models/category_model.dart';
-import 'package:rampungin_id_userside/client_screens/detail/booking_screen.dart';
 import 'package:rampungin_id_userside/client_screens/detail/tukang_detail_screen.dart';
 import 'package:rampungin_id_userside/core/api_config.dart';
 
@@ -23,9 +22,9 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
   List<UserModel> _tukangList = [];
   List<CategoryModel> _categories = [];
   bool _isLoading = false;
-  
+
   // Base URL untuk foto profil
- final url = ApiConfig.baseUrl;
+  final url = ApiConfig.baseUrl;
 
   // Filters
   int? _selectedKategoriId;
@@ -34,7 +33,7 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
   double? _minRating;
   double? _maxTarif;
   String _orderBy = 'rata_rata_rating';
-  String _orderDir = 'DESC';
+  String _orderDir = 'desc';
 
   @override
   void initState() {
@@ -135,7 +134,7 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
             _minRating = null;
             _maxTarif = null;
             _orderBy = 'rata_rata_rating';
-            _orderDir = 'DESC';
+            _orderDir = 'desc';
           });
           _loadTukang();
         },
@@ -143,17 +142,17 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
     );
   }
 
-  // Helper method to get photo URL
- String? _getPhotoUrl(String? fotoPath) {
-  if (fotoPath == null || fotoPath.isEmpty) return null;
+  // Helper method to get photo URL - SAMA DENGAN LOGIKA DI HOME
+  String? _getPhotoUrl(String? fotoPath) {
+    if (fotoPath == null || fotoPath.isEmpty) return null;
 
-  if (fotoPath.startsWith('http://') || fotoPath.startsWith('https://')) {
-    return fotoPath;
+    if (fotoPath.startsWith('http://') || fotoPath.startsWith('https://')) {
+      return fotoPath;
+    }
+
+    final cleanPath = fotoPath.startsWith('/uploads') ? fotoPath.substring(1) : fotoPath;
+    return '$url/uploads/$cleanPath';
   }
-
-  final cleanPath = fotoPath.startsWith('/') ? fotoPath.substring(1) : fotoPath;
-  return '$url/$cleanPath';
-}
 
   @override
   Widget build(BuildContext context) {
@@ -209,11 +208,11 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                     if (_selectedKategoriId != null)
                       _buildFilterChip(
                         _categories
-                                .firstWhere(
-                                  (c) => c.id == _selectedKategoriId,
-                                  orElse: () => CategoryModel(nama: 'Kategori'),
-                                )
-                                .nama ??
+                            .firstWhere(
+                              (c) => c.id == _selectedKategoriId,
+                              orElse: () => CategoryModel(nama: 'Kategori'),
+                            )
+                            .nama ??
                             'Kategori',
                         () {
                           setState(() {
@@ -313,175 +312,230 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
   }
 
   Widget _buildTukangCard(UserModel tukang) {
-    final photoUrl = _getPhotoUrl(tukang.fotoProfil);
-    
+    // MENGUBAH LOGIKA PENGGUNAAN FOTO PROFIL - SAMA DENGAN HOME
+    // Priority: fotoProfil -> fotoProfile -> null
+    final String? fotoPath = tukang.fotoProfil ?? tukang.fotoProfile;
+    final photoUrl = _getPhotoUrl(fotoPath);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TukangDetailScreen(tukangId: tukang.id!),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Avatar with Photo
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3B950).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: photoUrl != null
-                      ? Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar();
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
-                                strokeWidth: 2,
-                                color: const Color(0xFFF3B950),
-                              ),
-                            );
-                          },
-                        )
-                      : _buildDefaultAvatar(),
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tukang.nama ?? 'Nama Tukang',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar with Photo - LOGIKA SAMA DENGAN HOME
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TukangDetailScreen(tukangId: tukang.id!),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tukang.namaKategori ?? 'Kategori',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 16, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          tukang.rating?.toStringAsFixed(1) ?? '0.0',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '(${tukang.jumlahPesanan ?? 0} pesanan)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+                    );
+                  },
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3B950).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: photoUrl != null
+                          ? Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildDefaultAvatar();
+                              },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                    strokeWidth: 2,
+                                    color: const Color(0xFFF3B950),
+                                  ),
+                                );
+                              },
+                            )
+                          : _buildDefaultAvatar(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TukangDetailScreen(tukangId: tukang.id!),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          tukang.nama ?? 'Nama Tukang',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          decoration: BoxDecoration(
-                            color: tukang.statusAktif == 'online'
-                                ? Colors.green[100]
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            tukang.statusAktif == 'online'
-                                ? 'Tersedia'
-                                : 'Tidak Tersedia',
-                            style: TextStyle(
-                              fontSize: 12,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            tukang.rating?.toStringAsFixed(1) ?? '0.0',
+                            style: const TextStyle(
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: tukang.statusAktif == 'online'
-                                  ? Colors.green[800]
-                                  : Colors.grey[800],
                             ),
                           ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    BookingScreen(tukangData: tukang),
+                          const SizedBox(width: 8),
+                          Text(
+                            '(${tukang.jumlahPesanan ?? 0} pesanan)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Tampilkan kategori
+                      if (tukang.kategoriList != null && tukang.kategoriList!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: tukang.kategoriList!.take(3).map((kategori) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3B950).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFF3B950).withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                kategori['nama_kategori'] ?? kategori['nama'] ?? '',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF8B6914),
+                                ),
                               ),
                             );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF3B950),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'Pesan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                          }).toList(),
                         ),
+                        if (tukang.kategoriList!.length > 3)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '+${tukang.kategoriList!.length - 3} kategori lainnya',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
                       ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Status dan Button Detail
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tukang.statusAktif == 'online' ? Colors.green[100] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    tukang.statusAktif == 'online' ? 'Tersedia' : 'Tidak Tersedia',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: tukang.statusAktif == 'online' ? Colors.green[800] : Colors.grey[800],
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TukangDetailScreen(
+                          tukangId: tukang.tukangId ?? tukang.id!,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF3B950),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'pesan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -491,16 +545,13 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
     return Container(
       color: const Color(0xFFF3B950).withOpacity(0.2),
       child: const Center(
-        child: Icon(
-          Icons.person,
-          size: 40,
-          color: Color(0xFFF3B950),
-        ),
+        child: Icon(Icons.person, size: 40, color: Color(0xFFF3B950)),
       ),
     );
   }
 }
 
+// ... (FilterDialog class remains the same)
 class _FilterDialog extends StatefulWidget {
   final int? selectedKategoriId;
   final String? selectedKota;
@@ -554,8 +605,7 @@ class _FilterDialogState extends State<_FilterDialog> {
     _orderDir = widget.orderDir;
 
     _kotaController.text = _kota ?? '';
-    _maxTarifController.text =
-        _maxTarif != null ? _maxTarif!.toInt().toString() : '';
+    _maxTarifController.text = _maxTarif != null ? _maxTarif!.toInt().toString() : '';
   }
 
   @override
@@ -820,7 +870,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _orderDir = 'DESC';
+                                _orderDir = 'desc';
                               });
                             },
                             child: Container(
@@ -846,7 +896,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: _orderDir == 'DESC'
+                                          color: _orderDir == 'desc'
                                               ? const Color(0xFFF3B950)
                                               : Colors.transparent,
                                         ),

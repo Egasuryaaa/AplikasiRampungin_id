@@ -1,35 +1,40 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:mime/mime.dart';
+import 'package:logger/logger.dart';
+import '../core/api_client.dart';
+import '../core/api_config.dart';
 
 class ProfileService {
-  final String baseUrl = 'http://localhost/admintukang/api';
+  final ApiClient _apiClient = ApiClient();
+  final Logger _logger = Logger();
 
-  // Get profile
+  /// Get client profile
+  /// Token is handled automatically by ApiClient
   Future<Map<String, dynamic>> getProfile(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/client/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+      _logger.d('📱 ProfileService: Getting profile...');
+      
+      final response = await _apiClient.get(
+        ApiConfig.clientProfile,
+        requiresAuth: true,
       );
 
+      final data = json.decode(response.body);
+      
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        _logger.i('✅ Profile retrieved successfully');
+        return data;
       } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Gagal mengambil data profil');
+        _logger.e('❌ Failed to get profile: ${data['message']}');
+        throw Exception(data['message'] ?? 'Gagal mengambil data profil');
       }
     } catch (e) {
-      throw Exception('Error: $e');
+      _logger.e('💥 Error in getProfile: $e');
+      throw Exception('Failed to get profile: $e');
     }
   }
 
-  // Update profile without photo (JSON)
+  /// Update profile without photo (JSON)
+  /// Token is handled automatically by ApiClient
   Future<Map<String, dynamic>> updateProfileJson({
     required String token,
     required String namaLengkap,
@@ -41,13 +46,11 @@ class ProfileService {
     required String kodePos,
   }) async {
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/client/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
+      _logger.d('📝 ProfileService: Updating profile (JSON)...');
+      
+      final response = await _apiClient.put(
+        ApiConfig.clientProfile,
+        body: {
           'nama_lengkap': namaLengkap,
           'email': email,
           'no_telp': noTelp,
@@ -55,82 +58,28 @@ class ProfileService {
           'kota': kota,
           'provinsi': provinsi,
           'kode_pos': kodePos,
-        }),
+        },
+        requiresAuth: true,
       );
 
+      final data = json.decode(response.body);
+      
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        _logger.i('✅ Profile updated successfully');
+        return data;
       } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Gagal update profil');
+        _logger.e('❌ Failed to update profile: ${data['message']}');
+        throw Exception(data['message'] ?? 'Gagal update profil');
       }
     } catch (e) {
-      throw Exception('Error: $e');
+      _logger.e('💥 Error in updateProfileJson: $e');
+      throw Exception('Failed to update profile: $e');
     }
   }
 
-  // Update profile with photo (Multipart)
-  Future<Map<String, dynamic>> updateProfileWithPhoto({
-    required String token,
-    required String namaLengkap,
-    required String email,
-    required String noTelp,
-    required String alamat,
-    required String kota,
-    required String provinsi,
-    required String kodePos,
-    required File fotoProfil,
-  }) async {
-    try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/client/profile'),
-      );
-
-      // Add headers
-      request.headers['Authorization'] = 'Bearer $token';
-
-      // Add fields
-      request.fields['nama_lengkap'] = namaLengkap;
-      request.fields['email'] = email;
-      request.fields['no_telp'] = noTelp;
-      request.fields['alamat'] = alamat;
-      request.fields['kota'] = kota;
-      request.fields['provinsi'] = provinsi;
-      request.fields['kode_pos'] = kodePos;
-
-      // Add photo file
-      final mimeType = lookupMimeType(fotoProfil.path);
-      final mimeTypeParts = mimeType?.split('/');
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'foto_profil',
-          fotoProfil.path,
-          contentType:
-              mimeType != null && mimeTypeParts != null
-                  ? MediaType(mimeTypeParts[0], mimeTypeParts[1])
-                  : null,
-        ),
-      );
-
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Gagal update profil');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  /// Update profile with photo (Multipart) using raw bytes + filename.
-  /// This is web-friendly because it doesn't require `dart:io` File access.
+  /// Update profile with photo using bytes (web-compatible)
+  /// Token is handled automatically by ApiClient
+  /// Uses PUT method via method spoofing for CodeIgniter compatibility
   Future<Map<String, dynamic>> updateProfileWithPhotoBytes({
     required String token,
     required String namaLengkap,
@@ -144,51 +93,59 @@ class ProfileService {
     required String fotoProfilFilename,
   }) async {
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/client/profile'),
+      _logger.d('📸 ProfileService: Updating profile with photo (PUT)...');
+      
+      final streamedResponse = await _apiClient.putMultipart(
+        ApiConfig.clientProfile,
+        'foto_profil',
+        fotoProfilBytes,
+        fotoProfilFilename,
+        fields: {
+          'nama_lengkap': namaLengkap,
+          'email': email,
+          'no_telp': noTelp,
+          'alamat': alamat,
+          'kota': kota,
+          'provinsi': provinsi,
+          'kode_pos': kodePos,
+        },
+        requiresAuth: true,
       );
 
-      // Add headers
-      request.headers['Authorization'] = 'Bearer $token';
+      // Convert StreamedResponse to Response
+      final responseBody = await streamedResponse.stream.bytesToString();
+      
+      _logger.d('Response status: ${streamedResponse.statusCode}');
+      _logger.d('Response body: $responseBody');
 
-      // Add fields
-      request.fields['nama_lengkap'] = namaLengkap;
-      request.fields['email'] = email;
-      request.fields['no_telp'] = noTelp;
-      request.fields['alamat'] = alamat;
-      request.fields['kota'] = kota;
-      request.fields['provinsi'] = provinsi;
-      request.fields['kode_pos'] = kodePos;
+      // Handle non-200 responses
+      if (streamedResponse.statusCode != 200) {
+        _logger.e('❌ Server returned ${streamedResponse.statusCode}');
+        _logger.e('Response body: $responseBody');
+        
+        // Try to parse error message
+        try {
+          final errorData = json.decode(responseBody);
+          throw Exception(errorData['message'] ?? 'Server error: ${streamedResponse.statusCode}');
+        } catch (_) {
+          // If response is not JSON (like HTML error page)
+          throw Exception('Server error ${streamedResponse.statusCode}: Failed to update profile');
+        }
+      }
 
-      // Determine mime type from filename
-      final mimeType = lookupMimeType(fotoProfilFilename);
-      final mimeTypeParts = mimeType?.split('/');
+      // Parse successful response
+      final data = json.decode(responseBody);
 
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'foto_profil',
-          fotoProfilBytes,
-          filename: fotoProfilFilename,
-          contentType:
-              mimeType != null && mimeTypeParts != null
-                  ? MediaType(mimeTypeParts[0], mimeTypeParts[1])
-                  : null,
-        ),
-      );
-
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
+      if (data['status'] == 'success') {
+        _logger.i('✅ Profile with photo updated successfully');
+        return data;
       } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Gagal update profil');
+        _logger.e('❌ Failed to update profile with photo: ${data['message']}');
+        throw Exception(data['message'] ?? 'Gagal update foto profil');
       }
     } catch (e) {
-      throw Exception('Error: $e');
+      _logger.e('💥 Error in updateProfileWithPhotoBytes: $e');
+      throw Exception('Failed to update profile with photo: $e');
     }
   }
 }

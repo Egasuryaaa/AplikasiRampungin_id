@@ -9,6 +9,7 @@ class UserModel {
   final String? fotoProfile;
   final String? ktpPhoto;
   final String? fotoProfil;
+  final int? tukangId;
   final int? idKategori;
   final String? namaKategori;
   final List<Map<String, dynamic>>?
@@ -41,19 +42,38 @@ class UserModel {
     this.createdAt,
     this.updatedAt,
     this.fotoProfil,
+    this.tukangId,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // Parse id (could be String or int from backend)
     int? parsedId;
-    if (json['id'] != null) {
-      if (json['id'] is int) {
-        parsedId = json['id'] as int;
-      } else if (json['id'] is String) {
-        parsedId = int.tryParse(json['id'] as String);
-      }
+  // Priority: tukang_id > user_id > id
+  if (json['tukang_id'] != null) {
+    if (json['tukang_id'] is int) {
+      parsedId = json['tukang_id'] as int;
+    } else if (json['tukang_id'] is String) {
+      parsedId = int.tryParse(json['tukang_id'] as String);
+    } else if (json['tukang_id'] is double) {
+      parsedId = (json['tukang_id'] as double).toInt();
     }
-
+  } else if (json['user_id'] != null) {
+    if (json['user_id'] is int) {
+      parsedId = json['user_id'] as int;
+    } else if (json['user_id'] is String) {
+      parsedId = int.tryParse(json['user_id'] as String);
+    } else if (json['user_id'] is double) {
+      parsedId = (json['user_id'] as double).toInt();
+    }
+  } else if (json['id'] != null) {
+    if (json['id'] is int) {
+      parsedId = json['id'] as int;
+    } else if (json['id'] is String) {
+      parsedId = int.tryParse(json['id'] as String);
+    } else if (json['id'] is double) {
+      parsedId = (json['id'] as double).toInt();
+    }
+  }
     // Map id_role to jenisAkun (role name from backend)
     String? jenisAkun;
     if (json['id_role'] != null) {
@@ -87,6 +107,7 @@ class UserModel {
               ? 'online'
               : 'offline';
     }
+    
 
     // Parse id_kategori (could be String or int)
     int? parsedIdKategori;

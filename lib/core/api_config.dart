@@ -1,7 +1,7 @@
 /// API Configuration for Rampungin.id Backend
 class ApiConfig {
   // Base URL
-  static const String baseUrl = 'http://localhost/admintukang';
+  static const String baseUrl = 'https://api.iwakrejosari.com';
 
   // Timeout durations
   static const Duration connectionTimeout = Duration(seconds: 30);

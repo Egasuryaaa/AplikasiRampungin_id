@@ -26,7 +26,7 @@ class _TopUpScreenState extends State<TopUpScreen>
     if (!path.startsWith('uploads/')) {
       path = 'uploads/$path';
     }
-    return 'http://localhost/admintukang/$path';
+    return 'https://api.iwakrejosari.com/$path';
   }
 
   XFile? _selectedImage;

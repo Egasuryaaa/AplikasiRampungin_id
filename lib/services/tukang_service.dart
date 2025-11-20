@@ -1,5 +1,6 @@
 import 'dart:convert' show json;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../models/user_model.dart';
@@ -152,159 +153,216 @@ class TukangService {
     }
   }
 
-  /// Update tukang profile without photo (JSON format)
-  Future<TukangProfileModel> updateProfileFull({
-    required String namaLengkap,
-    required String email,
-    required String noTelp,
-    required String alamat,
-    required String kota,
-    required String provinsi,
-    required int pengalamanTahun,
-    required double tarifPerJam,
-    required String bio,
-    required List<String> keahlian,
-    required int radiusLayananKm,
-    required String namaBank,
-    required String nomorRekening,
-    required String namaPemilikRekening,
-    List<int>? kategoriIds,
-    List<int>? fotoProfilBytes,
-    String? fotoProfilFilename,
-  }) async {
-    try {
-      // If photo is provided, use multipart
-      if (fotoProfilBytes != null && fotoProfilFilename != null) {
-        return await _updateProfileWithPhoto(
-          namaLengkap: namaLengkap,
-          email: email,
-          noTelp: noTelp,
-          alamat: alamat,
-          kota: kota,
-          provinsi: provinsi,
-          pengalamanTahun: pengalamanTahun,
-          tarifPerJam: tarifPerJam,
-          bio: bio,
-          keahlian: keahlian,
-          radiusLayananKm: radiusLayananKm,
-          namaBank: namaBank,
-          nomorRekening: nomorRekening,
-          namaPemilikRekening: namaPemilikRekening,
-          kategoriIds: kategoriIds,
-          fotoProfilBytes: fotoProfilBytes,
-          fotoProfilFilename: fotoProfilFilename,
-        );
-      }
+/// Update tukang profile without photo (JSON format)
+Future<TukangProfileModel> updateProfileFull({
+  required String namaLengkap,
+  required String email,
+  required String noTelp,
+  required String alamat,
+  required String kota,
+  required String provinsi,
+  required int pengalamanTahun,
+  required double tarifPerJam,
+  required String bio,
+  required List<String> keahlian,
+  required int radiusLayananKm,
+  required String namaBank,
+  required String nomorRekening,
+  required String namaPemilikRekening,
+  List<int>? kategoriIds,
+  List<int>? fotoProfilBytes,
+  String? fotoProfilFilename,
+}) async {
+  try {
+    // If photo is provided, use multipart with PUT
+    if (fotoProfilBytes != null && fotoProfilFilename != null) {
+      return await _updateProfileWithPhoto(
+        namaLengkap: namaLengkap,
+        email: email,
+        noTelp: noTelp,
+        alamat: alamat,
+        kota: kota,
+        provinsi: provinsi,
+        pengalamanTahun: pengalamanTahun,
+        tarifPerJam: tarifPerJam,
+        bio: bio,
+        keahlian: keahlian,
+        radiusLayananKm: radiusLayananKm,
+        namaBank: namaBank,
+        nomorRekening: nomorRekening,
+        namaPemilikRekening: namaPemilikRekening,
+        kategoriIds: kategoriIds,
+        fotoProfilBytes: fotoProfilBytes,
+        fotoProfilFilename: fotoProfilFilename,
+      );
+    }
 
-      // No photo, use regular JSON PUT like client service
-      final body = {
-        'nama_lengkap': namaLengkap,
-        'email': email,
-        'no_telp': noTelp,
-        'alamat': alamat,
-        'kota': kota,
-        'provinsi': provinsi,
-        'pengalaman_tahun': pengalamanTahun,
-        'tarif_per_jam': tarifPerJam,
-        'bio': bio,
-        'keahlian': keahlian,
-        'radius_layanan_km': radiusLayananKm,
-        'nama_bank': namaBank,
-        'nomor_rekening': nomorRekening,
-        'nama_pemilik_rekening': namaPemilikRekening,
-        if (kategoriIds != null && kategoriIds.isNotEmpty)
-          'kategori_ids': kategoriIds,
-      };
+    // No photo, use regular JSON PUT
+    final body = {
+      'nama_lengkap': namaLengkap,
+      'email': email,
+      'no_telp': noTelp,
+      'alamat': alamat,
+      'kota': kota,
+      'provinsi': provinsi,
+      'pengalaman_tahun': pengalamanTahun,
+      'tarif_per_jam': tarifPerJam,
+      'bio': bio,
+      'keahlian': keahlian, // Send as array directly
+      'radius_layanan_km': radiusLayananKm,
+      'nama_bank': namaBank,
+      'nomor_rekening': nomorRekening,
+      'nama_pemilik_rekening': namaPemilikRekening,
+    };
 
-      final response = await _client.put(ApiConfig.tukangProfile, body: body);
-      final data = _client.parseResponse(response);
+    // Only add kategori_ids if it's not empty
+    if (kategoriIds != null && kategoriIds.isNotEmpty) {
+      body['kategori_ids'] = kategoriIds;
+    }
+
+    print('=== UPDATE PROFILE REQUEST (JSON) ===');
+    print('Body: ${json.encode(body)}');
+
+    final response = await _client.put(ApiConfig.tukangProfile, body: body);
+    
+    print('=== UPDATE PROFILE RESPONSE ===');
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body}');
+    
+    final data = _client.parseResponse(response);
+
+    if (data['status'] == 'success') {
+      await Future.delayed(const Duration(milliseconds: 500));
+      return await getProfileFull();
+    }
+
+    throw Exception(
+      'Update profile failed: ${data['message'] ?? 'Unknown error'}',
+    );
+  } catch (e) {
+    print('=== UPDATE PROFILE ERROR ===');
+    print('Error: $e');
+    throw Exception('Failed to update profile: $e');
+  }
+}
+
+/// Update profile with photo using multipart with direct PUT method
+/// FIXED: Send array items individually for multipart, not as JSON string
+Future<TukangProfileModel> _updateProfileWithPhoto({
+  required String namaLengkap,
+  required String email,
+  required String noTelp,
+  required String alamat,
+  required String kota,
+  required String provinsi,
+  required int pengalamanTahun,
+  required double tarifPerJam,
+  required String bio,
+  required List<String> keahlian,
+  required int radiusLayananKm,
+  required String namaBank,
+  required String nomorRekening,
+  required String namaPemilikRekening,
+  List<int>? kategoriIds,
+  required List<int> fotoProfilBytes,
+  required String fotoProfilFilename,
+}) async {
+  try {
+    final url = Uri.parse(ApiConfig.getFullUrl(ApiConfig.tukangProfile));
+    final token = await _client.getToken();
+
+    final request = http.MultipartRequest('PUT', url);
+
+    // Add Authorization header
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    // Add all text fields
+    request.fields['nama_lengkap'] = namaLengkap;
+    request.fields['email'] = email;
+    request.fields['no_telp'] = noTelp;
+    request.fields['alamat'] = alamat;
+    request.fields['kota'] = kota;
+    request.fields['provinsi'] = provinsi;
+    request.fields['pengalaman_tahun'] = pengalamanTahun.toString();
+    request.fields['tarif_per_jam'] = tarifPerJam.toString();
+    request.fields['bio'] = bio;
+    request.fields['radius_layanan_km'] = radiusLayananKm.toString();
+    request.fields['nama_bank'] = namaBank;
+    request.fields['nomor_rekening'] = nomorRekening;
+    request.fields['nama_pemilik_rekening'] = namaPemilikRekening;
+
+    // OPTION 1: Try comma-separated string (backend should split and parse)
+    request.fields['keahlian'] = keahlian.join(',');
+    
+    if (kategoriIds != null && kategoriIds.isNotEmpty) {
+      request.fields['kategori_ids'] = kategoriIds.join(',');
+    }
+    
+    print('=== MULTIPART REQUEST DEBUG ===');
+    print('Sending keahlian: ${request.fields['keahlian']}');
+    print('Sending kategori_ids: ${request.fields['kategori_ids']}');
+    print('All fields: ${request.fields}');
+
+    // Add photo file
+    String? mimeType;
+    final ext = fotoProfilFilename.toLowerCase().split('.').last;
+    if (ext == 'jpg' || ext == 'jpeg') {
+      mimeType = 'image/jpeg';
+    } else if (ext == 'png') {
+      mimeType = 'image/png';
+    } else if (ext == 'gif') {
+      mimeType = 'image/gif';
+    } else if (ext == 'webp') {
+      mimeType = 'image/webp';
+    }
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'foto_profil',
+        fotoProfilBytes,
+        filename: fotoProfilFilename,
+        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+      ),
+    );
+
+    print('=== UPDATE PROFILE WITH PHOTO REQUEST ===');
+    print('Fields: ${request.fields}');
+    print('Files: ${request.files.map((f) => f.filename).toList()}');
+
+    // Send request
+    final streamedResponse = await request.send().timeout(
+      ApiConfig.connectionTimeout,
+    );
+    final response = await http.Response.fromStream(streamedResponse);
+
+    print('=== UPDATE PROFILE WITH PHOTO RESPONSE ===');
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body}');
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final data = json.decode(response.body);
 
       if (data['status'] == 'success') {
+        await Future.delayed(const Duration(milliseconds: 500));
         return await getProfileFull();
       }
 
       throw Exception(
         'Update profile failed: ${data['message'] ?? 'Unknown error'}',
       );
-    } catch (e) {
-      throw Exception('Failed to update profile: $e');
+    } else {
+      final errorBody = response.body;
+      print('Error body: $errorBody');
+      throw Exception('HTTP ${response.statusCode}: $errorBody');
     }
+  } catch (e) {
+    print('=== UPDATE PROFILE WITH PHOTO ERROR ===');
+    print('Error: $e');
+    throw Exception('Failed to update profile with photo: $e');
   }
-
-  /// Update profile with photo using multipart (like client service)
-  Future<TukangProfileModel> _updateProfileWithPhoto({
-    required String namaLengkap,
-    required String email,
-    required String noTelp,
-    required String alamat,
-    required String kota,
-    required String provinsi,
-    required int pengalamanTahun,
-    required double tarifPerJam,
-    required String bio,
-    required List<String> keahlian,
-    required int radiusLayananKm,
-    required String namaBank,
-    required String nomorRekening,
-    required String namaPemilikRekening,
-    List<int>? kategoriIds,
-    required List<int> fotoProfilBytes,
-    required String fotoProfilFilename,
-  }) async {
-    try {
-      // Prepare form fields (convert complex types to strings)
-      final fields = <String, String>{
-        'nama_lengkap': namaLengkap,
-        'email': email,
-        'no_telp': noTelp,
-        'alamat': alamat,
-        'kota': kota,
-        'provinsi': provinsi,
-        'pengalaman_tahun': pengalamanTahun.toString(),
-        'tarif_per_jam': tarifPerJam.toString(),
-        'bio': bio,
-        'radius_layanan_km': radiusLayananKm.toString(),
-        'nama_bank': namaBank,
-        'nomor_rekening': nomorRekening,
-        'nama_pemilik_rekening': namaPemilikRekening,
-        '_method': 'PUT', // Method spoofing for CodeIgniter
-      };
-
-      // Add array fields as JSON strings (like topup does with fields)
-      fields['keahlian'] = json.encode(keahlian);
-      if (kategoriIds != null && kategoriIds.isNotEmpty) {
-        fields['kategori_ids'] = json.encode(kategoriIds);
-      }
-
-      // Use postMultipart like topup screen
-      final response = await _client.postMultipart(
-        ApiConfig.tukangProfile,
-        'foto_profil',
-        fotoProfilBytes,
-        fotoProfilFilename,
-        fields: fields,
-        requiresAuth: true,
-      );
-
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = json.decode(responseBody);
-
-        if (data['status'] == 'success') {
-          return await getProfileFull();
-        }
-
-        throw Exception(
-          'Update profile failed: ${data['message'] ?? 'Unknown error'}',
-        );
-      } else {
-        throw Exception('HTTP ${response.statusCode}: $responseBody');
-      }
-    } catch (e) {
-      throw Exception('Failed to update profile with photo: $e');
-    }
-  }
+}
 
   // ==================== ORDERS ====================
 

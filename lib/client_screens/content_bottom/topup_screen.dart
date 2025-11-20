@@ -16,7 +16,7 @@ class _TopUpScreenState extends State<TopUpScreen>
   final ClientService _clientService = ClientService();
   final TextEditingController _jumlahController = TextEditingController();
   late TabController _tabController;
-  final int _currentIndex = 1; // Current tab is Payment (Top-Up)
+
 
   String getFullImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
@@ -27,7 +27,7 @@ class _TopUpScreenState extends State<TopUpScreen>
     if (!path.startsWith('uploads/')) {
       path = 'uploads/$path';
     }
-    return 'http://localhost/admintukang/$path';
+    return 'https://api.iwakrejosari.com/$path';
   }
 
   XFile? _selectedImage;
@@ -161,20 +161,7 @@ class _TopUpScreenState extends State<TopUpScreen>
       }
     }
   }
-
-  void _handleNavigation(int index) {
-    if (index == _currentIndex) return;
-
-    switch (index) {
-      case 0:
-        // Navigate to Home
-        Navigator.of(context).pushReplacementNamed('/HomeScreen');
-        break;
-      case 1:
-        // Already on Top-Up screen
-        break;
-    }
-  }
+ 
 
   Color _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
@@ -542,126 +529,7 @@ class _TopUpScreenState extends State<TopUpScreen>
       ),
     );
   }
-
-  Widget _buildAnimatedBottomNav() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE6B366), Color(0xFFF3B950)],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(25),
-          topRight: Radius.circular(25),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: 0.15),
-            offset: const Offset(0, -4),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(
-              0,
-              Icons.home_outlined,
-              Icons.home,
-              'Home',
-              isCenter: true,
-            ),
-            _buildNavItem(
-              1,
-              Icons.account_balance_wallet_outlined,
-              Icons.account_balance_wallet,
-              'Payment',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-    int index,
-    IconData icon,
-    IconData activeIcon,
-    String label, {
-    bool isCenter = false,
-  }) {
-    bool isSelected = _currentIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _handleNavigation(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          height: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          decoration:
-              isCenter && isSelected
-                  ? BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  )
-                  : isSelected && !isCenter
-                  ? BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  )
-                  : null,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  key: ValueKey(isSelected),
-                  size: isCenter ? 28 : 24,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color:
-                      isCenter && isSelected
-                          ? const Color(0xFFF3B950)
-                          : isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
-                ),
-                child: Text(label),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ 
 
   void _showTopupDetailDialog(TopUpModel topup) {
     showDialog(
@@ -873,7 +741,7 @@ class _TopUpScreenState extends State<TopUpScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         backgroundColor: const Color(0xFFF3B950),
         title: const Text('Top-Up POIN'),
         elevation: 0,
@@ -887,7 +755,7 @@ class _TopUpScreenState extends State<TopUpScreen>
         controller: _tabController,
         children: [_buildRequestTab(), _buildHistoryTab()],
       ),
-      bottomNavigationBar: _buildAnimatedBottomNav(),
+
     );
   }
 }

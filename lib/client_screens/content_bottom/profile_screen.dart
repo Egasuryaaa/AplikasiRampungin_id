@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:rampungin_id_userside/core/api_client.dart';
 import 'package:rampungin_id_userside/models/profile_model.dart';
 import 'package:rampungin_id_userside/services/profile_service.dart';
 import 'package:rampungin_id_userside/client_screens/detail/setting.dart';
@@ -25,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   ProfileModel? _profile;
   bool _isLoading = true;
   String? _errorMessage;
-  String _token = '';
   Uint8List? _selectedImageBytes;
   String? _selectedImageFilename;
 
@@ -45,14 +43,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
 
     try {
-      final token = await ApiClient().getToken();
-      _token = token ?? '';
-
-      if (_token.isEmpty) {
-        throw Exception('Token tidak ditemukan. Silakan login kembali.');
-      }
-
-      final response = await _profileService.getProfile(_token);
+      // Token parameter is ignored - ApiClient handles it automatically
+      final response = await _profileService.getProfile('');
 
       if (response['status'] == 'success') {
         setState(() {
@@ -108,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
 
       final response = await _profileService.updateProfileWithPhotoBytes(
-        token: _token,
+        token: '', // Token parameter is ignored - ApiClient handles it
         namaLengkap: _profile!.namaLengkap,
         email: _profile!.email,
         noTelp: _profile!.noTelp,
@@ -155,6 +147,50 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildProfileImageContent() {
+    if (_selectedImageBytes != null) {
+      return CircleAvatar(
+        radius: 66,
+        backgroundColor: const Color(0xFFF3B950),
+        backgroundImage: MemoryImage(_selectedImageBytes!),
+      );
+    }
+
+    if (_profile?.fotoProfil == null || _profile!.fotoProfil!.isEmpty) {
+      return const CircleAvatar(
+        radius: 66,
+        backgroundColor: Color(0xFFF3B950),
+        child: Icon(
+          Icons.person,
+          size: 80,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    // Construct the image URL
+    String imageUrl = _profile!.fotoProfil!;
+    
+    if (!imageUrl.startsWith('http')) {
+      if (!imageUrl.startsWith('uploads/')) {
+        imageUrl = 'uploads/$imageUrl';
+      }
+      imageUrl = 'https://api.iwakrejosari.com/$imageUrl';
+    }
+
+    logger.d('Loading client profile image from: $imageUrl');
+
+    return CircleAvatar(
+      radius: 66,
+      backgroundColor: const Color(0xFFF3B950),
+      backgroundImage: NetworkImage(imageUrl),
+      onBackgroundImageError: (exception, stackTrace) {
+        logger.e('Error loading client profile image: $exception');
+      },
+      child: null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -175,10 +211,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Colors.red),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.red),
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -266,25 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ],
           ),
-          child: CircleAvatar(
-            radius: 66,
-            backgroundColor: const Color(0xFFF3B950),
-            backgroundImage: _selectedImageBytes != null
-                ? MemoryImage(_selectedImageBytes!) as ImageProvider
-                : (_profile!.fotoProfil != null && _profile!.fotoProfil!.isNotEmpty)
-                    ? NetworkImage(
-                        _profile!.getFullImageUrl('http://localhost/admintukang'),
-                      )
-                    : null,
-            child: (_selectedImageBytes == null &&
-                    (_profile!.fotoProfil == null || _profile!.fotoProfil!.isEmpty))
-                ? const Icon(
-                    Icons.person,
-                    size: 80,
-                    color: Colors.white,
-                  )
-                : null,
-          ),
+          child: _buildProfileImageContent(),
         ),
         Positioned(
           bottom: 10,

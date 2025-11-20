@@ -27,8 +27,11 @@ class _EditProfileState extends State<EditProfile> {
   List<CategoryModel> _allCategories = [];
   List<int> _selectedCategoryIds = [];
 
+  Map<int, List<TextEditingController>> _keahlianPerKategori = {};
+  int? _kategoriAktif;
+
   // Photo
-  XFile? _selectedImageXFile; // Keep XFile for filename
+  XFile? _selectedImageXFile;
   String? _currentPhotoUrl;
   Uint8List? _selectedImageBytes;
 
@@ -42,7 +45,10 @@ class _EditProfileState extends State<EditProfile> {
   final TextEditingController _pengalamanController = TextEditingController();
   final TextEditingController _tarifController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _keahlianController = TextEditingController();
+
+  // CHANGED: List of controllers for dynamic skills
+  List<TextEditingController> _Controllers = [TextEditingController()];
+
   final TextEditingController _radiusController = TextEditingController();
   final TextEditingController _namaBankController = TextEditingController();
   final TextEditingController _nomorRekeningController =
@@ -67,7 +73,19 @@ class _EditProfileState extends State<EditProfile> {
     _pengalamanController.dispose();
     _tarifController.dispose();
     _bioController.dispose();
-    _keahlianController.dispose();
+
+    // Dispose all keahlian controllers
+    for (var controller in _Controllers) {
+      controller.dispose();
+    }
+
+    // Dispose keahlian per kategori controllers
+    for (var kategoriControllers in _keahlianPerKategori.values) {
+      for (var controller in kategoriControllers) {
+        controller.dispose();
+      }
+    }
+
     _radiusController.dispose();
     _namaBankController.dispose();
     _nomorRekeningController.dispose();
@@ -128,7 +146,7 @@ class _EditProfileState extends State<EditProfile> {
       if (image != null) {
         final bytes = await image.readAsBytes();
         setState(() {
-          _selectedImageXFile = image; // Save XFile
+          _selectedImageXFile = image;
           _selectedImageBytes = Uint8List.fromList(bytes);
         });
       }
@@ -145,136 +163,285 @@ class _EditProfileState extends State<EditProfile> {
     }
   }
 
-  void _populateFields(TukangProfileModel profile) {
-    _namaController.text = profile.namaLengkap ?? '';
-    _emailController.text = profile.email ?? '';
-    _noTelpController.text = profile.noTelp ?? '';
-    _alamatController.text = profile.alamat ?? '';
-    _kotaController.text = profile.kota ?? '';
-    _provinsiController.text = profile.provinsi ?? '';
+ // FIXED: _populateFields method with proper category handling
+void _populateFields(TukangProfileModel profile) {
+  _namaController.text = profile.namaLengkap ?? '';
+  _emailController.text = profile.email ?? '';
+  _noTelpController.text = profile.noTelp ?? '';
+  _alamatController.text = profile.alamat ?? '';
+  _kotaController.text = profile.kota ?? '';
+  _provinsiController.text = profile.provinsi ?? '';
 
-    // Set current photo URL
-    _currentPhotoUrl = profile.fotoProfil;
+  _currentPhotoUrl = profile.fotoProfil;
 
-    // Set selected category IDs
-    if (profile.kategori != null) {
-      _selectedCategoryIds =
-          profile.kategori!.map((e) => e.id).whereType<int>().toList();
+  // FIXED: Handle kategori properly
+  if (profile.kategori != null && profile.kategori!.isNotEmpty) {
+    _selectedCategoryIds = profile.kategori!
+        .map((e) => e.id)
+        .whereType<int>()
+        .toList();
+    
+    // Set first category as active
+    if (_selectedCategoryIds.isNotEmpty) {
+      _kategoriAktif = _selectedCategoryIds.first;
     }
-
-    if (profile.profilTukang != null) {
-      final profilTukang = profile.profilTukang!;
-      _pengalamanController.text =
-          profilTukang.pengalamanTahun?.toString() ?? '0';
-      _tarifController.text =
-          profilTukang.tarifPerJam?.toStringAsFixed(0) ?? '0';
-      _bioController.text = profilTukang.bio ?? '';
-      _radiusController.text = profilTukang.radiusLayananKm?.toString() ?? '0';
-      _namaBankController.text = profilTukang.namaBank ?? '';
-      _nomorRekeningController.text = profilTukang.nomorRekening ?? '';
-      _namaPemilikController.text = profilTukang.namaPemilikRekening ?? '';
-
-      // Join keahlian array to comma-separated string
-      if (profilTukang.keahlian != null && profilTukang.keahlian!.isNotEmpty) {
-        _keahlianController.text = profilTukang.keahlian!.join(', ');
-      }
+    
+    // FIXED: Initialize keahlian per kategori from existing data
+    // Since the backend doesn't store skills per category separately,
+    // we'll need to initialize empty controllers for each category
+    for (var categoryId in _selectedCategoryIds) {
+      _keahlianPerKategori.putIfAbsent(
+        categoryId,
+        () => [TextEditingController()],
+      );
     }
+  } else {
+    // No categories selected yet - this is fine for new/incomplete profiles
+    _selectedCategoryIds = [];
+    _kategoriAktif = null;
+    _keahlianPerKategori = {};
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
+  if (profile.profilTukang != null) {
+    final profilTukang = profile.profilTukang!;
+    _pengalamanController.text =
+        profilTukang.pengalamanTahun?.toString() ?? '0';
+    _tarifController.text =
+        profilTukang.tarifPerJam?.toStringAsFixed(0) ?? '0';
+    _bioController.text = profilTukang.bio ?? '';
+    _radiusController.text = profilTukang.radiusLayananKm?.toString() ?? '0';
+    _namaBankController.text = profilTukang.namaBank ?? '';
+    _nomorRekeningController.text = profilTukang.nomorRekening ?? '';
+    _namaPemilikController.text = profilTukang.namaPemilikRekening ?? '';
+
+    // FIXED: Handle keahlian properly
+    // Populate the old keahlian system (fallback)
+    if (profilTukang.keahlian != null && profilTukang.keahlian!.isNotEmpty) {
+      // Dispose old controllers
+      for (var controller in _Controllers) {
+        controller.dispose();
+      }
+
+      // Create new controllers for each skill
+      _Controllers = profilTukang.keahlian!
+          .map((skill) => TextEditingController(text: skill))
+          .toList();
+
+      // ADDED: If we have categories and skills, distribute skills to categories
+      if (_selectedCategoryIds.isNotEmpty) {
+        // For now, put all existing skills in the first active category
+        if (_kategoriAktif != null) {
+          _keahlianPerKategori[_kategoriAktif!] = profilTukang.keahlian!
+              .map((skill) => TextEditingController(text: skill))
+              .toList();
+        }
+      }
+    } else {
+      // Ensure at least one empty controller
+      _Controllers = [TextEditingController()];
+    }
+  }
+}
+
+// IMPROVED: _saveProfile with better validation
+Future<void> _saveProfile() async {
+  if (!_formKey.currentState!.validate()) {
+    return;
+  }
+
+  try {
+    setState(() => _isSaving = true);
+
+    // CHANGED: Parse keahlian from controllers - collect from all selected categories
+    List<String> keahlianList = [];
+    
+    if (_selectedCategoryIds.isNotEmpty) {
+      // Collect skills from all selected categories
+      for (var categoryId in _selectedCategoryIds) {
+        if (_keahlianPerKategori.containsKey(categoryId)) {
+          final categorySkills = _keahlianPerKategori[categoryId]!
+              .map((controller) => controller.text.trim())
+              .where((text) => text.isNotEmpty)
+              .toList();
+          keahlianList.addAll(categorySkills);
+        }
+      }
+    } else {
+      // Use skills from old system
+      keahlianList = _Controllers
+          .map((controller) => controller.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
+    }
+
+    // IMPROVED: Better validation message
+    if (keahlianList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Minimal 1 keahlian wajib diisi untuk setiap kategori yang dipilih'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      setState(() => _isSaving = false);
       return;
     }
 
-    try {
-      setState(() => _isSaving = true);
-
-      // Parse keahlian from comma-separated string to list
-      final keahlianList =
-          _keahlianController.text
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList();
-
-      // Get image bytes and filename if selected
-      List<int>? fotoProfilBytes;
-      String? fotoProfilFilename;
-
-      // Use the bytes we already have from _pickImage()
-      if (_selectedImageBytes != null && _selectedImageXFile != null) {
-        try {
-          // Limit file size to 2MB to avoid issues with large payloads
-          if (_selectedImageBytes!.length > 2 * 1024 * 1024) {
-            throw Exception('Ukuran foto terlalu besar. Maksimal 2MB');
-          }
-
-          fotoProfilBytes = _selectedImageBytes!;
-          fotoProfilFilename = _selectedImageXFile!.name;
-          developer.log(
-            'Image prepared for upload, size: ${_selectedImageBytes!.length} bytes, filename: $fotoProfilFilename',
-            name: 'EditProfile',
-          );
-        } catch (e) {
-          developer.log('Error preparing image: $e', name: 'EditProfile');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gagal memproses foto: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isSaving = false);
-          return;
-        }
-      }
-
-      await _tukangService.updateProfileFull(
-        namaLengkap: _namaController.text,
-        email: _emailController.text,
-        noTelp: _noTelpController.text,
-        alamat: _alamatController.text,
-        kota: _kotaController.text,
-        provinsi: _provinsiController.text,
-        pengalamanTahun: int.tryParse(_pengalamanController.text) ?? 0,
-        tarifPerJam: double.tryParse(_tarifController.text) ?? 0,
-        bio: _bioController.text,
-        keahlian: keahlianList,
-        radiusLayananKm: int.tryParse(_radiusController.text) ?? 0,
-        namaBank: _namaBankController.text,
-        nomorRekening: _nomorRekeningController.text,
-        namaPemilikRekening: _namaPemilikController.text,
-        kategoriIds:
-            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
-        fotoProfilBytes: fotoProfilBytes,
-        fotoProfilFilename: fotoProfilFilename,
+    // IMPROVED: Validate that at least one category is selected
+    if (_selectedCategoryIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Minimal 1 kategori harus dipilih'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
       );
-
       setState(() => _isSaving = false);
+      return;
+    }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil berhasil diperbarui!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to indicate success
-      }
-    } catch (e) {
-      developer.log('Error saving profile: $e', name: 'EditProfile');
-      setState(() => _isSaving = false);
+    // Get image bytes and filename if selected
+    List<int>? fotoProfilBytes;
+    String? fotoProfilFilename;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan profil: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+    if (_selectedImageBytes != null && _selectedImageXFile != null) {
+      try {
+        if (_selectedImageBytes!.length > 2 * 1024 * 1024) {
+          throw Exception('Ukuran foto terlalu besar. Maksimal 2MB');
+        }
+
+        fotoProfilBytes = _selectedImageBytes!;
+        fotoProfilFilename = _selectedImageXFile!.name;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal memproses foto: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isSaving = false);
+        return;
       }
     }
+
+    await _tukangService.updateProfileFull(
+      namaLengkap: _namaController.text,
+      email: _emailController.text,
+      noTelp: _noTelpController.text,
+      alamat: _alamatController.text,
+      kota: _kotaController.text,
+      provinsi: _provinsiController.text,
+      pengalamanTahun: int.tryParse(_pengalamanController.text) ?? 0,
+      tarifPerJam: double.tryParse(_tarifController.text) ?? 0,
+      bio: _bioController.text,
+      keahlian: keahlianList,
+      radiusLayananKm: int.tryParse(_radiusController.text) ?? 0,
+      namaBank: _namaBankController.text,
+      nomorRekening: _nomorRekeningController.text,
+      namaPemilikRekening: _namaPemilikController.text,
+      kategoriIds: _selectedCategoryIds,  // Always send category IDs
+      fotoProfilBytes: fotoProfilBytes,
+      fotoProfilFilename: fotoProfilFilename,
+    );
+
+    setState(() => _isSaving = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profil berhasil diperbarui!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    }
+  } catch (e) {
+    setState(() => _isSaving = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan profil: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
+  // NEW: Function to get current category progress
+  String _getCurrentCategoryProgress() {
+    if (_kategoriAktif == null) return '';
+    
+    final currentIndex = _allCategories.indexWhere((c) => c.id == _kategoriAktif);
+    if (currentIndex == -1) return '';
+    
+    return 'Kategori ${currentIndex + 1} dari ${_allCategories.length}';
+  }
+
+  // NEW: Function to get list of selected categories with their skills
+  Widget _buildSelectedCategoriesList() {
+    if (_selectedCategoryIds.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Kategori yang Dipilih:',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFFF3B950),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._selectedCategoryIds.map((categoryId) {
+          final category = _allCategories.firstWhere((c) => c.id == categoryId);
+          final skills = _keahlianPerKategori[categoryId] ?? [];
+          final skillTexts = skills
+              .map((controller) => controller.text.trim())
+              .where((text) => text.isNotEmpty)
+              .toList();
+          
+          return Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF3B950).withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  category.nama ?? 'Unknown',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                if (skillTexts.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Keahlian: ${skillTexts.join(', ')}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
   }
 
   @override
@@ -517,23 +684,23 @@ class _EditProfileState extends State<EditProfile> {
               },
             ),
             const SizedBox(height: 16),
-            _buildTextField(
-              controller: _keahlianController,
-              label: 'Keahlian (pisahkan dengan koma)',
-              hint: 'Contoh: Instalasi listrik, Perbaikan listrik',
-              icon: Icons.build,
-              maxLines: 3,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Keahlian wajib diisi';
-                }
-                return null;
-              },
-            ),
+
+            // Keahlian section (old system - fallback)
+            if (_kategoriAktif == null && _selectedCategoryIds.isEmpty) ...[
+              const SizedBox(height: 24),
+              _buildSectionTitle('Keahlian'),
+              const SizedBox(height: 16),
+              _buildKeahlianSection(),
+            ],
+
             const SizedBox(height: 24),
             _buildSectionTitle('Kategori Keahlian'),
             const SizedBox(height: 16),
             _buildCategorySection(),
+            
+            // NEW: Show selected categories list
+            _buildSelectedCategoriesList(),
+            
             const SizedBox(height: 24),
             _buildSectionTitle('Informasi Bank'),
             const SizedBox(height: 16),
@@ -578,7 +745,6 @@ class _EditProfileState extends State<EditProfile> {
               },
             ),
             const SizedBox(height: 32),
-            // Save Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -619,6 +785,7 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  // ADDED: Missing _buildSectionTitle method
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -630,6 +797,7 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  // ADDED: Missing _buildTextField method
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -670,7 +838,7 @@ class _EditProfileState extends State<EditProfile> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                color: const Color(0xFFF3B950).withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -692,6 +860,7 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  // ADDED: Missing _buildPhotoSection method
   Widget _buildPhotoSection() {
     return Center(
       child: Column(
@@ -707,7 +876,7 @@ class _EditProfileState extends State<EditProfile> {
                 border: Border.all(color: const Color(0xFFF3B950), width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -719,7 +888,7 @@ class _EditProfileState extends State<EditProfile> {
                         ? Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
                         : _currentPhotoUrl != null
                         ? Image.network(
-                          'http://localhost/admintukang/${_currentPhotoUrl!}',
+                          'https://api.iwakrejosari.com/${_currentPhotoUrl!}',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const Icon(
@@ -756,6 +925,165 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  // Build dynamic keahlian section
+  Widget _buildKeahlianSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Keahlian',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // List of skill inputs
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _Controllers.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Input field
+                  Expanded(
+                    child: TextFormField(
+                      controller: _Controllers[index],
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: Instalasi listrik',
+                        prefixIcon: const Icon(
+                          Icons.build,
+                          color: Color(0xFFF3B950),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF3B950),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xFFF3B950).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF3B950),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      validator: (value) {
+                        // Only validate if it's the only field
+                        if (index == 0 && (value == null || value.isEmpty)) {
+                          return 'Minimal 1 keahlian wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Add/Remove buttons
+                  if (index == _Controllers.length - 1)
+                    // Add button on last item
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade400,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            _Controllers.add(TextEditingController());
+                          });
+                        },
+                        tooltip: 'Tambah keahlian',
+                      ),
+                    )
+                  else
+                    // Remove button on other items
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade400,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            _Controllers[index].dispose();
+                            _Controllers.removeAt(index);
+                          });
+                        },
+                        tooltip: 'Hapus keahlian',
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // Helper text
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 4),
+          child: Text(
+            'Klik tombol + untuk menambah keahlian lainnya',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategorySection() {
     if (_isLoadingCategories) {
       return const Center(
@@ -767,9 +1095,9 @@ class _EditProfileState extends State<EditProfile> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.1),
+          color: Colors.orange.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
         ),
         child: const Row(
           children: [
@@ -790,7 +1118,7 @@ class _EditProfileState extends State<EditProfile> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Pilih kategori keahlian Anda (bisa lebih dari satu)',
+          'Pilih kategori keahlian Anda (bisa memilih lebih dari satu)',
           style: TextStyle(fontSize: 14, color: Colors.black87),
         ),
         const SizedBox(height: 12),
@@ -807,15 +1135,27 @@ class _EditProfileState extends State<EditProfile> {
                     setState(() {
                       if (selected) {
                         if (category.id != null) {
+                          // ADD category to selected list
                           _selectedCategoryIds.add(category.id!);
+                          _kategoriAktif = category.id!;
+                          _keahlianPerKategori.putIfAbsent(
+                            category.id!,
+                            () => [TextEditingController()],
+                          );
                         }
                       } else {
-                        _selectedCategoryIds.remove(category.id);
+                        // REMOVE category from selected list
+                        _selectedCategoryIds.remove(category.id!);
+                        if (_kategoriAktif == category.id) {
+                          _kategoriAktif = _selectedCategoryIds.isNotEmpty 
+                              ? _selectedCategoryIds.first 
+                              : null;
+                        }
                       }
                     });
                   },
                   backgroundColor: Colors.white,
-                  selectedColor: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                  selectedColor: const Color(0xFFF3B950).withOpacity(0.3),
                   checkmarkColor: const Color(0xFFF3B950),
                   labelStyle: TextStyle(
                     color:
@@ -827,7 +1167,7 @@ class _EditProfileState extends State<EditProfile> {
                     color:
                         isSelected
                             ? const Color(0xFFF3B950)
-                            : Colors.grey.withValues(alpha: 0.3),
+                            : Colors.grey.withOpacity(0.3),
                     width: isSelected ? 2 : 1,
                   ),
                 );
@@ -841,6 +1181,282 @@ class _EditProfileState extends State<EditProfile> {
               style: TextStyle(fontSize: 12, color: Colors.red.shade700),
             ),
           ),
+        if (_selectedCategoryIds.isNotEmpty && _kategoriAktif != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: _buildKeahlianPerKategoriSection(_kategoriAktif!),
+          ),
+      ],
+    );
+  }
+
+  // Build keahlian section for specific kategori
+  Widget _buildKeahlianPerKategoriSection(int kategoriId) {
+    final controllers = _keahlianPerKategori[kategoriId] ?? [TextEditingController()];
+    final currentCategory = _allCategories.firstWhere((c) => c.id == kategoriId);
+    final currentIndex = _allCategories.indexWhere((c) => c.id == kategoriId);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Category progress indicator
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3B950).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFF3B950).withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.category, color: const Color(0xFFF3B950), size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Kategori Keahlian:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF3B950),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                currentCategory.nama ?? 'Unknown',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _getCurrentCategoryProgress(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        Text(
+          'Keahlian untuk ${currentCategory.nama}',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // List of skill inputs for this category
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: controllers.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Input field
+                  Expanded(
+                    child: TextFormField(
+                      controller: controllers[index],
+                      decoration: InputDecoration(
+                        hintText: 'isi keahlian Anda sesuai kategori ini',
+                        prefixIcon: const Icon(
+                          Icons.build,
+                          color: Color(0xFFF3B950),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF3B950),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xFFF3B950).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF3B950),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      validator: (value) {
+                        // Only validate if it's the only field
+                        if (index == 0 && (value == null || value.isEmpty)) {
+                          return 'Minimal 1 keahlian wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Add/Remove buttons
+                  if (index == controllers.length - 1)
+                    // Add button on last item
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade400,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            controllers.add(TextEditingController());
+                          });
+                        },
+                        tooltip: 'Tambah keahlian',
+                      ),
+                    )
+                  else
+                    // Remove button on other items
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade400,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            controllers[index].dispose();
+                            controllers.removeAt(index);
+                          });
+                        },
+                        tooltip: 'Hapus keahlian',
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // Helper text
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 4),
+          child: Text(
+            'Klik tombol + untuk menambah keahlian lainnya',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+
+        // Next category button
+        if (_kategoriAktif != null) ...[
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 45,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF3B950),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                final currentIndex = _allCategories.indexWhere((c) => c.id == _kategoriAktif);
+                if (currentIndex < _allCategories.length - 1) {
+                  setState(() {
+                    // Find next category that is not yet selected
+                    int nextIndex = currentIndex + 1;
+                    while (nextIndex < _allCategories.length && 
+                           _selectedCategoryIds.contains(_allCategories[nextIndex].id)) {
+                      nextIndex++;
+                    }
+                    
+                    if (nextIndex < _allCategories.length) {
+                      _kategoriAktif = _allCategories[nextIndex].id;
+                      if (!_selectedCategoryIds.contains(_kategoriAktif)) {
+                        _selectedCategoryIds.add(_kategoriAktif!);
+                      }
+                      _keahlianPerKategori.putIfAbsent(
+                        _kategoriAktif!,
+                        () => [TextEditingController()],
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Semua kategori sudah dipilih'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Semua kategori sudah dipilih'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'Lanjut ke Kategori Berikutnya',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

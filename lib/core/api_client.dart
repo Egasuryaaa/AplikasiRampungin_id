@@ -15,32 +15,66 @@ class ApiClient {
   factory ApiClient() => _instance;
   ApiClient._internal();
 
+  // Cache the SharedPreferences instance
+  SharedPreferences? _prefs;
+  
+  /// Get SharedPreferences instance (with initialization)
+  Future<SharedPreferences> _getPrefs() async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      return _prefs!;
+    } catch (e) {
+      _logger.e('Failed to initialize SharedPreferences: $e');
+      rethrow;
+    }
+  }
+
   // ==================== TOKEN MANAGEMENT ====================
 
   /// Save JWT token to local storage
   Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-    _logger.i('Token saved successfully');
+    try {
+      final prefs = await _getPrefs();
+      await prefs.setString(_tokenKey, token);
+      _logger.i('Token saved successfully');
+    } catch (e) {
+      _logger.e('Failed to save token: $e');
+      rethrow;
+    }
   }
 
   /// Get JWT token from local storage
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    try {
+      final prefs = await _getPrefs();
+      return prefs.getString(_tokenKey);
+    } catch (e) {
+      _logger.e('Failed to get token: $e');
+      return null; // Return null instead of crashing
+    }
   }
 
   /// Remove JWT token (for logout)
   Future<void> removeToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-    _logger.i('Token removed successfully');
+    try {
+      final prefs = await _getPrefs();
+      await prefs.remove(_tokenKey);
+      _logger.i('Token removed successfully');
+    } catch (e) {
+      _logger.e('Failed to remove token: $e');
+      rethrow;
+    }
   }
 
   /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
-    final token = await getToken();
-    return token != null && token.isNotEmpty;
+    try {
+      final token = await getToken();
+      return token != null && token.isNotEmpty;
+    } catch (e) {
+      _logger.e('Failed to check authentication: $e');
+      return false;
+    }
   }
 
   // ==================== HTTP METHODS ====================
@@ -74,7 +108,6 @@ class ApiClient {
     final url = Uri.parse(ApiConfig.getFullUrl(endpoint));
     final headers = await _buildHeaders(requiresAuth);
 
-    _logger.d('POST $url');
     _logger.d('POST $url');
     if (body != null) {
       _logger.d('Body keys: ${body.keys.join(", ")}');
@@ -254,6 +287,72 @@ class ApiClient {
       return response;
     } catch (e) {
       _logger.e('Multipart request failed: $e');
+      rethrow;
+    }
+  }
+
+  /// PUT Multipart Request (for file uploads with PUT method)
+  /// Uses actual PUT method for true multipart/form-data upload
+  Future<http.StreamedResponse> putMultipart(
+    String endpoint,
+    String fieldName,
+    List<int> fileBytes,
+    String filename, {
+    Map<String, String>? fields,
+    bool requiresAuth = true,
+  }) async {
+    final url = Uri.parse(ApiConfig.getFullUrl(endpoint));
+    final token = requiresAuth ? await getToken() : null;
+
+    _logger.d('PUT MULTIPART $url (actual PUT method)');
+
+    try {
+      // Use actual PUT method
+      final request = http.MultipartRequest('PUT', url);
+
+      // Add auth header
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add file using bytes (web-compatible)
+      String? mimeType;
+      final ext = filename.toLowerCase().split('.').last;
+      if (ext == 'jpg' || ext == 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (ext == 'png') {
+        mimeType = 'image/png';
+      } else if (ext == 'gif') {
+        mimeType = 'image/gif';
+      } else if (ext == 'webp') {
+        mimeType = 'image/webp';
+      }
+
+      _logger.d(
+        '📎 Uploading file: $filename (${fileBytes.length} bytes, type: $mimeType)',
+      );
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          fileBytes,
+          filename: filename,
+          contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+        ),
+      );
+
+      // Add other fields
+      if (fields != null) {
+        request.fields.addAll(fields);
+        _logger.d('📝 Fields: $fields');
+      }
+
+      final response = await request.send();
+
+      _logger.i('PUT Multipart response: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      _logger.e('PUT Multipart request failed: $e');
       rethrow;
     }
   }

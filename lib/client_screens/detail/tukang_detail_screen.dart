@@ -23,7 +23,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
   bool _isLoading = false;
   bool _isLoadingRatings = false;
 
-  // Rating statistics
   Map<int, int> _ratingStats = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
 
   @override
@@ -43,19 +42,36 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
         name: 'TukangDetailScreen',
       );
 
-      // Use getTukangDetailFull to get full profile including ratings
       final tukang = await _clientService.getTukangDetailFull(widget.tukangId);
 
       developer.log(
         'Tukang loaded successfully: ${tukang.namaLengkap}',
         name: 'TukangDetailScreen',
       );
+
       developer.log(
-        'Tukang ID: ${tukang.id}, Kategori count: ${tukang.kategori?.length ?? 0}',
+        'FULL TUKANG DATA:\n'
+        '  ID: ${tukang.id}\n'
+        '  Nama: ${tukang.namaLengkap}\n'
+        '  Email: ${tukang.email}\n'
+        '  No Telp: ${tukang.noTelp}\n'
+        '  Alamat: ${tukang.alamat}\n'
+        '  Kota: ${tukang.kota}\n'
+        '  Provinsi: ${tukang.provinsi}\n'
+        '  Tarif Per Jam: ${tukang.tarifPerJam}\n'
+        '  Bio: ${tukang.bio}\n'
+        '  Pengalaman Tahun: ${tukang.pengalamanTahun}\n'
+        '  Radius Layanan KM: ${tukang.radiusLayananKm}\n'
+        '  Rating: ${tukang.rataRataRating}\n'
+        '  Total Rating: ${tukang.totalRating}\n'
+        '  Total Pekerjaan Selesai: ${tukang.totalPekerjaanSelesai}\n'
+        '  Status Ketersediaan: ${tukang.statusKetersediaan}\n'
+        '  Nama Bank: ${tukang.namaBank}\n'
+        '  Kategori Count: ${tukang.kategori?.length ?? 0}\n'
+        '  Ratings Count: ${tukang.ratings?.length ?? 0}',
         name: 'TukangDetailScreen',
       );
 
-      // Log kategori details
       if (tukang.kategori != null && tukang.kategori!.isNotEmpty) {
         for (var kat in tukang.kategori!) {
           developer.log(
@@ -66,10 +82,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
       }
 
       developer.log(
-        'Ratings count: ${tukang.ratings?.length ?? 0}',
-        name: 'TukangDetailScreen',
-      );
-      developer.log(
         'Rating stats: ${tukang.ratingStats?.total ?? 0}',
         name: 'TukangDetailScreen',
       );
@@ -79,7 +91,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
           _tukangData = tukang;
           _ratings = tukang.ratings ?? [];
 
-          // Update rating stats from backend data
           if (tukang.ratingStats != null) {
             _ratingStats = {
               5: tukang.ratingStats!.bintang5 ?? 0,
@@ -159,7 +170,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
       backgroundColor: const Color(0xFFFDF6E8),
       body: CustomScrollView(
         slivers: [
-          // App Bar with Image
           SliverAppBar(
             expandedHeight: 250,
             pinned: true,
@@ -178,12 +188,10 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
             ),
           ),
 
-          // Content
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Info
                 Container(
                   padding: const EdgeInsets.all(20),
                   color: Colors.white,
@@ -204,18 +212,48 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  (_tukangData!.kategori != null &&
-                                          _tukangData!.kategori!.isNotEmpty)
-                                      ? (_tukangData!.kategori!.first.nama ??
-                                          'Kategori')
-                                      : 'Kategori',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
+                                const SizedBox(height: 8),
+                                if (_tukangData!.kategori != null &&
+                                    _tukangData!.kategori!.isNotEmpty)
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children:
+                                        _tukangData!.kategori!.map((kategori) {
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF3B950)
+                                                  .withOpacity(0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: const Color(0xFFF3B950)
+                                                    .withOpacity(0.3),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              kategori.nama ?? 'Kategori',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF8B6914),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                  )
+                                else
+                                  Text(
+                                    'Kategori tidak tersedia',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -251,14 +289,13 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Rating & Stats
                       Row(
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 24),
                           const SizedBox(width: 4),
                           Text(
-                            (_tukangData!.rataRataRating?.toStringAsFixed(1) ??
-                                '0.0'),
+                            _tukangData!.rataRataRating?.toStringAsFixed(1) ??
+                                '0.0',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -266,7 +303,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '(${_ratings.length} ulasan)',
+                            '(${_tukangData!.ratingStats?.total ?? 0} ulasan)',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -285,11 +322,10 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Tarif
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3B950).withValues(alpha: 0.1),
+                          color: const Color(0xFFF3B950).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -304,7 +340,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                             ),
                             Text(
                               _tukangData!.tarifPerJam != null
-                                  ? 'Rp ${_tukangData!.tarifPerJam!.toStringAsFixed(0)}'
+                                  ? 'Rp ${_tukangData!.tarifPerJam!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}'
                                   : 'Hubungi untuk harga',
                               style: const TextStyle(
                                 fontSize: 16,
@@ -321,7 +357,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                 const SizedBox(height: 8),
 
-                // Contact Info
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -379,7 +414,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                 const SizedBox(height: 8),
 
-                // Experience
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -430,7 +464,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                 const SizedBox(height: 8),
 
-                // Bio Section
                 if (_tukangData!.bio != null &&
                     _tukangData!.bio!.isNotEmpty) ...[
                   Container(
@@ -458,7 +491,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                   const SizedBox(height: 8),
                 ],
 
-                // Keahlian Section
                 if (_tukangData!.keahlian != null &&
                     _tukangData!.keahlian!.isNotEmpty) ...[
                   Container(
@@ -487,9 +519,10 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFFF3B950,
-                                    ).withValues(alpha: 0.2),
+                                    color:
+                                        const Color(0xFFF3B950).withValues(
+                                          alpha: 0.2,
+                                        ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -508,7 +541,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                   const SizedBox(height: 8),
                 ],
 
-                // Rating Breakdown
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -525,7 +557,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Rating Bars
                       ...List.generate(5, (index) {
                         int stars = 5 - index;
                         int count = _ratingStats[stars] ?? 0;
@@ -580,7 +611,6 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Reviews List
                       if (_isLoadingRatings)
                         const Center(child: CircularProgressIndicator())
                       else if (_ratings.isEmpty)
@@ -601,7 +631,8 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _ratings.length,
-                          separatorBuilder: (context, index) => const Divider(),
+                          separatorBuilder: (context, index) =>
+                              const Divider(),
                           itemBuilder: (context, index) {
                             return _buildReviewCard(_ratings[index]);
                           },
@@ -610,14 +641,13 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 80), // Space for bottom button
+                const SizedBox(height: 80),
               ],
             ),
           ),
         ],
       ),
 
-      // Bottom Button
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -635,14 +665,12 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
             onPressed:
                 _tukangData!.statusKetersediaan == 'tersedia'
                     ? () {
-                      // Navigate to booking dengan tukang ID dan info
                       try {
                         developer.log(
                           'Preparing booking for tukang ID: ${_tukangData!.id}',
                           name: 'TukangDetailScreen',
                         );
 
-                        // Safely extract kategori info
                         int? kategoriId;
                         String? kategoriNama;
 
@@ -740,7 +768,8 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: const Color(0xFFF3B950).withValues(alpha: 0.2),
+                backgroundColor:
+                    const Color(0xFFF3B950).withValues(alpha: 0.2),
                 child: const Icon(Icons.person, color: Color(0xFFF3B950)),
               ),
               const SizedBox(width: 12),
