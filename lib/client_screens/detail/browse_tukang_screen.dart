@@ -105,40 +105,41 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _FilterDialog(
-        selectedKategoriId: _selectedKategoriId,
-        selectedKota: _selectedKota,
-        selectedStatus: _selectedStatus,
-        minRating: _minRating,
-        maxTarif: _maxTarif,
-        orderBy: _orderBy,
-        orderDir: _orderDir,
-        categories: _categories,
-        onApply: (filters) {
-          setState(() {
-            _selectedKategoriId = filters['kategoriId'];
-            _selectedKota = filters['kota'];
-            _selectedStatus = filters['status'];
-            _minRating = filters['minRating'];
-            _maxTarif = filters['maxTarif'];
-            _orderBy = filters['orderBy'];
-            _orderDir = filters['orderDir'];
-          });
-          _loadTukang();
-        },
-        onReset: () {
-          setState(() {
-            _selectedKategoriId = null;
-            _selectedKota = null;
-            _selectedStatus = 'tersedia';
-            _minRating = null;
-            _maxTarif = null;
-            _orderBy = 'rata_rata_rating';
-            _orderDir = 'desc';
-          });
-          _loadTukang();
-        },
-      ),
+      builder:
+          (context) => _FilterDialog(
+            selectedKategoriId: _selectedKategoriId,
+            selectedKota: _selectedKota,
+            selectedStatus: _selectedStatus,
+            minRating: _minRating,
+            maxTarif: _maxTarif,
+            orderBy: _orderBy,
+            orderDir: _orderDir,
+            categories: _categories,
+            onApply: (filters) {
+              setState(() {
+                _selectedKategoriId = filters['kategoriId'];
+                _selectedKota = filters['kota'];
+                _selectedStatus = filters['status'];
+                _minRating = filters['minRating'];
+                _maxTarif = filters['maxTarif'];
+                _orderBy = filters['orderBy'];
+                _orderDir = filters['orderDir'];
+              });
+              _loadTukang();
+            },
+            onReset: () {
+              setState(() {
+                _selectedKategoriId = null;
+                _selectedKota = null;
+                _selectedStatus = 'tersedia';
+                _minRating = null;
+                _maxTarif = null;
+                _orderBy = 'rata_rata_rating';
+                _orderDir = 'desc';
+              });
+              _loadTukang();
+            },
+          ),
     );
   }
 
@@ -150,7 +151,8 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
       return fotoPath;
     }
 
-    final cleanPath = fotoPath.startsWith('/uploads') ? fotoPath.substring(1) : fotoPath;
+    final cleanPath =
+        fotoPath.startsWith('/uploads') ? fotoPath.substring(1) : fotoPath;
     return '$url/uploads/$cleanPath';
   }
 
@@ -208,11 +210,11 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                     if (_selectedKategoriId != null)
                       _buildFilterChip(
                         _categories
-                            .firstWhere(
-                              (c) => c.id == _selectedKategoriId,
-                              orElse: () => CategoryModel(nama: 'Kategori'),
-                            )
-                            .nama ??
+                                .firstWhere(
+                                  (c) => c.id == _selectedKategoriId,
+                                  orElse: () => CategoryModel(nama: 'Kategori'),
+                                )
+                                .nama ??
                             'Kategori',
                         () {
                           setState(() {
@@ -249,20 +251,21 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
 
           // Tukang List
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _tukangList.isEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _tukangList.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
-                        onRefresh: _loadTukang,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _tukangList.length,
-                          itemBuilder: (context, index) {
-                            return _buildTukangCard(_tukangList[index]);
-                          },
-                        ),
+                      onRefresh: _loadTukang,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _tukangList.length,
+                        itemBuilder: (context, index) {
+                          return _buildTukangCard(_tukangList[index]);
+                        },
                       ),
+                    ),
           ),
         ],
       ),
@@ -317,6 +320,12 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
     final String? fotoPath = tukang.fotoProfil ?? tukang.fotoProfile;
     final photoUrl = _getPhotoUrl(fotoPath);
 
+    // Helper untuk format currency
+    String formatCurrency(double? amount) {
+      if (amount == null) return 'N/A';
+      return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -329,13 +338,15 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar with Photo - LOGIKA SAMA DENGAN HOME
+                // Avatar with Photo
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => TukangDetailScreen(tukangId: tukang.id!),
+                        builder:
+                            (context) =>
+                                TukangDetailScreen(tukangId: tukang.id!),
                       ),
                     );
                   },
@@ -355,28 +366,37 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: photoUrl != null
-                          ? Image.network(
-                              photoUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildDefaultAvatar();
-                              },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
-                                    strokeWidth: 2,
-                                    color: const Color(0xFFF3B950),
-                                  ),
-                                );
-                              },
-                            )
-                          : _buildDefaultAvatar(),
+                      child:
+                          photoUrl != null
+                              ? Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildDefaultAvatar();
+                                },
+                                loadingBuilder: (
+                                  context,
+                                  child,
+                                  loadingProgress,
+                                ) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                      strokeWidth: 2,
+                                      color: const Color(0xFFF3B950),
+                                    ),
+                                  );
+                                },
+                              )
+                              : _buildDefaultAvatar(),
                     ),
                   ),
                 ),
@@ -387,12 +407,15 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Nama Tukang
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TukangDetailScreen(tukangId: tukang.id!),
+                              builder:
+                                  (context) =>
+                                      TukangDetailScreen(tukangId: tukang.id!),
                             ),
                           );
                         },
@@ -408,20 +431,22 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                       ),
                       const SizedBox(height: 4),
 
+                      // Rating & Total Ulasan
                       Row(
                         children: [
                           const Icon(Icons.star, size: 16, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
-                            tukang.rating?.toStringAsFixed(1) ?? '0.0',
+                            (tukang.rataRataRating ?? tukang.rating ?? 0)
+                                .toStringAsFixed(1),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                           Text(
-                            '(${tukang.jumlahPesanan ?? 0} pesanan)',
+                            '(${tukang.totalRating ?? tukang.jumlahPesanan ?? 0} ulasan)',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -429,50 +454,49 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 4),
 
-                      // Tampilkan kategori
-                      if (tukang.kategoriList != null && tukang.kategoriList!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: tukang.kategoriList!.take(3).map((kategori) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3B950).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFF3B950).withOpacity(0.3),
-                                ),
-                              ),
-                              child: Text(
-                                kategori['nama_kategori'] ?? kategori['nama'] ?? '',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF8B6914),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        if (tukang.kategoriList!.length > 3)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '+${tukang.kategoriList!.length - 3} kategori lainnya',
+                      // Pengalaman & Tarif
+                      Row(
+                        children: [
+                          if (tukang.pengalamanTahun != null) ...[
+                            Icon(
+                              Icons.work_outline,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${tukang.pengalamanTahun} Tahun',
                               style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                                fontStyle: FontStyle.italic,
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                      ],
+                            const SizedBox(width: 12),
+                          ],
+                          if (tukang.tarifPerJam != null) ...[
+                            Icon(
+                              Icons.payments_outlined,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '${formatCurrency(tukang.tarifPerJam)}/jam',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -481,55 +505,234 @@ class _BrowseTukangScreenState extends State<BrowseTukangScreen> {
 
             const SizedBox(height: 12),
 
-            // Status dan Button Detail
+            // Detail Info (Pesanan Selesai & Radius Layanan)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                if (tukang.totalPekerjaanSelesai != null) ...[
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 14,
+                    color: Colors.green[700],
                   ),
-                  decoration: BoxDecoration(
-                    color: tukang.statusAktif == 'online' ? Colors.green[100] : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    tukang.statusAktif == 'online' ? 'Tersedia' : 'Tidak Tersedia',
+                  const SizedBox(width: 4),
+                  Text(
+                    '${tukang.totalPekerjaanSelesai} Pesanan Selesai',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: tukang.statusAktif == 'online' ? Colors.green[800] : Colors.grey[800],
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (tukang.totalPekerjaanSelesai != null &&
+                    tukang.radiusLayananKm != null)
+                  const SizedBox(width: 12),
+                if (tukang.radiusLayananKm != null) ...[
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Max ${tukang.radiusLayananKm} km',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
+            // Bio (Deskripsi Singkat)
+            if (tukang.bio != null && tukang.bio!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                tukang.bio!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+
+            // Tampilkan kategori
+            if (tukang.kategoriList != null &&
+                tukang.kategoriList!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children:
+                    tukang.kategoriList!.take(3).map((kategori) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3B950).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFF3B950).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          kategori['nama_kategori'] ?? kategori['nama'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF8B6914),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+              if (tukang.kategoriList!.length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '+${tukang.kategoriList!.length - 3} kategori lainnya',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TukangDetailScreen(
-                          tukangId: tukang.tukangId ?? tukang.id!,
+            ],
+
+            const SizedBox(height: 12),
+
+            // Status dan Button Pesan
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Status Ketersediaan
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        (tukang.statusKetersediaan ?? tukang.statusAktif) ==
+                                    'tersedia' ||
+                                (tukang.statusKetersediaan ??
+                                        tukang.statusAktif) ==
+                                    'online'
+                            ? Colors.green[100]
+                            : (tukang.statusKetersediaan ??
+                                    tukang.statusAktif) ==
+                                'sibuk'
+                            ? Colors.orange[100]
+                            : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              (tukang.statusKetersediaan ??
+                                              tukang.statusAktif) ==
+                                          'tersedia' ||
+                                      (tukang.statusKetersediaan ??
+                                              tukang.statusAktif) ==
+                                          'online'
+                                  ? Colors.green[700]
+                                  : (tukang.statusKetersediaan ??
+                                          tukang.statusAktif) ==
+                                      'sibuk'
+                                  ? Colors.orange[700]
+                                  : Colors.grey[700],
                         ),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF3B950),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                      const SizedBox(width: 6),
+                      Text(
+                        (tukang.statusKetersediaan ?? tukang.statusAktif) ==
+                                    'tersedia' ||
+                                (tukang.statusKetersediaan ??
+                                        tukang.statusAktif) ==
+                                    'online'
+                            ? 'Tersedia'
+                            : (tukang.statusKetersediaan ??
+                                    tukang.statusAktif) ==
+                                'sibuk'
+                            ? 'Sibuk'
+                            : 'Tidak Tersedia',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              (tukang.statusKetersediaan ??
+                                              tukang.statusAktif) ==
+                                          'tersedia' ||
+                                      (tukang.statusKetersediaan ??
+                                              tukang.statusAktif) ==
+                                          'online'
+                                  ? Colors.green[800]
+                                  : (tukang.statusKetersediaan ??
+                                          tukang.statusAktif) ==
+                                      'sibuk'
+                                  ? Colors.orange[800]
+                                  : Colors.grey[800],
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text(
-                    'pesan',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                ),
+
+                // Button Pesan dengan hover effect
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => TukangDetailScreen(
+                                tukangId: tukang.tukangId ?? tukang.id!,
+                              ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3B950),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF3B950).withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Pesan',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -605,7 +808,8 @@ class _FilterDialogState extends State<_FilterDialog> {
     _orderDir = widget.orderDir;
 
     _kotaController.text = _kota ?? '';
-    _maxTarifController.text = _maxTarif != null ? _maxTarif!.toInt().toString() : '';
+    _maxTarifController.text =
+        _maxTarif != null ? _maxTarif!.toInt().toString() : '';
   }
 
   @override
@@ -896,9 +1100,10 @@ class _FilterDialogState extends State<_FilterDialog> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: _orderDir == 'desc'
-                                              ? const Color(0xFFF3B950)
-                                              : Colors.transparent,
+                                          color:
+                                              _orderDir == 'desc'
+                                                  ? const Color(0xFFF3B950)
+                                                  : Colors.transparent,
                                         ),
                                       ),
                                     ),
@@ -946,9 +1151,10 @@ class _FilterDialogState extends State<_FilterDialog> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: _orderDir == 'ASC'
-                                              ? const Color(0xFFF3B950)
-                                              : Colors.transparent,
+                                          color:
+                                              _orderDir == 'ASC'
+                                                  ? const Color(0xFFF3B950)
+                                                  : Colors.transparent,
                                         ),
                                       ),
                                     ),

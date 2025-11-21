@@ -22,6 +22,17 @@ class UserModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  // Profil Tukang Details (from API response)
+  final Map<String, dynamic>? profilTukang;
+  final int? pengalamanTahun;
+  final double? tarifPerJam;
+  final double? rataRataRating;
+  final int? totalRating;
+  final int? totalPekerjaanSelesai;
+  final String? statusKetersediaan;
+  final int? radiusLayananKm;
+  final String? bio;
+
   UserModel({
     this.id,
     this.nama,
@@ -43,37 +54,46 @@ class UserModel {
     this.updatedAt,
     this.fotoProfil,
     this.tukangId,
+    this.profilTukang,
+    this.pengalamanTahun,
+    this.tarifPerJam,
+    this.rataRataRating,
+    this.totalRating,
+    this.totalPekerjaanSelesai,
+    this.statusKetersediaan,
+    this.radiusLayananKm,
+    this.bio,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // Parse id (could be String or int from backend)
     int? parsedId;
-  // Priority: tukang_id > user_id > id
-  if (json['tukang_id'] != null) {
-    if (json['tukang_id'] is int) {
-      parsedId = json['tukang_id'] as int;
-    } else if (json['tukang_id'] is String) {
-      parsedId = int.tryParse(json['tukang_id'] as String);
-    } else if (json['tukang_id'] is double) {
-      parsedId = (json['tukang_id'] as double).toInt();
+    // Priority: tukang_id > user_id > id
+    if (json['tukang_id'] != null) {
+      if (json['tukang_id'] is int) {
+        parsedId = json['tukang_id'] as int;
+      } else if (json['tukang_id'] is String) {
+        parsedId = int.tryParse(json['tukang_id'] as String);
+      } else if (json['tukang_id'] is double) {
+        parsedId = (json['tukang_id'] as double).toInt();
+      }
+    } else if (json['user_id'] != null) {
+      if (json['user_id'] is int) {
+        parsedId = json['user_id'] as int;
+      } else if (json['user_id'] is String) {
+        parsedId = int.tryParse(json['user_id'] as String);
+      } else if (json['user_id'] is double) {
+        parsedId = (json['user_id'] as double).toInt();
+      }
+    } else if (json['id'] != null) {
+      if (json['id'] is int) {
+        parsedId = json['id'] as int;
+      } else if (json['id'] is String) {
+        parsedId = int.tryParse(json['id'] as String);
+      } else if (json['id'] is double) {
+        parsedId = (json['id'] as double).toInt();
+      }
     }
-  } else if (json['user_id'] != null) {
-    if (json['user_id'] is int) {
-      parsedId = json['user_id'] as int;
-    } else if (json['user_id'] is String) {
-      parsedId = int.tryParse(json['user_id'] as String);
-    } else if (json['user_id'] is double) {
-      parsedId = (json['user_id'] as double).toInt();
-    }
-  } else if (json['id'] != null) {
-    if (json['id'] is int) {
-      parsedId = json['id'] as int;
-    } else if (json['id'] is String) {
-      parsedId = int.tryParse(json['id'] as String);
-    } else if (json['id'] is double) {
-      parsedId = (json['id'] as double).toInt();
-    }
-  }
     // Map id_role to jenisAkun (role name from backend)
     String? jenisAkun;
     if (json['id_role'] != null) {
@@ -107,7 +127,6 @@ class UserModel {
               ? 'online'
               : 'offline';
     }
-    
 
     // Parse id_kategori (could be String or int)
     int? parsedIdKategori;
@@ -176,6 +195,48 @@ class UserModel {
       }
     }
 
+    // Parse profil_tukang object
+    final profilTukang = json['profil_tukang'] as Map<String, dynamic>?;
+
+    // Extract profil_tukang fields
+    int? pengalamanTahun;
+    double? tarifPerJam;
+    double? rataRataRating;
+    int? totalRating;
+    int? totalPekerjaanSelesai;
+    String? statusKetersediaan;
+    int? radiusLayananKm;
+    String? bio;
+
+    if (profilTukang != null) {
+      pengalamanTahun =
+          profilTukang['pengalaman_tahun'] != null
+              ? int.tryParse(profilTukang['pengalaman_tahun'].toString())
+              : null;
+      tarifPerJam =
+          profilTukang['tarif_per_jam'] != null
+              ? double.tryParse(profilTukang['tarif_per_jam'].toString())
+              : null;
+      rataRataRating =
+          profilTukang['rata_rata_rating'] != null
+              ? double.tryParse(profilTukang['rata_rata_rating'].toString())
+              : null;
+      totalRating =
+          profilTukang['total_rating'] != null
+              ? int.tryParse(profilTukang['total_rating'].toString())
+              : null;
+      totalPekerjaanSelesai =
+          profilTukang['total_pekerjaan_selesai'] != null
+              ? int.tryParse(profilTukang['total_pekerjaan_selesai'].toString())
+              : null;
+      statusKetersediaan = profilTukang['status_ketersediaan'] as String?;
+      radiusLayananKm =
+          profilTukang['radius_layanan_km'] != null
+              ? int.tryParse(profilTukang['radius_layanan_km'].toString())
+              : null;
+      bio = profilTukang['bio'] as String?;
+    }
+
     return UserModel(
       id: parsedId,
       nama: json['nama_lengkap'] as String? ?? json['nama'] as String?,
@@ -188,7 +249,11 @@ class UserModel {
       ktpPhoto: json['ktp_photo'] as String?,
       idKategori: parsedIdKategori,
       namaKategori: json['nama_kategori'] as String?,
-      fotoProfil: json['foto_profil'], 
+      fotoProfil: json['foto_profil'],
+      tukangId:
+          json['tukang_id'] != null
+              ? int.tryParse(json['tukang_id'].toString())
+              : null,
       kategoriList: kategoriList,
       statusVerifikasi:
           statusVerifikasi ?? json['status_verifikasi'] as String?,
@@ -204,6 +269,15 @@ class UserModel {
           json['updated_at'] != null
               ? DateTime.parse(json['updated_at'] as String)
               : null,
+      profilTukang: profilTukang,
+      pengalamanTahun: pengalamanTahun,
+      tarifPerJam: tarifPerJam,
+      rataRataRating: rataRataRating ?? parsedRating,
+      totalRating: totalRating ?? parsedJumlahPesanan,
+      totalPekerjaanSelesai: totalPekerjaanSelesai,
+      statusKetersediaan: statusKetersediaan ?? statusAktif,
+      radiusLayananKm: radiusLayananKm,
+      bio: bio,
     );
   }
 
