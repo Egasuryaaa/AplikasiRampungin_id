@@ -17,8 +17,6 @@ class _BookingScreenState extends State<BookingScreen> {
   final ClientService _clientService = ClientService();
 
   // Form controllers
-  final TextEditingController _judulLayananController = TextEditingController();
-  final TextEditingController _deskripsiController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
   final TextEditingController _catatanController = TextEditingController();
   final TextEditingController _hargaDasarController = TextEditingController();
@@ -31,17 +29,24 @@ class _BookingScreenState extends State<BookingScreen> {
   String _metodePembayaran = 'poin'; // 'poin' or 'tunai'
   bool _isLoading = false;
 
+  // Selected services
+  String? _selectedLayanan;
+
   @override
   void initState() {
     super.initState();
     // Set default values
     _hargaDasarController.text = widget.hargaDasar?.toString() ?? '50000';
+    
+    // Set default layanan dari keahlian pertama jika ada
+    final daftarLayanan = _getDaftarLayanan();
+    if (daftarLayanan.isNotEmpty) {
+      _selectedLayanan = daftarLayanan.first;
+    }
   }
 
   @override
   void dispose() {
-    _judulLayananController.dispose();
-    _deskripsiController.dispose();
     _lokasiController.dispose();
     _catatanController.dispose();
     _hargaDasarController.dispose();
@@ -87,16 +92,23 @@ class _BookingScreenState extends State<BookingScreen> {
     }
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pilih tanggal jadwal')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih tanggal jadwal'))
+      );
       return;
     }
 
     if (_selectedTime == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pilih waktu jadwal')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih waktu jadwal'))
+      );
+      return;
+    }
+
+    if (_selectedLayanan == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih jenis layanan'))
+      );
       return;
     }
 
@@ -108,11 +120,18 @@ class _BookingScreenState extends State<BookingScreen> {
       final hargaDasar = double.tryParse(_hargaDasarController.text) ?? 0;
       final biayaTambahan = double.tryParse(_biayaTambahanController.text) ?? 0;
 
+      // Buat judul layanan dari kategori dan layanan yang dipilih
+      final judulLayanan = '${widget.tukangData.namaKategori ?? "Layanan"} - $_selectedLayanan';
+      
+      // Buat deskripsi dari bio tukang atau layanan yang dipilih
+      final deskripsiLayanan = widget.tukangData.bio ?? 
+          'Layanan $_selectedLayanan oleh ${widget.tukangData.nama}';
+
       final transaction = await _clientService.createBooking(
         tukangId: widget.tukangData.id!,
         kategoriId: widget.tukangData.idKategori ?? 1,
-        judulLayanan: _judulLayananController.text,
-        deskripsiLayanan: _deskripsiController.text,
+        judulLayanan: judulLayanan,
+        deskripsiLayanan: deskripsiLayanan,
         lokasiKerja: _lokasiController.text,
         tanggalJadwal:
             '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
@@ -135,35 +154,34 @@ class _BookingScreenState extends State<BookingScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Booking Berhasil'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Pesanan Anda berhasil dibuat!'),
-                    const SizedBox(height: 8),
-                    Text('Nomor Pesanan: ${transaction.id ?? 'N/A'}'),
-                    const SizedBox(height: 4),
-                    Text('Status: ${transaction.statusPesanan ?? 'pending'}'),
-                    const SizedBox(height: 4),
-                    Text('Metode: ${_metodePembayaran.toUpperCase()}'),
-                  ],
+          builder: (context) => AlertDialog(
+            title: const Text('Booking Berhasil'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pesanan Anda berhasil dibuat!'),
+                const SizedBox(height: 8),
+                Text('Nomor Pesanan: ${transaction.id ?? 'N/A'}'),
+                const SizedBox(height: 4),
+                Text('Status: ${transaction.statusPesanan ?? 'pending'}'),
+                const SizedBox(height: 4),
+                Text('Metode: ${_metodePembayaran.toUpperCase()}'),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Close booking screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF3B950),
                 ),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pop(context); // Close booking screen
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF3B950),
-                    ),
-                    child: const Text('OK'),
-                  ),
-                ],
+                child: const Text('OK'),
               ),
+            ],
+          ),
         );
       }
     } catch (e) {
@@ -182,8 +200,59 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
+  // Helper method untuk mendapatkan daftar keahlian spesifik dari tukang
+  List<String> _getDaftarLayanan() {
+    final List<String> layanan = [];
+    
+    // Tambahkan keahlian spesifik dari data profil tukang
+    if (widget.tukangData.profilTukang != null && 
+        widget.tukangData.profilTukang!['keahlian'] != null) {
+      if (widget.tukangData.profilTukang!['keahlian'] is List) {
+        final keahlianList = (widget.tukangData.profilTukang!['keahlian'] as List)
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        layanan.addAll(keahlianList);
+      } else if (widget.tukangData.profilTukang!['keahlian'] is String) {
+        final keahlianString = widget.tukangData.profilTukang!['keahlian'] as String;
+        final keahlianList = keahlianString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        layanan.addAll(keahlianList);
+      }
+    }
+    
+    // Jika tidak ada keahlian spesifik, gunakan kata kunci dari bio
+    if (layanan.isEmpty && widget.tukangData.bio != null && widget.tukangData.bio!.isNotEmpty) {
+      // Ambil kata kunci dari bio (exclude kategori)
+      final bioKeywords = widget.tukangData.bio!
+          .split('.')
+          .where((sentence) => sentence.trim().isNotEmpty)
+          .map((sentence) => sentence.trim())
+          .where((sentence) => !sentence.toLowerCase().contains('tukang'))
+          .toList();
+      
+      layanan.addAll(bioKeywords);
+    }
+    
+    // Jika masih kosong, buat default options berdasarkan kategori
+    if (layanan.isEmpty) {
+      final kategori = widget.tukangData.namaKategori?.toLowerCase() ?? '';
+      if (kategori.contains('listrik')) {
+        layanan.addAll(['Instalasi Listrik', 'Perbaikan Listrik', 'Pemasangan Lampu']);
+      } else if (kategori.contains('bangunan')) {
+        layanan.addAll(['Renovasi', 'Perbaikan Bangunan', 'Konstruksi']);
+      } else {
+        layanan.add('Layanan ${widget.tukangData.namaKategori ?? "Umum"}');
+      }
+    }
+    
+    // Hapus duplikat
+    return layanan.toSet().toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final daftarLayanan = _getDaftarLayanan();
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E8),
       appBar: AppBar(
@@ -208,7 +277,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
                         ),
                       ],
@@ -217,9 +286,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundColor: const Color(
-                            0xFFF3B950,
-                          ).withValues(alpha: 0.2),
+                          backgroundColor: const Color(0xFFF3B950).withOpacity(0.2),
                           child: const Icon(
                             Icons.person,
                             size: 30,
@@ -259,42 +326,127 @@ class _BookingScreenState extends State<BookingScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Judul Layanan
-                  TextFormField(
-                    controller: _judulLayananController,
-                    decoration: const InputDecoration(
-                      labelText: 'Judul Layanan',
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
+                  // Kategori (Read-only, dari data tukang)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Judul layanan harus diisi';
-                      }
-                      return null;
-                    },
+                    child: Row(
+                      children: [
+                        const Icon(Icons.category, color: Colors.grey),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Kategori',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                widget.tukangData.namaKategori ?? 'Tidak tersedia',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Deskripsi Layanan
-                  TextFormField(
-                    controller: _deskripsiController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Deskripsi Layanan',
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
+                  // Pilih Jenis Layanan (dari keahlian spesifik tukang)
+                  const Text(
+                    'Jenis Layanan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Deskripsi harus diisi';
-                      }
-                      return null;
-                    },
                   ),
+                  const SizedBox(height: 8),
+                  if (daftarLayanan.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedLayanan,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        items: daftarLayanan
+                            .map(
+                              (layanan) => DropdownMenuItem(
+                                value: layanan,
+                                child: Text(layanan),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedLayanan = value;
+                          });
+                        },
+                        hint: const Text('Pilih jenis layanan'),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: const Text(
+                        'Tidak ada layanan tersedia',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  // Deskripsi Layanan (auto-generated)
+                  if (_selectedLayanan != null)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue[100]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Deskripsi Layanan:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.tukangData.bio ?? 
+                                'Layanan $_selectedLayanan oleh ${widget.tukangData.nama}',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   const SizedBox(height: 16),
 
@@ -389,15 +541,14 @@ class _BookingScreenState extends State<BookingScreen> {
                       value: _estimasiDurasi,
                       isExpanded: true,
                       underline: const SizedBox(),
-                      items:
-                          List.generate(12, (index) => index + 1)
-                              .map(
-                                (hour) => DropdownMenuItem(
-                                  value: hour,
-                                  child: Text('$hour jam'),
-                                ),
-                              )
-                              .toList(),
+                      items: List.generate(12, (index) => index + 1)
+                          .map(
+                            (hour) => DropdownMenuItem(
+                              value: hour,
+                              child: Text('$hour jam'),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (value) {
                         setState(() {
                           _estimasiDurasi = value!;
@@ -611,7 +762,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF3B950).withValues(alpha: 0.2),
+                      color: const Color(0xFFF3B950).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -650,19 +801,18 @@ class _BookingScreenState extends State<BookingScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child:
-                          _isLoading
-                              ? const CircularProgressIndicator(
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text(
+                              'Buat Booking',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                              )
-                              : const Text(
-                                'Buat Booking',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
                               ),
+                            ),
                     ),
                   ),
 

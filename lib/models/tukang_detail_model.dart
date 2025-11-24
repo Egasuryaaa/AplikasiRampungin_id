@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:rampungin_id_userside/models/rating_model.dart';
 
@@ -94,31 +93,26 @@ class TukangDetailModel {
       name: 'TukangDetailModel',
     );
 
+    // Extract profil_tukang data
+    final profilTukang = json['profil_tukang'] as Map<String, dynamic>?;
     developer.log(
-      'Tarif fields check - tarif_per_jam: ${json['tarif_per_jam']}, tarif: ${json['tarif']}, hourly_rate: ${json['hourly_rate']}',
+      'Profil Tukang keys: ${profilTukang?.keys.join(', ')}',
       name: 'TukangDetailModel',
     );
 
-    // Parse keahlian array
+    // Parse keahlian array - PERBAIKAN: Handle string dengan koma
     List<String>? keahlian;
-    if (json['keahlian'] != null) {
-      if (json['keahlian'] is List) {
-        keahlian = (json['keahlian'] as List).map((e) => e.toString()).toList();
-      } else if (json['keahlian'] is String) {
-        try {
-          final decoded = jsonDecode(json['keahlian'] as String);
-          if (decoded is List) {
-            keahlian = decoded.map((e) => e.toString()).toList();
-          }
-        } catch (e, stackTrace) {
-          developer.log(
-            'Error parsing keahlian JSON string: $e',
-            name: 'TukangDetailModel',
-            error: e,
-            stackTrace: stackTrace,
-          );
-          keahlian = null;
-        }
+    if (profilTukang?['keahlian'] != null) {
+      if (profilTukang!['keahlian'] is List) {
+        keahlian = (profilTukang['keahlian'] as List).map((e) => e.toString()).toList();
+      } else if (profilTukang['keahlian'] is String) {
+        final keahlianString = profilTukang['keahlian'] as String;
+        // Split by comma and trim each item
+        keahlian = keahlianString.split(',').map((e) => e.trim()).toList();
+        developer.log(
+          'Parsed keahlian from string: $keahlian',
+          name: 'TukangDetailModel',
+        );
       }
     }
 
@@ -126,10 +120,9 @@ class TukangDetailModel {
     List<CategoryInfo>? kategori;
     if (json['kategori'] != null && json['kategori'] is List) {
       try {
-        kategori =
-            (json['kategori'] as List)
-                .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
-                .toList();
+        kategori = (json['kategori'] as List)
+            .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
+            .toList();
         developer.log(
           'Parsed ${kategori.length} kategori items',
           name: 'TukangDetailModel',
@@ -149,10 +142,9 @@ class TukangDetailModel {
     List<RatingModel>? ratings;
     if (json['ratings'] != null && json['ratings'] is List) {
       try {
-        ratings =
-            (json['ratings'] as List)
-                .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
-                .toList();
+        ratings = (json['ratings'] as List)
+            .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
+            .toList();
         developer.log(
           'Parsed ${ratings.length} ratings items',
           name: 'TukangDetailModel',
@@ -190,31 +182,85 @@ class TukangDetailModel {
       }
     }
 
-    // Parse tarif dengan priority
+    // Parse tarif dari profil_tukang - PERBAIKAN: Ambil dari nested object
     double? tarifPerJam;
-    if (json['tarif_per_jam'] != null) {
+    if (profilTukang?['tarif_per_jam'] != null) {
+      tarifPerJam = parseDouble(profilTukang!['tarif_per_jam']);
+      developer.log(
+        'Parsed tarif_per_jam from profil_tukang: $tarifPerJam',
+        name: 'TukangDetailModel',
+      );
+    } else if (json['tarif_per_jam'] != null) {
       tarifPerJam = parseDouble(json['tarif_per_jam']);
       developer.log(
-        'Parsed tarif_per_jam: $tarifPerJam',
+        'Parsed tarif_per_jam from root: $tarifPerJam',
         name: 'TukangDetailModel',
       );
-    } else if (json['tarif'] != null) {
-      tarifPerJam = parseDouble(json['tarif']);
+    }
+
+    // Parse pengalaman tahun dari profil_tukang
+    int? pengalamanTahun;
+    if (profilTukang?['pengalaman_tahun'] != null) {
+      pengalamanTahun = parseInt(profilTukang!['pengalaman_tahun']);
       developer.log(
-        'Parsed tarif (fallback): $tarifPerJam',
+        'Parsed pengalaman_tahun from profil_tukang: $pengalamanTahun',
         name: 'TukangDetailModel',
       );
-    } else if (json['hourly_rate'] != null) {
-      tarifPerJam = parseDouble(json['hourly_rate']);
+    }
+
+    // Parse total pekerjaan selesai dari profil_tukang
+    int? totalPekerjaanSelesai;
+    if (profilTukang?['total_pekerjaan_selesai'] != null) {
+      totalPekerjaanSelesai = parseInt(profilTukang!['total_pekerjaan_selesai']);
       developer.log(
-        'Parsed hourly_rate (fallback): $tarifPerJam',
+        'Parsed total_pekerjaan_selesai from profil_tukang: $totalPekerjaanSelesai',
         name: 'TukangDetailModel',
       );
-    } else {
+    }
+
+    // Parse status ketersediaan dari profil_tukang - PERBAIKAN PENTING
+    String? statusKetersediaan;
+    if (profilTukang?['status_ketersediaan'] != null) {
+      statusKetersediaan = profilTukang!['status_ketersediaan'] as String;
       developer.log(
-        'WARNING: Tarif field not found in API response!',
+        'Parsed status_ketersediaan from profil_tukang: $statusKetersediaan',
         name: 'TukangDetailModel',
       );
+    }
+
+    // Parse bio dari profil_tukang
+    String? bio;
+    if (profilTukang?['bio'] != null) {
+      bio = profilTukang!['bio'] as String;
+      developer.log(
+        'Parsed bio from profil_tukang: $bio',
+        name: 'TukangDetailModel',
+      );
+    }
+
+    // Parse radius layanan dari profil_tukang
+    int? radiusLayananKm;
+    if (profilTukang?['radius_layanan_km'] != null) {
+      radiusLayananKm = parseInt(profilTukang!['radius_layanan_km']);
+      developer.log(
+        'Parsed radius_layanan_km from profil_tukang: $radiusLayananKm',
+        name: 'TukangDetailModel',
+      );
+    }
+
+    // Parse rating stats dari profil_tukang atau root
+    double? rataRataRating;
+    if (profilTukang?['rata_rata_rating'] != null) {
+      rataRataRating = parseDouble(profilTukang!['rata_rata_rating']);
+    } else if (json['rata_rata_rating'] != null) {
+      rataRataRating = parseDouble(json['rata_rata_rating']);
+    }
+
+    int? totalRating;
+    if (profilTukang?['total_rating'] != null) {
+      totalRating = parseInt(profilTukang!['total_rating']);
+    } else if (json['total_rating'] != null) {
+      totalRating = parseInt(json['total_rating']);
     }
 
     return TukangDetailModel(
@@ -227,18 +273,18 @@ class TukangDetailModel {
       alamat: json['alamat'] as String?,
       kota: json['kota'] as String?,
       provinsi: json['provinsi'] as String?,
-      pengalamanTahun: parseInt(json['pengalaman_tahun']),
+      pengalamanTahun: pengalamanTahun,
       tarifPerJam: tarifPerJam,
-      bio: json['bio'] as String?,
+      bio: bio,
       keahlian: keahlian,
-      radiusLayananKm: parseInt(json['radius_layanan_km']),
-      rataRataRating: parseDouble(json['rata_rata_rating']),
-      totalRating: parseInt(json['total_rating']),
-      totalPekerjaanSelesai: parseInt(json['total_pekerjaan_selesai']),
-      statusKetersediaan: json['status_ketersediaan'] as String?,
-      namaBank: json['nama_bank'] as String?,
-      nomorRekening: json['nomor_rekening'] as String?,
-      namaPemilikRekening: json['nama_pemilik_rekening'] as String?,
+      radiusLayananKm: radiusLayananKm,
+      rataRataRating: rataRataRating,
+      totalRating: totalRating,
+      totalPekerjaanSelesai: totalPekerjaanSelesai,
+      statusKetersediaan: statusKetersediaan,
+      namaBank: profilTukang?['nama_bank'] as String?,
+      nomorRekening: profilTukang?['nomor_rekening'] as String?,
+      namaPemilikRekening: profilTukang?['nama_pemilik_rekening'] as String?,
       tanggalBergabung: json['tanggal_bergabung'] as String?,
       kategori: kategori,
       ratings: ratings,
