@@ -123,17 +123,44 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadProfile() async {
-    try {
-      final profile = await _tukangService.getProfileFull();
-      if (mounted && profile.profilTukang != null) {
-        setState(() {
-          _availabilityStatus =
-              profile.profilTukang!.statusKetersediaan ?? 'tersedia';
-        });
-      }
-    } catch (e) {
-      // Silently fail
+Future<void> _loadProfile() async {
+  try {
+    final profile = await _tukangService.getProfileFull();
+    
+    // Convert to map dan cari field yang mengandung 'ketersediaan'
+    final profileMap = profile.toJson();
+    final availabilityKey = profileMap.keys.firstWhere(
+      (key) => key.toString().toLowerCase().contains('ketersediaan'),
+      orElse: () => 'status_ketersediaan'
+    );
+    
+    if (mounted) {
+      setState(() {
+        _availabilityStatus = profileMap[availabilityKey]?.toString() ?? 'tersedia';
+      });
+    }
+  } catch (e) {
+    print('Error loading profile: $e');
+    // Set default value
+    if (mounted) {
+      setState(() {
+        _availabilityStatus = 'tersedia';
+      });
+    }
+  }
+}
+
+  // Fungsi helper untuk SnackBar
+  void _showSnackbar(String message, {bool isError = false}) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Colors.red : Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 
@@ -143,52 +170,25 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
 
     try {
-      await _tukangService.updateAvailability(newStatus);
+      final response = await _tukangService.updateAvailability(newStatus);
 
-      if (mounted) {
-        setState(() {
-          _availabilityStatus = newStatus;
-          _isUpdatingAvailability = false;
-        });
+      if (response['status'] == 'success') {
+        if (mounted) {
+          setState(() {
+            _availabilityStatus = newStatus;
+          });
 
-        String message;
-        Color bgColor;
-
-        switch (newStatus) {
-          case 'tersedia':
-            message = '✅ Status diubah menjadi Tersedia';
-            bgColor = Colors.green;
-            break;
-          case 'sibuk':
-            message = '⏱️ Status diubah menjadi Sibuk';
-            bgColor = Colors.orange;
-            break;
-          case 'offline':
-            message = '⏸️ Status diubah menjadi Offline';
-            bgColor = Colors.grey;
-            break;
-          default:
-            message = '✅ Status berhasil diubah';
-            bgColor = Colors.blue;
+          _showSnackbar('✅ Status berhasil diubah menjadi ${_getAvailabilityText(newStatus)}');
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(message)),
-              ],
-            ),
-            backgroundColor: bgColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      } else {
+        _showSnackbar('❌ Gagal mengubah status: ${response['message']}', isError: true);
       }
     } catch (e) {
+      if (mounted) {
+        _showSnackbar('❌ Terjadi kesalahan saat mengubah status', isError: true);
+      }
+      print('Update availability error: $e');
+    } finally {
       if (mounted) {
         setState(() {
           _isUpdatingAvailability = false;
@@ -206,6 +206,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
+      print('Error loading orders: $e');
       // Silently fail
     }
   }
@@ -232,6 +233,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
+      print('Error loading statistics: $e');
       // Silently fail
     }
   }
@@ -322,6 +324,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     try {
       await _authService.logout();
     } catch (e) {
+      print('Logout error: $e');
       // Ignore
     }
 
@@ -357,7 +360,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Gagal menerima pesanan: $e'),
+            content: Text('❌ Gagal menerima pesanan: ${e.toString()}'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -375,14 +378,27 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: const Text('Tolak Pesanan'),
-        content: TextField(
-          controller: reasonController,
-          decoration: InputDecoration(
-            labelText: 'Alasan Penolakan',
-            hintText: 'Masukkan alasan penolakan...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          maxLines: 3,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: reasonController,
+              decoration: InputDecoration(
+                labelText: 'Alasan Penolakan',
+                hintText: 'Masukkan alasan penolakan...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              maxLines: 3,
+            ),
+            if (reasonController.text.trim().isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Alasan tidak boleh kosong',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+          ],
         ),
         actions: [
           TextButton(
@@ -392,14 +408,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ElevatedButton(
             onPressed: () {
               if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Alasan tidak boleh kosong'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
                 return;
               }
               Navigator.pop(context, true);
@@ -429,7 +437,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           _refreshOrders();
         }
       } catch (e) {
-        // Error handling
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Gagal menolak pesanan: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
     }
   }
@@ -449,7 +466,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         _refreshOrders();
       }
     } catch (e) {
-      // Error handling
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal memulai pekerjaan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -468,7 +494,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         _refreshOrders();
       }
     } catch (e) {
-      // Error handling
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal menyelesaikan pekerjaan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -487,7 +522,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         _refreshOrders();
       }
     } catch (e) {
-      // Error handling
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal mengonfirmasi pembayaran: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -501,40 +545,37 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Color _getAvailabilityColor() {
-    switch (_availabilityStatus) {
+  Color _getAvailabilityColor([String? status]) {
+    final currentStatus = status ?? _availabilityStatus;
+    switch (currentStatus) {
       case 'tersedia':
         return Colors.green;
-      case 'sibuk':
-        return Colors.orange;
-      case 'offline':
-        return Colors.grey;
+      case 'tidak_tersedia':
+        return Colors.red;
       default:
         return Colors.blue;
     }
   }
 
-  IconData _getAvailabilityIcon() {
-    switch (_availabilityStatus) {
+  IconData _getAvailabilityIcon([String? status]) {
+    final currentStatus = status ?? _availabilityStatus;
+    switch (currentStatus) {
       case 'tersedia':
         return Icons.check_circle;
-      case 'sibuk':
-        return Icons.access_time;
-      case 'offline':
-        return Icons.pause_circle;
+      case 'tidak_tersedia':
+        return Icons.cancel;
       default:
         return Icons.help_outline;
     }
   }
 
-  String _getAvailabilityText() {
-    switch (_availabilityStatus) {
+  String _getAvailabilityText([String? status]) {
+    final currentStatus = status ?? _availabilityStatus;
+    switch (currentStatus) {
       case 'tersedia':
         return 'Tersedia';
-      case 'sibuk':
-        return 'Sibuk';
-      case 'offline':
-        return 'Offline';
+      case 'tidak_tersedia':
+        return 'Tidak Tersedia';
       default:
         return 'Unknown';
     }
@@ -580,12 +621,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 12),
             _buildAvailabilityOption(
-              'offline',
-              'Offline',
-              Icons.pause_circle,
-              Colors.grey,
+              'tidak_tersedia',
+              'Tidak Tersedia',
+              Icons.cancel,
+              Colors.red,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -1077,18 +1118,28 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: _getAvailabilityColor(),
-                                              shape: BoxShape.circle,
+                                          if (_isUpdatingAvailability)
+                                            SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: _getAvailabilityColor(),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                _getAvailabilityIcon(),
+                                                color: Colors.white,
+                                                size: 14,
+                                              ),
                                             ),
-                                            child: Icon(
-                                              _getAvailabilityIcon(),
-                                              color: Colors.white,
-                                              size: 14,
-                                            ),
-                                          ),
                                           const SizedBox(width: 8),
                                           Text(
                                             _getAvailabilityText(),

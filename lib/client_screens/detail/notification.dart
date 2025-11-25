@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:rampungin_id_userside/core/api_config.dart';
+import 'package:rampungin_id_userside/core/api_client.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:developer';
+
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -14,17 +20,46 @@ class _NotificationScreenState extends State<NotificationScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  //Data ini akan diambil dari database
-  List<Map<String, dynamic>> _newOrders = [];
+  final ApiClient _apiClient = ApiClient(); // Use ApiClient instance
+
+  List<Map<String, dynamic>> _notifications = [];
   int _unreadCount = 0;
+  Set<String> _readNotifications = {};
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
-    //Panggil fungsi untuk fetch data dari database
-    _loadNewOrders();
+    _loadReadNotifications();
+    _loadNotifications();
+  }
+
+  /// Load read notification IDs from SharedPreferences
+  Future<void> _loadReadNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final readList = prefs.getStringList('read_notifications') ?? [];
+      setState(() {
+        _readNotifications = readList.toSet();
+      });
+      log('📖 Loaded ${_readNotifications.length} read notifications');
+    } catch (e) {
+      log('⚠️ Failed to load read notifications: $e');
+    }
+  }
+
+  /// Save read notification IDs to SharedPreferences
+  Future<void> _saveReadNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('read_notifications', _readNotifications.toList());
+      log('💾 Saved ${_readNotifications.length} read notifications');
+    } catch (e) {
+      log('⚠️ Failed to save read notifications: $e');
+    }
   }
 
   void _initializeAnimations() {
@@ -58,132 +93,604 @@ class _NotificationScreenState extends State<NotificationScreen>
     _slideController.forward();
   }
 
-  //Ganti dengan fungsi yang mengambil data dari database
-  Future<void> _loadNewOrders() async {
-    // Simulasi fetch dari database
-    // Ganti dengan: await DatabaseService.getNewOrders();
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Check authentication first
+      final isAuth = await _apiClient.isAuthenticated();
+      log('🔐 Is Authenticated: $isAuth');
+
+      if (!isAuth) {
+        _handleUnauthenticated('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      // Get token for debugging
+      final token = await _apiClient.getToken();
+      log('🎫 Token exists: ${token != null}');
+      if (token != null) {
+        log('🎫 Token length: ${token.length}');
+        log('🎫 Token preview: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+      }
+
+      // Make API request using ApiClient
+      log('📡 Making GET request to: /api/client/notification');
+      log('📡 Full URL: ${ApiConfig.getFullUrl('/api/client/notification')}');
+      
+      final response = await _apiClient.get(
+        '/api/client/notification',
+        requiresAuth: true,
+      );
+
+      log('✅ Response status: ${response.statusCode}');
+      log('📦 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        if (jsonResponse['status'] == 'success') {
+          final List<dynamic> data = jsonResponse['data'] ?? [];
+
+          log('📋 Received ${data.length} notifications');
+
+          setState(() {
+            _notifications = data.map((notif) {
+              // Generate unique ID for each notification
+              final notifId = _generateNotificationId(notif);
+              final isRead = _readNotifications.contains(notifId);
+              
+              return {
+                'id': notifId,
+                'type': notif['type'] ?? 'general',
+                'title': notif['title'] ?? 'Notifikasi',
+                'message': notif['message'] ?? '',
+                'timestamp': notif['timestamp'] ?? DateTime.now().toIso8601String(),
+                'data': notif['data'] ?? {},
+                'isRead': isRead,
+              };
+            }).toList();
+
+            _unreadCount = _notifications.where((n) => !n['isRead']).length;
+            _isLoading = false;
+          });
+
+          log('✅ Notifications loaded successfully');
+        } else {
+          throw Exception(
+            jsonResponse['message'] ?? 'Gagal mengambil notifikasi',
+          );
+        }
+      } else if (response.statusCode == 401) {
+        log('🚫 Unauthorized - Token expired or invalid');
+        _handleUnauthenticated('Sesi Anda telah berakhir. Silakan login kembali.');
+      } else {
+        throw Exception(
+          'Gagal mengambil notifikasi. Status: ${response.statusCode}\nResponse: ${response.body}',
+        );
+      }
+    } catch (e, stackTrace) {
+      log('❌ Error loading notifications: $e');
+      log('📍 Stack trace: $stackTrace');
+      
+      if (mounted) {
+        setState(() {
+          _errorMessage = _getUserFriendlyError(e.toString());
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Handle unauthenticated state
+  void _handleUnauthenticated(String message) {
+    if (!mounted) return;
 
     setState(() {
-      // Contoh data - akan diganti dengan data dari database
-      _newOrders = [
-        // {
-        //   'orderId': 'ORD001',
-        //   'customerName': 'Budi Santoso',
-        //   'serviceType': 'Perbaikan AC',
-        //   'location': 'Jl. Malioboro No. 45, Yogyakarta',
-        //   'price': 'Rp 150.000',
-        //   'time': '5 menit yang lalu',
-        //   'isRead': false,
-        //   'description': 'AC tidak dingin, perlu dibersihkan',
-        // },
-      ];
+      _isLoading = false;
+      _errorMessage = message;
+    });
 
-      _unreadCount = _newOrders.where((order) => !order['isRead']).length;
+    // Show dialog and redirect to login
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange, size: 28),
+              SizedBox(width: 12),
+              Expanded(child: Text('Sesi Berakhir')),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                // Clear token
+                await _apiClient.removeToken();
+                
+                if (!mounted) return;
+                
+                // Close dialog and navigate to login
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF3B950),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Login Kembali'),
+            ),
+          ],
+        ),
+      );
     });
   }
 
-  void _markAsRead(int index) {
-    setState(() {
-      _newOrders[index]['isRead'] = true;
-      _unreadCount = _newOrders.where((order) => !order['isRead']).length;
-    });
+  /// Convert technical error to user-friendly message
+  String _getUserFriendlyError(String error) {
+    if (error.contains('SocketException') || error.contains('Failed host lookup')) {
+      return 'Tidak dapat terhubung ke server.\nPeriksa koneksi internet Anda.';
+    } else if (error.contains('TimeoutException')) {
+      return 'Koneksi timeout.\nSilakan coba lagi.';
+    } else if (error.contains('401')) {
+      return 'Sesi Anda telah berakhir.\nSilakan login kembali.';
+    } else if (error.contains('404')) {
+      return 'Endpoint tidak ditemukan.\nHubungi administrator.';
+    } else if (error.contains('500')) {
+      return 'Terjadi kesalahan server.\nSilakan coba lagi nanti.';
+    }
+    return error;
+  }
 
-    //Update status di database
-    // await DatabaseService.markOrderAsRead(_newOrders[index]['orderId']);
+  /// Generate unique ID for notification
+  String _generateNotificationId(Map<String, dynamic> notif) {
+    final type = notif['type'] ?? 'general';
+    final timestamp = notif['timestamp'] ?? '';
+    final data = notif['data'] ?? {};
+    
+    // Create unique ID based on type and data
+    if (type == 'transaksi') {
+      return 'transaksi_${data['transaksi_id']}_${data['status']}';
+    } else if (type == 'topup') {
+      return 'topup_${data['topup_id']}_${data['status']}';
+    } else {
+      return '${type}_${timestamp}';
+    }
+  }
+
+  void _markAsRead(int index) {
+    final notifId = _notifications[index]['id'] as String;
+    
+    setState(() {
+      _notifications[index]['isRead'] = true;
+      _readNotifications.add(notifId);
+      _unreadCount = _notifications.where((n) => !n['isRead']).length;
+    });
+    
+    // Save to persistent storage
+    _saveReadNotifications();
   }
 
   void _markAllAsRead() {
     setState(() {
-      for (var order in _newOrders) {
-        order['isRead'] = true;
+      for (var notif in _notifications) {
+        notif['isRead'] = true;
+        _readNotifications.add(notif['id'] as String);
       }
       _unreadCount = 0;
     });
-
-    //Update semua status di database
-    //await DatabaseService.markAllOrdersAsRead();
+    
+    // Save to persistent storage
+    _saveReadNotifications();
   }
 
-  void _acceptOrder(Map<String, dynamic> order) {
-    //Implementasi logika menerima orderan
+  void _handleNotificationAction(Map<String, dynamic> notification) {
+    final type = notification['type'];
+
+    switch (type) {
+      case 'transaksi':
+        _showTransactionDialog(notification);
+        break;
+      case 'topup':
+        _showTopupDialog(notification);
+        break;
+      default:
+        _showGenericDialog(notification);
+    }
+  }
+
+  void _showTransactionDialog(Map<String, dynamic> notification) {
+    final data = notification['data'] ?? {};
+
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              _getStatusIcon(data['status']?.toString() ?? ''),
+              color: _getStatusColor(data['status']?.toString() ?? ''),
+              size: 28,
             ),
-            title: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 28),
-                SizedBox(width: 12),
-                Text('Terima Orderan?'),
-              ],
-            ),
-            content: Text(
-              'Apakah Anda yakin ingin menerima orderan dari ${order['customerName']}?',
-              style: const TextStyle(fontSize: 15),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Batal',
-                  style: TextStyle(color: Colors.grey),
-                ),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Detail Transaksi')),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                notification['message'] ?? '',
+                style: const TextStyle(fontSize: 15),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  //Kirim konfirmasi ke database
-                  // await DatabaseService.acceptOrder(order['orderId']);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Orderan berhasil diterima!'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Terima'),
+              const SizedBox(height: 16),
+              _buildDialogDetailRow(
+                'Nomor Pesanan',
+                data['nomor_pesanan']?.toString() ?? '-',
+              ),
+              _buildDialogDetailRow(
+                'Tukang',
+                data['tukang_nama']?.toString() ?? '-',
+              ),
+              _buildDialogDetailRow(
+                'Status',
+                _formatStatus(data['status']?.toString() ?? ''),
+                isHighlight: true,
               ),
             ],
           ),
+        ),
+        actions: [
+          if (data['status']?.toString().toLowerCase() == 'selesai') ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Nanti',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                // TODO: Navigate to rating page
+                // Navigator.push(context, MaterialPageRoute(...));
+              },
+              icon: const Icon(Icons.star, size: 18),
+              label: const Text('Beri Rating'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF3B950),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ] else ...[
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF3B950),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
+  void _showTopupDialog(Map<String, dynamic> notification) {
+    final data = notification['data'] ?? {};
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              data['status']?.toString().toLowerCase() == 'berhasil'
+                  ? Icons.check_circle
+                  : data['status']?.toString().toLowerCase() == 'ditolak'
+                      ? Icons.cancel
+                      : Icons.info,
+              color: data['status']?.toString().toLowerCase() == 'berhasil'
+                  ? Colors.green
+                  : data['status']?.toString().toLowerCase() == 'ditolak'
+                      ? Colors.red
+                      : Colors.orange,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Info Top-up')),
+          ],
+        ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              notification['message'] ?? '',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            _buildDialogDetailRow(
+              'Jumlah Top-up',
+              'Rp ${_formatCurrency(data['jumlah'] ?? 0)}',
+              isHighlight: true,
+            ),
+            _buildDialogDetailRow(
+              'Status',
+              _formatStatus(data['status']?.toString() ?? ''),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3B950),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildOrderNotificationCard(Map<String, dynamic> order, int index) {
-    bool isRead = order['isRead'] ?? false;
+  void _showGenericDialog(Map<String, dynamic> notification) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(notification['title'] ?? 'Notifikasi'),
+        content: Text(notification['message'] ?? ''),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3B950),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogDetailRow(
+    String label,
+    String value, {
+    bool isHighlight = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Text(': ', style: TextStyle(fontSize: 13)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+                color: isHighlight ? const Color(0xFFF3B950) : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCurrency(dynamic amount) {
+    final number = amount is String ? int.tryParse(amount) ?? 0 : (amount ?? 0);
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 1) {
+        return 'Baru saja';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} menit yang lalu';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} jam yang lalu';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} hari yang lalu';
+      } else {
+        return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+      }
+    } catch (e) {
+      return timestamp;
+    }
+  }
+
+  String _formatStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        return 'Selesai';
+      case 'ditolak':
+        return 'Ditolak';
+      case 'dibatalkan':
+        return 'Dibatalkan';
+      case 'berhasil':
+        return 'Berhasil';
+      case 'pending':
+        return 'Menunggu';
+      default:
+        return status;
+    }
+  }
+
+  IconData _getNotificationIcon(String type) {
+    switch (type) {
+      case 'transaksi':
+        return Icons.receipt_long;
+      case 'topup':
+        return Icons.account_balance_wallet;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _getNotificationColor(String type) {
+    switch (type) {
+      case 'transaksi':
+        return const Color(0xFFF3B950);
+      case 'topup':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Get notification card color based on type and status
+  Color _getNotificationCardColor(Map<String, dynamic> notification) {
+    final type = notification['type'] ?? 'general';
+    log('Notification type: $type');
+    final data = notification['data'] ?? {};
+    final status = data['status']?.toString().toLowerCase() ?? '';
+    
+    // Check if it's a rejected/cancelled notification
+    if (status == 'ditolak' || status == 'dibatalkan') {
+      return const Color(0xFFFFE6E6); // Light red background
+    }
+    
+    // Check if already read
+    final isRead = notification['isRead'] ?? false;
+    if (isRead) {
+      return Colors.white;
+    }
+    
+    // Unread notifications - yellow background
+    return const Color(0xFFFFF9E6);
+  }
+
+  /// Get notification border color based on type and status
+  Color _getNotificationBorderColor(Map<String, dynamic> notification) {
+    final data = notification['data'] ?? {};
+    final status = data['status']?.toString().toLowerCase() ?? '';
+    final isRead = notification['isRead'] ?? false;
+    
+    // Check if it's a rejected/cancelled notification
+    if (status == 'ditolak' || status == 'dibatalkan') {
+      return Colors.red.withOpacity(0.5);
+    }
+    
+    // Normal border colors
+    if (isRead) {
+      return Colors.grey.withOpacity(0.2);
+    }
+    
+    return const Color(0xFFF3B950).withOpacity(0.5);
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+      case 'berhasil':
+        return Icons.check_circle;
+      case 'ditolak':
+      case 'dibatalkan':
+        return Icons.cancel;
+      case 'pending':
+        return Icons.access_time;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+      case 'berhasil':
+        return Colors.green;
+      case 'ditolak':
+      case 'dibatalkan':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> notification, int index) {
+    bool isRead = notification['isRead'] ?? false;
+    final type = notification['type'] ?? 'general';
+    final data = notification['data'] ?? {};
+    final status = data['status']?.toString().toLowerCase() ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: isRead ? Colors.white : const Color(0xFFFFF9E6),
+        color: _getNotificationCardColor(notification),
         border: Border.all(
-          color:
-              isRead
-                  ? Colors.grey.withValues(alpha: 0.2)
-                  : const Color(0xFFF3B950).withValues(alpha: 0.5),
+          color: _getNotificationBorderColor(notification),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withOpacity(0.08),
             offset: const Offset(0, 4),
             blurRadius: 12,
             spreadRadius: 1,
@@ -194,35 +701,33 @@ class _NotificationScreenState extends State<NotificationScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () => _markAsRead(index),
+          onTap: () {
+            _markAsRead(index);
+            _handleNotificationAction(notification);
+          },
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header: Icon + Title + Badge
                 Row(
                   children: [
                     Container(
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
-                        ),
+                        color: _getNotificationColor(type),
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFFF3B950,
-                            ).withValues(alpha: 0.3),
+                            color: _getNotificationColor(type).withOpacity(0.3),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.work_outline,
+                      child: Icon(
+                        _getNotificationIcon(type),
                         color: Colors.white,
                         size: 26,
                       ),
@@ -234,15 +739,16 @@ class _NotificationScreenState extends State<NotificationScreen>
                         children: [
                           Row(
                             children: [
-                              const Text(
-                                'Orderan Baru',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                              Expanded(
+                                child: Text(
+                                  notification['title'] ?? 'Notifikasi',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               if (!isRead)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -250,7 +756,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF3B950),
+                                    color: (status == 'ditolak' || status == 'dibatalkan') 
+                                        ? Colors.red 
+                                        : const Color(0xFFF3B950),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Text(
@@ -264,9 +772,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
-                            order['time'] ?? '',
+                            _formatTimestamp(notification['timestamp'] ?? ''),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -277,171 +785,20 @@ class _NotificationScreenState extends State<NotificationScreen>
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-
-                // Divider
-                Divider(color: Colors.grey.shade300, height: 1),
-
-                const SizedBox(height: 16),
-
-                // Order Details
-                _buildDetailRow(
-                  Icons.person_outline,
-                  'Pelanggan',
-                  order['customerName'] ?? '',
-                ),
                 const SizedBox(height: 12),
-
-                _buildDetailRow(
-                  Icons.build_outlined,
-                  'Jenis Layanan',
-                  order['serviceType'] ?? '',
-                ),
-                const SizedBox(height: 12),
-
-                _buildDetailRow(
-                  Icons.location_on_outlined,
-                  'Lokasi',
-                  order['location'] ?? '',
-                ),
-                const SizedBox(height: 12),
-
-                _buildDetailRow(
-                  Icons.payments_outlined,
-                  'Harga',
-                  order['price'] ?? '',
-                  valueColor: Colors.green.shade700,
-                ),
-
-                if (order['description'] != null &&
-                    order['description'].isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildDetailRow(
-                    Icons.description_outlined,
-                    'Keterangan',
-                    order['description'],
+                Text(
+                  notification['message'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    height: 1.4,
                   ),
-                ],
-
-                const SizedBox(height: 20),
-
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          //Implementasi tolak orderan
-                          showDialog(
-                            context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  title: const Text('Tolak Orderan?'),
-                                  content: const Text(
-                                    'Orderan ini akan ditawarkan ke tukang lain.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Batal'),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        setState(() {
-                                          _newOrders.removeAt(index);
-                                          _unreadCount =
-                                              _newOrders
-                                                  .where((o) => !o['isRead'])
-                                                  .length;
-                                        });
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                      ),
-                                      child: const Text('Tolak'),
-                                    ),
-                                  ],
-                                ),
-                          );
-                        },
-                        icon: const Icon(Icons.close, size: 20),
-                        label: const Text('Tolak'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _acceptOrder(order),
-                        icon: const Icon(Icons.check, size: 20),
-                        label: const Text('Terima Orderan'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDetailRow(
-    IconData icon,
-    String label,
-    String value, {
-    Color? valueColor,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor ?? Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -454,7 +811,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: const Color(0xFFF3B950).withValues(alpha: 0.1),
+              color: const Color(0xFFF3B950).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -465,7 +822,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
           const SizedBox(height: 24),
           const Text(
-            'Belum Ada Orderan',
+            'Belum Ada Notifikasi',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -474,12 +831,58 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Orderan baru akan muncul di sini',
+            'Notifikasi akan muncul di sini',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 80, color: Colors.red),
+          const SizedBox(height: 16),
+          const Text(
+            'Terjadi Kesalahan',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              _errorMessage ?? 'Gagal memuat notifikasi',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _loadNotifications,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Coba Lagi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3B950),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _slideController.dispose();
+    super.dispose();
   }
 
   @override
@@ -524,7 +927,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
+                                color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -536,7 +939,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                           ),
                           const Expanded(
                             child: Text(
-                              'Orderan Baru',
+                              'Notifikasi',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -554,7 +957,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Text(
@@ -580,22 +983,22 @@ class _NotificationScreenState extends State<NotificationScreen>
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: Colors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(
-                              Icons.work_outline,
+                              Icons.notifications_active,
                               color: Colors.white,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               _unreadCount > 0
-                                  ? '$_unreadCount orderan baru'
-                                  : 'Tidak ada orderan baru',
+                                  ? '$_unreadCount notifikasi baru'
+                                  : 'Tidak ada notifikasi baru',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -612,31 +1015,38 @@ class _NotificationScreenState extends State<NotificationScreen>
             ),
           ),
 
-          // Orders List
+          // Notifications List
           Expanded(
-            child:
-                _newOrders.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                      onRefresh: _loadNewOrders,
-                      color: const Color(0xFFF3B950),
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(20),
-                            itemCount: _newOrders.length,
-                            itemBuilder: (context, index) {
-                              return _buildOrderNotificationCard(
-                                _newOrders[index],
-                                index,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFF3B950),
                     ),
+                  )
+                : _errorMessage != null
+                    ? _buildErrorState()
+                    : _notifications.isEmpty
+                        ? _buildEmptyState()
+                        : RefreshIndicator(
+                            onRefresh: _loadNotifications,
+                            color: const Color(0xFFF3B950),
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.all(20),
+                                  itemCount: _notifications.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildNotificationCard(
+                                      _notifications[index],
+                                      index,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
           ),
         ],
       ),
