@@ -178,7 +178,9 @@ class _BookingScreenState extends State<BookingScreen> {
       debugPrint(
         'DEBUG - widget.tukangData.userId: ${widget.tukangData.userId}',
       );
-      debugPrint('DEBUG - widget.tukangData.id (profil_tukang.id): ${widget.tukangData.id}');
+      debugPrint(
+        'DEBUG - widget.tukangData.id (profil_tukang.id): ${widget.tukangData.id}',
+      );
       debugPrint(
         'DEBUG - Will send to API (tukang_id field): ${widget.tukangData.userId}',
       );

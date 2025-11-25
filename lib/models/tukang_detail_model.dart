@@ -276,9 +276,10 @@ class TukangDetailModel {
     final parsedTukangId = parseInt(json['tukang_id']);
     final parsedId = parseInt(json['id']);
     // userId ada di profil_tukang.user_id atau di root json['id'] (yang merupakan users.id)
-    final parsedUserId = profilTukang != null 
-        ? parseInt(profilTukang['user_id']) 
-        : parseInt(json['id']);
+    final parsedUserId =
+        profilTukang != null
+            ? parseInt(profilTukang['user_id'])
+            : parseInt(json['id']);
 
     developer.log(
       'Parsing TukangDetailModel - profil_tukang.id: $profilTukangId, root id (users.id): $parsedId, profil_tukang.user_id: $parsedUserId',

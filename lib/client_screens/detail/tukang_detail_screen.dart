@@ -907,7 +907,9 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
       final userModel = UserModel(
         id: _tukangData!.id, // Ini adalah tukang_id dari API
         tukangId: _tukangData!.id, // Pastikan tukangId juga di-set
-        userId: _tukangData!.userId, // ✅ user_id untuk booking (referensi ke tabel users)
+        userId:
+            _tukangData!
+                .userId, // ✅ user_id untuk booking (referensi ke tabel users)
         nama: _tukangData!.namaLengkap,
         email: _tukangData!.email,
         noHp: _tukangData!.noTelp,
