@@ -917,6 +917,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
         alamat: _tukangData!.alamat,
         idKategori: kategoriId,
         namaKategori: kategoriNama,
+        kategoriList: _tukangData!.kategori?.map((k) => {'id': k.id, 'nama': k.nama}).toList(),
         rating: _tukangData!.rataRataRating,
         jumlahPesanan: _tukangData!.totalPekerjaanSelesai,
         tarifPerJam: _tukangData!.tarifPerJam,
