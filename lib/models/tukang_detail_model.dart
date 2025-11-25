@@ -275,16 +275,19 @@ class TukangDetailModel {
         profilTukang != null ? parseInt(profilTukang['id']) : null;
     final parsedTukangId = parseInt(json['tukang_id']);
     final parsedId = parseInt(json['id']);
-    final parsedUserId = parseInt(json['user_id']);
+    // userId ada di profil_tukang.user_id atau di root json['id'] (yang merupakan users.id)
+    final parsedUserId = profilTukang != null 
+        ? parseInt(profilTukang['user_id']) 
+        : parseInt(json['id']);
 
     developer.log(
-      'Parsing TukangDetailModel - profil_tukang.id: $profilTukangId, tukang_id: $parsedTukangId, id: $parsedId, user_id: $parsedUserId',
+      'Parsing TukangDetailModel - profil_tukang.id: $profilTukangId, root id (users.id): $parsedId, profil_tukang.user_id: $parsedUserId',
       name: 'TukangDetailModel',
     );
 
     return TukangDetailModel(
       id: profilTukangId ?? parsedTukangId ?? parsedId,
-      userId: parsedUserId,
+      userId: parsedUserId, // userId untuk booking (users.id)
       namaLengkap: json['nama_lengkap'] as String?,
       email: json['email'] as String?,
       noTelp: json['no_telp'] as String?,

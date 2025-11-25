@@ -877,7 +877,11 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
         name: 'TukangDetailScreen',
       );
       developer.log(
-        'TukangDetailModel - id: ${_tukangData!.id}, userId: ${_tukangData!.userId}',
+        'TukangDetailModel - profil_tukang.id: ${_tukangData!.id}, user_id: ${_tukangData!.userId}',
+        name: 'TukangDetailScreen',
+      );
+      developer.log(
+        'Will send to booking - userId (for tukang_id): ${_tukangData!.userId}',
         name: 'TukangDetailScreen',
       );
 
@@ -903,6 +907,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
       final userModel = UserModel(
         id: _tukangData!.id, // Ini adalah tukang_id dari API
         tukangId: _tukangData!.id, // Pastikan tukangId juga di-set
+        userId: _tukangData!.userId, // ✅ user_id untuk booking (referensi ke tabel users)
         nama: _tukangData!.namaLengkap,
         email: _tukangData!.email,
         noHp: _tukangData!.noTelp,

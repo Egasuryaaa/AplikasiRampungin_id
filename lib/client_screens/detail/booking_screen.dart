@@ -172,19 +172,19 @@ class _BookingScreenState extends State<BookingScreen> {
           'Layanan $layananName oleh ${widget.tukangData.nama}';
 
       debugPrint(
-        'Creating booking with tukangId: ${widget.tukangData.tukangId ?? widget.tukangData.id}, '
+        'Creating booking with userId (as tukangId): ${widget.tukangData.userId}, '
         'kategoriId: ${widget.tukangData.idKategori}',
       );
       debugPrint(
-        'DEBUG - widget.tukangData.tukangId: ${widget.tukangData.tukangId}',
+        'DEBUG - widget.tukangData.userId: ${widget.tukangData.userId}',
       );
-      debugPrint('DEBUG - widget.tukangData.id: ${widget.tukangData.id}');
+      debugPrint('DEBUG - widget.tukangData.id (profil_tukang.id): ${widget.tukangData.id}');
       debugPrint(
-        'DEBUG - Will send to API: ${widget.tukangData.tukangId ?? widget.tukangData.id}',
+        'DEBUG - Will send to API (tukang_id field): ${widget.tukangData.userId}',
       );
 
       final transaction = await _clientService.createBooking(
-        tukangId: widget.tukangData.tukangId ?? widget.tukangData.id!,
+        tukangId: widget.tukangData.userId!,
         kategoriId: widget.tukangData.idKategori ?? 1,
         judulLayanan: judulLayanan,
         deskripsiLayanan: deskripsiLayanan,

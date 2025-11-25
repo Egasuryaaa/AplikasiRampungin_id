@@ -10,6 +10,7 @@ class UserModel {
   final String? ktpPhoto;
   final String? fotoProfil;
   final int? tukangId;
+  final int? userId; // user_id dari tabel users untuk referensi booking
   final int? idKategori;
   final String? namaKategori;
   final List<Map<String, dynamic>>?
@@ -42,6 +43,7 @@ class UserModel {
     this.jenisAkun,
     this.fotoProfile,
     this.ktpPhoto,
+    this.userId,
     this.idKategori,
     this.namaKategori,
     this.kategoriList,
