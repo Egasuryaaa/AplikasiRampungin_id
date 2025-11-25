@@ -104,7 +104,10 @@ class TukangDetailModel {
     List<String>? keahlian;
     if (profilTukang?['keahlian'] != null) {
       if (profilTukang!['keahlian'] is List) {
-        keahlian = (profilTukang['keahlian'] as List).map((e) => e.toString()).toList();
+        keahlian =
+            (profilTukang['keahlian'] as List)
+                .map((e) => e.toString())
+                .toList();
       } else if (profilTukang['keahlian'] is String) {
         final keahlianString = profilTukang['keahlian'] as String;
         // Split by comma and trim each item
@@ -120,9 +123,10 @@ class TukangDetailModel {
     List<CategoryInfo>? kategori;
     if (json['kategori'] != null && json['kategori'] is List) {
       try {
-        kategori = (json['kategori'] as List)
-            .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
-            .toList();
+        kategori =
+            (json['kategori'] as List)
+                .map((e) => CategoryInfo.fromJson(e as Map<String, dynamic>))
+                .toList();
         developer.log(
           'Parsed ${kategori.length} kategori items',
           name: 'TukangDetailModel',
@@ -142,9 +146,10 @@ class TukangDetailModel {
     List<RatingModel>? ratings;
     if (json['ratings'] != null && json['ratings'] is List) {
       try {
-        ratings = (json['ratings'] as List)
-            .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+        ratings =
+            (json['ratings'] as List)
+                .map((e) => RatingModel.fromJson(e as Map<String, dynamic>))
+                .toList();
         developer.log(
           'Parsed ${ratings.length} ratings items',
           name: 'TukangDetailModel',
@@ -211,7 +216,9 @@ class TukangDetailModel {
     // Parse total pekerjaan selesai dari profil_tukang
     int? totalPekerjaanSelesai;
     if (profilTukang?['total_pekerjaan_selesai'] != null) {
-      totalPekerjaanSelesai = parseInt(profilTukang!['total_pekerjaan_selesai']);
+      totalPekerjaanSelesai = parseInt(
+        profilTukang!['total_pekerjaan_selesai'],
+      );
       developer.log(
         'Parsed total_pekerjaan_selesai from profil_tukang: $totalPekerjaanSelesai',
         name: 'TukangDetailModel',
@@ -263,9 +270,21 @@ class TukangDetailModel {
       totalRating = parseInt(json['total_rating']);
     }
 
+    // Parse ID yang benar dari profil_tukang, bukan dari root
+    final profilTukangId =
+        profilTukang != null ? parseInt(profilTukang['id']) : null;
+    final parsedTukangId = parseInt(json['tukang_id']);
+    final parsedId = parseInt(json['id']);
+    final parsedUserId = parseInt(json['user_id']);
+
+    developer.log(
+      'Parsing TukangDetailModel - profil_tukang.id: $profilTukangId, tukang_id: $parsedTukangId, id: $parsedId, user_id: $parsedUserId',
+      name: 'TukangDetailModel',
+    );
+
     return TukangDetailModel(
-      id: parseInt(json['id']),
-      userId: parseInt(json['user_id']),
+      id: profilTukangId ?? parsedTukangId ?? parsedId,
+      userId: parsedUserId,
       namaLengkap: json['nama_lengkap'] as String?,
       email: json['email'] as String?,
       noTelp: json['no_telp'] as String?,

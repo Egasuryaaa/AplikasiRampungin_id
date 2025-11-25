@@ -295,6 +295,12 @@ class ClientService {
         if (catatanClient != null) 'catatan_client': catatanClient,
       };
 
+      developer.log(
+        'Sending booking request - tukang_id: $tukangId, kategori_id: $kategoriId',
+        name: 'ClientService',
+      );
+      developer.log('Full booking body: $body', name: 'ClientService');
+
       final response = await _client.post(ApiConfig.clientBooking, body: body);
 
       final data = _client.parseResponse(response);

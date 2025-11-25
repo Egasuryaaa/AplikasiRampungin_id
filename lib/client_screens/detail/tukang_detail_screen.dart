@@ -110,44 +110,45 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
   }
 
   // Helper method to get photo URL
-String? _getPhotoUrl(String? fotoPath) {
-  if (fotoPath == null || fotoPath.isEmpty) return null;
+  String? _getPhotoUrl(String? fotoPath) {
+    if (fotoPath == null || fotoPath.isEmpty) return null;
 
-  // Jika sudah full URL, langsung return
-  if (fotoPath.startsWith('http://') || fotoPath.startsWith('https://')) {
-    return fotoPath;
-  }
+    // Jika sudah full URL, langsung return
+    if (fotoPath.startsWith('http://') || fotoPath.startsWith('https://')) {
+      return fotoPath;
+    }
 
-  // Handle path dari API
-  if (fotoPath.startsWith('profiles/')) {
-    // Format: profiles/foto_profil-xxx.png -> /uploads/profiles/foto_profil-xxx.png
-    return '$url/uploads/$fotoPath';
-  } else if (fotoPath.startsWith('/uploads/')) {
-    // Format: /uploads/profiles/xxx -> full URL
-    final cleanPath = fotoPath.startsWith('/uploads') ? fotoPath.substring(1) : fotoPath;
-    return '$url/$cleanPath';
-  } else {
-    // Default case
-    return '$url/uploads/$fotoPath';
+    // Handle path dari API
+    if (fotoPath.startsWith('profiles/')) {
+      // Format: profiles/foto_profil-xxx.png -> /uploads/profiles/foto_profil-xxx.png
+      return '$url/uploads/$fotoPath';
+    } else if (fotoPath.startsWith('/uploads/')) {
+      // Format: /uploads/profiles/xxx -> full URL
+      final cleanPath =
+          fotoPath.startsWith('/uploads') ? fotoPath.substring(1) : fotoPath;
+      return '$url/$cleanPath';
+    } else {
+      // Default case
+      return '$url/uploads/$fotoPath';
+    }
   }
-}
 
   // Format currency untuk tarif
   String _formatCurrency(double? amount) {
     if (amount == null) return 'Hubungi untuk harga';
-    
+
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
   // Helper untuk parse keahlian dari string ke list
   List<String> _parseKeahlian(List<String>? keahlianList) {
     if (keahlianList == null || keahlianList.isEmpty) return [];
-    
+
     // Jika ada string dengan koma, split menjadi list
     if (keahlianList.length == 1 && keahlianList.first.contains(',')) {
       return keahlianList.first.split(',').map((e) => e.trim()).toList();
     }
-    
+
     return keahlianList;
   }
 
@@ -241,10 +242,11 @@ String? _getPhotoUrl(String? fotoPath) {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
+                              value:
+                                  loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
                               color: Colors.white,
                             ),
                           );
@@ -252,7 +254,7 @@ String? _getPhotoUrl(String? fotoPath) {
                       )
                     else
                       _buildDefaultHeader(),
-                    
+
                     // Gradient overlay
                     Container(
                       decoration: BoxDecoration(
@@ -279,17 +281,17 @@ String? _getPhotoUrl(String? fotoPath) {
               children: [
                 // Informasi utama (nama, kategori, status, rating, tarif)
                 _buildMainInfoSection(),
-                
+
                 const SizedBox(height: 8),
 
                 // Informasi kontak
                 _buildContactInfoSection(),
-                
+
                 const SizedBox(height: 8),
 
                 // Pengalaman dan statistik
                 _buildExperienceSection(),
-                
+
                 const SizedBox(height: 8),
 
                 // Bio (jika ada)
@@ -349,48 +351,51 @@ String? _getPhotoUrl(String? fotoPath) {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Kategori
-                    if (_tukangData!.kategori != null && _tukangData!.kategori!.isNotEmpty)
+                    if (_tukangData!.kategori != null &&
+                        _tukangData!.kategori!.isNotEmpty)
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: _tukangData!.kategori!.map((kategori) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3B950).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: const Color(0xFFF3B950).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Text(
-                              kategori.nama ?? 'Kategori',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF8B6914),
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            _tukangData!.kategori!.map((kategori) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFF3B950,
+                                  ).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFFF3B950,
+                                    ).withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Text(
+                                  kategori.nama ?? 'Kategori',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF8B6914),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       )
                     else
                       Text(
                         'Kategori tidak tersedia',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                   ],
                 ),
               ),
-              
+
               // Status ketersediaan - PERBAIKAN: Gunakan nilai langsung dari API
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -398,21 +403,23 @@ String? _getPhotoUrl(String? fotoPath) {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _tukangData!.statusKetersediaan == 'tersedia'
-                      ? Colors.green[100]
-                      : Colors.grey[300],
+                  color:
+                      _tukangData!.statusKetersediaan == 'tersedia'
+                          ? Colors.green[100]
+                          : Colors.grey[300],
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _tukangData!.statusKetersediaan == 'tersedia' 
-                      ? 'Tersedia' 
+                  _tukangData!.statusKetersediaan == 'tersedia'
+                      ? 'Tersedia'
                       : 'Tidak Tersedia',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _tukangData!.statusKetersediaan == 'tersedia'
-                        ? Colors.green[800]
-                        : Colors.grey[800],
+                    color:
+                        _tukangData!.statusKetersediaan == 'tersedia'
+                            ? Colors.green[800]
+                            : Colors.grey[800],
                   ),
                 ),
               ),
@@ -436,10 +443,7 @@ String? _getPhotoUrl(String? fotoPath) {
               const SizedBox(width: 8),
               Text(
                 '(${_tukangData!.ratingStats?.total ?? 0} ulasan)',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const Spacer(),
               Text(
@@ -466,10 +470,7 @@ String? _getPhotoUrl(String? fotoPath) {
               children: [
                 const Text(
                   'Tarif per Jam',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
                   _formatCurrency(_tukangData!.tarifPerJam),
@@ -497,22 +498,16 @@ String? _getPhotoUrl(String? fotoPath) {
         children: [
           const Text(
             'Informasi Kontak',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          
+
           // Nomor telepon
           if (_tukangData!.noTelp != null) ...[
-            _buildContactItem(
-              Icons.phone,
-              _tukangData!.noTelp!,
-            ),
+            _buildContactItem(Icons.phone, _tukangData!.noTelp!),
             const SizedBox(height: 8),
           ],
-          
+
           // Alamat
           if (_tukangData!.alamat != null) ...[
             _buildContactItem(
@@ -521,7 +516,7 @@ String? _getPhotoUrl(String? fotoPath) {
               isAddress: true,
             ),
           ],
-          
+
           // Kota dan provinsi
           if (_tukangData!.kota != null || _tukangData!.provinsi != null) ...[
             const SizedBox(height: 8),
@@ -535,22 +530,18 @@ String? _getPhotoUrl(String? fotoPath) {
     );
   }
 
-  Widget _buildContactItem(IconData icon, String text, {bool isAddress = false}) {
+  Widget _buildContactItem(
+    IconData icon,
+    String text, {
+    bool isAddress = false,
+  }) {
     return Row(
-      crossAxisAlignment: isAddress ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment:
+          isAddress ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: const Color(0xFFF3B950),
-        ),
+        Icon(icon, size: 20, color: const Color(0xFFF3B950)),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
       ],
     );
   }
@@ -565,26 +556,23 @@ String? _getPhotoUrl(String? fotoPath) {
         children: [
           const Text(
             'Pengalaman',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          
+
           // Tahun pengalaman
           _buildExperienceItem(
             Icons.work,
             '${_tukangData!.pengalamanTahun ?? 0} tahun pengalaman',
           ),
           const SizedBox(height: 8),
-          
+
           // Jumlah pesanan selesai
           _buildExperienceItem(
             Icons.check_circle,
             '${_tukangData!.totalPekerjaanSelesai ?? 0} pesanan diselesaikan',
           ),
-          
+
           // Radius layanan
           if (_tukangData!.radiusLayananKm != null) ...[
             const SizedBox(height: 8),
@@ -601,16 +589,9 @@ String? _getPhotoUrl(String? fotoPath) {
   Widget _buildExperienceItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: const Color(0xFFF3B950),
-        ),
+        Icon(icon, size: 20, color: const Color(0xFFF3B950)),
         const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 14),
-        ),
+        Text(text, style: const TextStyle(fontSize: 14)),
       ],
     );
   }
@@ -625,18 +606,12 @@ String? _getPhotoUrl(String? fotoPath) {
         children: [
           const Text(
             'Tentang',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
             _tukangData!.bio!,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.5,
-            ),
+            style: const TextStyle(fontSize: 14, height: 1.5),
           ),
         ],
       ),
@@ -653,34 +628,32 @@ String? _getPhotoUrl(String? fotoPath) {
         children: [
           const Text(
             'Keahlian',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: keahlian.map((keahlian) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3B950).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  keahlian,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            }).toList(),
+            children:
+                keahlian.map((keahlian) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3B950).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      keahlian,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -697,10 +670,7 @@ String? _getPhotoUrl(String? fotoPath) {
         children: [
           const Text(
             'Rating & Ulasan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -723,11 +693,7 @@ String? _getPhotoUrl(String? fotoPath) {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
-                    Icons.star,
-                    size: 14,
-                    color: Colors.amber,
-                  ),
+                  const Icon(Icons.star, size: 14, color: Colors.amber),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
@@ -745,10 +711,7 @@ String? _getPhotoUrl(String? fotoPath) {
                   const SizedBox(width: 8),
                   Text(
                     '$count',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -766,10 +729,7 @@ String? _getPhotoUrl(String? fotoPath) {
                 padding: const EdgeInsets.all(20),
                 child: Text(
                   'Belum ada ulasan',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ),
             )
@@ -876,11 +836,12 @@ String? _getPhotoUrl(String? fotoPath) {
       ),
       child: SafeArea(
         child: ElevatedButton(
-          onPressed: _tukangData!.statusKetersediaan == 'tersedia'
-              ? () {
-                  _navigateToBooking();
-                }
-              : null,
+          onPressed:
+              _tukangData!.statusKetersediaan == 'tersedia'
+                  ? () {
+                    _navigateToBooking();
+                  }
+                  : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF3B950),
             disabledBackgroundColor: Colors.grey,
@@ -906,8 +867,17 @@ String? _getPhotoUrl(String? fotoPath) {
 
   void _navigateToBooking() {
     try {
+      // Pastikan tukang_id tersedia
+      if (_tukangData!.id == null) {
+        throw Exception('Tukang ID tidak tersedia');
+      }
+
       developer.log(
-        'Preparing booking for tukang ID: ${_tukangData!.id}',
+        'Preparing booking for tukang_id: ${_tukangData!.id}',
+        name: 'TukangDetailScreen',
+      );
+      developer.log(
+        'TukangDetailModel - id: ${_tukangData!.id}, userId: ${_tukangData!.userId}',
         name: 'TukangDetailScreen',
       );
 
@@ -931,7 +901,8 @@ String? _getPhotoUrl(String? fotoPath) {
       }
 
       final userModel = UserModel(
-        id: _tukangData!.id,
+        id: _tukangData!.id, // Ini adalah tukang_id dari API
+        tukangId: _tukangData!.id, // Pastikan tukangId juga di-set
         nama: _tukangData!.namaLengkap,
         email: _tukangData!.email,
         noHp: _tukangData!.noTelp,
@@ -942,10 +913,11 @@ String? _getPhotoUrl(String? fotoPath) {
         rating: _tukangData!.rataRataRating,
         jumlahPesanan: _tukangData!.totalPekerjaanSelesai,
         tarifPerJam: _tukangData!.tarifPerJam,
+        bio: _tukangData!.bio,
       );
 
       developer.log(
-        'UserModel created, navigating to BookingScreen',
+        'UserModel created with tukang_id: ${_tukangData!.id}, navigating to BookingScreen',
         name: 'TukangDetailScreen',
       );
 
@@ -975,11 +947,7 @@ String? _getPhotoUrl(String? fotoPath) {
 
   Widget _buildDefaultHeader() {
     return const Center(
-      child: Icon(
-        Icons.person,
-        size: 100,
-        color: Colors.white,
-      ),
+      child: Icon(Icons.person, size: 100, color: Colors.white),
     );
   }
 
