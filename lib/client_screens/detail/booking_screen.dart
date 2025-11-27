@@ -442,7 +442,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     )
                   else if (_daftarKeahlian.isNotEmpty)
                     DropdownButtonFormField<String>(
-                      value: _selectedLayanan,
+                      initialValue: _selectedLayanan,
                       isExpanded: true,
                       decoration: InputDecoration(
                         border: const OutlineInputBorder(),

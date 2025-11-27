@@ -280,10 +280,13 @@ class WithdrawalStats {
           json['ditolak'] != null
               ? int.tryParse(json['ditolak'].toString())
               : null,
+      // FIX: Handle both 'total_penarikan' and 'total_ditarik' from API
       totalPenarikan:
           json['total_penarikan'] != null
               ? double.tryParse(json['total_penarikan'].toString())
-              : null,
+              : json['total_ditarik'] != null
+                  ? double.tryParse(json['total_ditarik'].toString())
+                  : null,
       totalBiayaAdmin:
           json['total_biaya_admin'] != null
               ? double.tryParse(json['total_biaya_admin'].toString())
