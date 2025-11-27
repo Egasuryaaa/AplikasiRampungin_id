@@ -271,7 +271,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } else if (type == 'topup') {
       return 'topup_${data['topup_id']}_${data['status']}';
     } else {
-      return '${type}_${timestamp}';
+      return '${type}_$timestamp';
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/client_screens/content_bottom/topup_screen.dart';
 import 'package:rampungin_id_userside/services/client_service.dart';
@@ -394,13 +396,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       imageUrl = '${ApiConfig.baseUrl}/$imageUrl';
     }
 
-    print('🖼️ Home loading image: $imageUrl');
+    log('🖼️ Home loading image: $imageUrl');
 
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        print('❌ Error loading image: $error');
+        log('❌ Error loading image: $error');
         return const Icon(Icons.person, color: Color(0xFFF3B950), size: 30);
       },
     );

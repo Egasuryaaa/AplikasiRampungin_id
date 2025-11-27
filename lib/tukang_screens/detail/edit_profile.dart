@@ -439,7 +439,7 @@ Future<void> _saveProfile() async {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
