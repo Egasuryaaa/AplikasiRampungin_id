@@ -18,9 +18,15 @@ class AuthService {
       final jsonData = request.toJson();
       jsonData.forEach((key, value) {
         if (value != null) {
+          // Skip foto_profil - handled separately
+          if (key == 'foto_profil') return;
+
           if (value is List) {
-            // For keahlian array, join with comma
-            fields[key] = value.join(',');
+            // For keahlian array, send each item separately with array notation
+            // Backend expects: keahlian[0], keahlian[1], etc.
+            for (int i = 0; i < value.length; i++) {
+              fields['$key[$i]'] = value[i].toString();
+            }
           } else {
             fields[key] = value.toString();
           }

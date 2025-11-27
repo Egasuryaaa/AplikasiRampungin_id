@@ -26,13 +26,11 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
   final kotaController = TextEditingController();
   final provinsiController = TextEditingController();
   final kodePosController = TextEditingController();
-  final keahlianInputController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String _jenisAkun = 'client';
-  List<String> _keahlianList = [];
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -62,7 +60,6 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     pengalamanController.dispose();
     tarifController.dispose();
     bioController.dispose();
-    keahlianInputController.dispose();
     passwordController.dispose();
     konfirmasiPasswordController.dispose();
     usernameController.dispose();
@@ -71,22 +68,6 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     kodePosController.dispose();
 
     super.dispose();
-  }
-
-  void _addKeahlian() {
-    final input = keahlianInputController.text.trim();
-    if (input.isNotEmpty && !_keahlianList.contains(input)) {
-      setState(() {
-        _keahlianList.add(input);
-        keahlianInputController.clear();
-      });
-    }
-  }
-
-  void _removeKeahlian(String keahlian) {
-    setState(() {
-      _keahlianList.remove(keahlian);
-    });
   }
 
   Future<void> _register() async {
@@ -143,10 +124,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
             _jenisAkun == 'tukang' && bioController.text.trim().isNotEmpty
                 ? bioController.text.trim()
                 : null,
-        keahlian:
-            _jenisAkun == 'tukang' && _keahlianList.isNotEmpty
-                ? _keahlianList
-                : null,
+        keahlian: null,
         kategoriIds: null,
         namaBank: null,
         nomorRekening: null,
@@ -456,80 +434,6 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       label: "Bio",
                       icon: Icons.description_outlined,
                       controller: bioController,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Keahlian Input Section
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: keahlianInputController,
-                                decoration: InputDecoration(
-                                  labelText: "Tambah Keahlian",
-                                  hintText: "Contoh: Instalasi Listrik",
-                                  prefixIcon: const Icon(
-                                    Icons.build_outlined,
-                                    color: Color(0xFFE8A63C),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: _addKeahlian,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE8A63C),
-                                shape: const CircleBorder(),
-                                padding: const EdgeInsets.all(16),
-                              ),
-                              child: const Icon(Icons.add, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (_keahlianList.isNotEmpty)
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children:
-                                _keahlianList.map((keahlian) {
-                                  return Chip(
-                                    label: Text(keahlian),
-                                    deleteIcon: const Icon(
-                                      Icons.close,
-                                      size: 18,
-                                    ),
-                                    onDeleted: () => _removeKeahlian(keahlian),
-                                    backgroundColor: const Color(0xFFFFF8E1),
-                                    labelStyle: const TextStyle(
-                                      color: Color(0xFF6D4C41),
-                                    ),
-                                  );
-                                }).toList(),
-                          ),
-                        if (_keahlianList.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 16),
-                            child: Text(
-                              "Belum ada keahlian ditambahkan (opsional)",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                      ],
                     ),
                     const SizedBox(height: 20),
                   ],

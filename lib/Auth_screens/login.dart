@@ -237,10 +237,14 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       if (!mounted) return;
 
-      String errorMessage = "Email atau password salah!";
+      String errorMessage = "Email/password salah!";
+      bool isUnverified = false;
 
       // Check for specific errors
-      if (e.toString().contains('JWT configuration error')) {
+      if (e.toString().contains('403') ||
+          e.toString().contains('belum diverifikasi')) {
+        isUnverified = true;
+      } else if (e.toString().contains('JWT configuration error')) {
         errorMessage =
             "Backend error: JWT tidak dikonfigurasi dengan benar. Hubungi admin.";
       } else if (e.toString().contains('401')) {
@@ -258,24 +262,118 @@ class _LoginScreenState extends State<LoginScreen>
       });
       _shakeForm();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(child: Text(errorMessage)),
-            ],
+      // Show special dialog for unverified tukang (403 Forbidden)
+      if (isUnverified) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (ctx) => AlertDialog(
+                icon: const Icon(
+                  Icons.access_time,
+                  color: Colors.orange,
+                  size: 50,
+                ),
+                title: const Text(
+                  '\u26d4 Akun Belum Diverifikasi',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Akun Tukang Anda belum diverifikasi oleh Admin.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                size: 18,
+                                color: Colors.orange.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Proses verifikasi: 1-2 hari kerja',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.notifications_active,
+                                size: 18,
+                                color: Colors.orange.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Anda akan menerima notifikasi',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Mohon bersabar menunggu verifikasi dari Admin.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('OK, Mengerti'),
+                  ),
+                ],
+              ),
+        );
+      } else {
+        // Show snackbar for other errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 5),
           ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
