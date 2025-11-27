@@ -442,7 +442,7 @@ class _SettingState extends State<Setting> {
             onChanged: (value) {
               setState(() {});
             },
-            activeThumbColor: const Color(0xFFF3B950),
+            thumbColor: MaterialStateProperty.all(const Color(0xFFF3B950)),
           ),
         );
       },

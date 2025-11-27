@@ -76,7 +76,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    initialValue: tempStatus,
+                    value: tempStatus,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
@@ -97,7 +97,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: tempMetode,
+                    value: tempMetode,
                     decoration: const InputDecoration(
                       labelText: 'Metode Pembayaran',
                       border: OutlineInputBorder(),

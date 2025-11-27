@@ -413,7 +413,7 @@ class _FormTukangState extends State<FormTukang> with TickerProviderStateMixin {
               ),
             ),
             child: DropdownButtonFormField<String>(
-              initialValue:
+              value:
                   _selectedCategory.isEmpty
                       ? null
                       : _selectedCategory, // use 'value' instead of deprecated 'initialValue'
