@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rampungin_id_userside/services/auth_service.dart';
+import 'package:rampungin_id_userside/models/register_request.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -19,18 +20,19 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
   final pengalamanController = TextEditingController(text: '0');
   final tarifController = TextEditingController(text: '0');
   final bioController = TextEditingController();
-  final keahlianController = TextEditingController();
   final passwordController = TextEditingController();
   final konfirmasiPasswordController = TextEditingController();
   final usernameController = TextEditingController();
   final kotaController = TextEditingController();
   final provinsiController = TextEditingController();
   final kodePosController = TextEditingController();
+  final keahlianInputController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String _jenisAkun = 'client';
+  List<String> _keahlianList = [];
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -60,7 +62,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     pengalamanController.dispose();
     tarifController.dispose();
     bioController.dispose();
-    keahlianController.dispose();
+    keahlianInputController.dispose();
     passwordController.dispose();
     konfirmasiPasswordController.dispose();
     usernameController.dispose();
@@ -69,6 +71,22 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     kodePosController.dispose();
 
     super.dispose();
+  }
+
+  void _addKeahlian() {
+    final input = keahlianInputController.text.trim();
+    if (input.isNotEmpty && !_keahlianList.contains(input)) {
+      setState(() {
+        _keahlianList.add(input);
+        keahlianInputController.clear();
+      });
+    }
+  }
+
+  void _removeKeahlian(String keahlian) {
+    setState(() {
+      _keahlianList.remove(keahlian);
+    });
   }
 
   Future<void> _register() async {
@@ -87,49 +105,87 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      Map<String, dynamic> registrationData = {
-        'username': usernameController.text.trim(),
-        'email': emailController.text.trim(),
-        'password': passwordController.text.trim(),
-        'namaLengkap': namaController.text.trim(),
-        'noTelp': noHpController.text.trim(),
-        'role': _jenisAkun,
-        'alamat': alamatController.text.trim(),
-        'kota': kotaController.text.trim(),
-        'provinsi': provinsiController.text.trim(),
-        'kodePos': kodePosController.text.trim(),
-      };
+      // Create request object
+      final request = RegisterRequest(
+        username: usernameController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+        namaLengkap: namaController.text.trim(),
+        noTelp: noHpController.text.trim(),
+        role: _jenisAkun,
+        fotoProfil: null,
+        alamat:
+            alamatController.text.trim().isEmpty
+                ? null
+                : alamatController.text.trim(),
+        kota:
+            kotaController.text.trim().isEmpty
+                ? null
+                : kotaController.text.trim(),
+        provinsi:
+            provinsiController.text.trim().isEmpty
+                ? null
+                : provinsiController.text.trim(),
+        kodePos:
+            kodePosController.text.trim().isEmpty
+                ? null
+                : kodePosController.text.trim(),
+        // Tukang-specific fields
+        pengalamanTahun:
+            _jenisAkun == 'tukang'
+                ? int.tryParse(pengalamanController.text)
+                : null,
+        tarifPerJam:
+            _jenisAkun == 'tukang'
+                ? int.tryParse(tarifController.text)?.toDouble()
+                : null,
+        bio:
+            _jenisAkun == 'tukang' && bioController.text.trim().isNotEmpty
+                ? bioController.text.trim()
+                : null,
+        keahlian:
+            _jenisAkun == 'tukang' && _keahlianList.isNotEmpty
+                ? _keahlianList
+                : null,
+        kategoriIds: null,
+        namaBank: null,
+        nomorRekening: null,
+        namaPemilikRekening: null,
+      );
 
-      if (_jenisAkun == "tukang") {
-        registrationData.addAll({
-          'pengalaman_tahun': int.tryParse(pengalamanController.text) ?? 0,
-          'tarif_per_jam': int.tryParse(tarifController.text) ?? 0,
-          'bio': bioController.text.trim(),
-          'keahlian':
-              keahlianController.text.split(',').map((e) => e.trim()).toList(),
-          'kategori_ids': "[]",
-          'nama_bank': "",
-          'nomor_rekening': "",
-          'nama_pemilik_rekening': "",
-        });
-      }
-
-      final response = await _authService.register(registrationData);
+      final response = await _authService.register(request);
 
       if (!mounted) return;
 
-      if (response.user != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registrasi berhasil! Silakan login."),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
+      if (response.isSuccess && response.data != null) {
+        // Check if user is auto-verified (Client) or needs verification (Tukang)
+        if (response.data!.isVerified) {
+          // Client - auto-verified, can login immediately
+          _showSuccessDialog(
+            title: 'Registrasi Berhasil!',
+            content:
+                'Akun client Anda telah dibuat dan diverifikasi.\n\n'
+                'Anda dapat langsung login sekarang.',
+            isVerified: true,
+          );
+        } else {
+          // Tukang - needs admin verification
+          _showSuccessDialog(
+            title: 'Registrasi Berhasil!',
+            content:
+                'Akun tukang Anda telah dibuat!\n\n'
+                '⚠️ Akun Anda perlu diverifikasi oleh Admin terlebih dahulu '
+                'sebelum dapat login.\n\n'
+                'Proses verifikasi biasanya memakan waktu 1-2 hari kerja. '
+                'Mohon tunggu konfirmasi dari Admin.',
+            isVerified: false,
+          );
+        }
       } else {
+        // Error from server
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registrasi gagal!"),
+          SnackBar(
+            content: Text(response.message),
             backgroundColor: Colors.red,
           ),
         );
@@ -145,6 +201,39 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSuccessDialog({
+    required String title,
+    required String content,
+    required bool isVerified,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            icon: Icon(
+              isVerified ? Icons.check_circle : Icons.access_time,
+              color: isVerified ? Colors.green : Colors.orange,
+              size: 50,
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Text(content, textAlign: TextAlign.center),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop(); // Go back to login
+                },
+                child: Text(isVerified ? 'Login Sekarang' : 'OK, Mengerti'),
+              ),
+            ],
+          ),
+    );
   }
 
   Widget _buildTextField({
@@ -204,6 +293,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
               child: Column(
                 children: [
                   const SizedBox(height: 30),
+
                   Image.asset(
                     'assets/img/LogoRampung.png',
                     width: 100,
@@ -258,9 +348,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                     label: "Kota",
                     icon: Icons.location_city,
                     controller: kotaController,
-                    validator:
-                        (v) =>
-                            v == null || v.isEmpty ? "Kota wajib diisi" : null,
+                    // Made optional - no validator
                   ),
                   const SizedBox(height: 20),
 
@@ -268,11 +356,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                     label: "Provinsi",
                     icon: Icons.map_outlined,
                     controller: provinsiController,
-                    validator:
-                        (v) =>
-                            v == null || v.isEmpty
-                                ? "Provinsi wajib diisi"
-                                : null,
+                    // Made optional - no validator
                   ),
                   const SizedBox(height: 20),
 
@@ -280,9 +364,11 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                     label: "Kode Pos",
                     icon: Icons.markunread_mailbox_outlined,
                     controller: kodePosController,
+                    // Made optional - only validate format if not empty
                     validator: (v) {
-                      if (v == null || v.isEmpty) return "Kode pos wajib diisi";
-                      if (int.tryParse(v) == null) {
+                      if (v != null &&
+                          v.isNotEmpty &&
+                          int.tryParse(v) == null) {
                         return "Kode pos harus berupa angka";
                       }
                       return null;
@@ -304,11 +390,7 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                     label: "Alamat",
                     icon: Icons.home_outlined,
                     controller: alamatController,
-                    validator:
-                        (v) =>
-                            v == null || v.isEmpty
-                                ? "Alamat wajib diisi"
-                                : null,
+                    // Made optional - no validator
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<String>(
@@ -347,8 +429,9 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       icon: Icons.work_outline,
                       controller: pengalamanController,
                       validator: (v) {
-                        if (v == null || v.isEmpty) return "Wajib diisi";
-                        if (int.tryParse(v) == null) {
+                        if (v != null &&
+                            v.isNotEmpty &&
+                            int.tryParse(v) == null) {
                           return "Harus berupa angka";
                         }
                         return null;
@@ -360,8 +443,9 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       icon: Icons.payments_outlined,
                       controller: tarifController,
                       validator: (v) {
-                        if (v == null || v.isEmpty) return "Wajib diisi";
-                        if (int.tryParse(v) == null) {
+                        if (v != null &&
+                            v.isNotEmpty &&
+                            int.tryParse(v) == null) {
                           return "Harus berupa angka";
                         }
                         return null;
@@ -372,20 +456,80 @@ class _RegisterState extends State<Register> with TickerProviderStateMixin {
                       label: "Bio",
                       icon: Icons.description_outlined,
                       controller: bioController,
-                      validator:
-                          (v) =>
-                              v == null || v.isEmpty ? "Bio wajib diisi" : null,
                     ),
                     const SizedBox(height: 20),
-                    _buildTextField(
-                      label: "Keahlian (pisahkan dengan koma)",
-                      icon: Icons.build_outlined,
-                      controller: keahlianController,
-                      validator:
-                          (v) =>
-                              v == null || v.isEmpty
-                                  ? "Keahlian wajib diisi"
-                                  : null,
+
+                    // Keahlian Input Section
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: keahlianInputController,
+                                decoration: InputDecoration(
+                                  labelText: "Tambah Keahlian",
+                                  hintText: "Contoh: Instalasi Listrik",
+                                  prefixIcon: const Icon(
+                                    Icons.build_outlined,
+                                    color: Color(0xFFE8A63C),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: _addKeahlian,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE8A63C),
+                                shape: const CircleBorder(),
+                                padding: const EdgeInsets.all(16),
+                              ),
+                              child: const Icon(Icons.add, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_keahlianList.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children:
+                                _keahlianList.map((keahlian) {
+                                  return Chip(
+                                    label: Text(keahlian),
+                                    deleteIcon: const Icon(
+                                      Icons.close,
+                                      size: 18,
+                                    ),
+                                    onDeleted: () => _removeKeahlian(keahlian),
+                                    backgroundColor: const Color(0xFFFFF8E1),
+                                    labelStyle: const TextStyle(
+                                      color: Color(0xFF6D4C41),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                        if (_keahlianList.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 16),
+                            child: Text(
+                              "Belum ada keahlian ditambahkan (opsional)",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                   ],

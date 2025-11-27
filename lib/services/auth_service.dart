@@ -3,12 +3,71 @@ import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../models/user_model.dart';
+import '../models/register_request.dart';
+import '../models/register_response.dart';
 
 class AuthService {
   final ApiClient _client = ApiClient();
 
   // ==================== REGISTER ====================
-  Future<AuthResponse> register(Map<String, dynamic> registrationData) async {
+  Future<RegisterResponse> register(RegisterRequest request) async {
+    try {
+      final Map<String, String> fields = {};
+
+      // Convert all request data to string fields for multipart
+      final jsonData = request.toJson();
+      jsonData.forEach((key, value) {
+        if (value != null) {
+          if (value is List) {
+            // For keahlian array, join with comma
+            fields[key] = value.join(',');
+          } else {
+            fields[key] = value.toString();
+          }
+        }
+      });
+
+      http.Response response;
+
+      // If photo is provided, use multipart request
+      if (request.fotoProfil != null) {
+        final fileBytes = await request.fotoProfil!.readAsBytes();
+        final filename = request.fotoProfil!.path.split('/').last;
+
+        final streamedResponse = await _client.postMultipart(
+          ApiConfig.authRegister,
+          'foto_profil',
+          fileBytes,
+          filename,
+          fields: fields,
+          requiresAuth: false,
+        );
+
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Otherwise use regular POST
+        response = await _client.post(
+          ApiConfig.authRegister,
+          body: fields,
+          requiresAuth: false,
+        );
+      }
+
+      final data = _client.parseResponse(response);
+      return RegisterResponse.fromJson(data);
+    } catch (e) {
+      return RegisterResponse(
+        status: 'error',
+        message: 'Terjadi kesalahan: ${e.toString()}',
+      );
+    }
+  }
+
+  // Backward compatibility: keep old register method for existing code
+  @Deprecated('Use register(RegisterRequest) instead')
+  Future<AuthResponse> registerOld(
+    Map<String, dynamic> registrationData,
+  ) async {
     try {
       final Map<String, String> body = {
         "username": registrationData['username'] ?? "",
